@@ -1,0 +1,19 @@
+{
+  "name": "nollup",
+  "version": "0.0.1",
+  "main": "src/index.js",
+  "dependencies": {
+    "chokidar": "^2.0.2",
+    "convert-source-map": "^1.5.1"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
+    "express": "^4.16.2",
+    "preact": "^8.2.7",
+    "rollup-plugin-babel": "^3.0.3",
+    "rollup-plugin-commonjs": "^8.3.0",
+    "rollup-plugin-less": "^0.1.3",
+    "rollup-plugin-node-resolve": "^3.0.3"
+  }
+}

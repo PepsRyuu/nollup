@@ -1,0 +1,10 @@
+.idea/
+dist/
+*.log
+node_modules/
+.DS_STORE
+*.swp
+.npm
+.eslintcache
+target/
+*.stackdump
