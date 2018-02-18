@@ -20,8 +20,9 @@ function resolvePath (target, current) {
         let parts = target.split(':');
         let namespace = parts.length === 2? parts[0] + ':' : '';
         let file = parts.length === 2? parts[1] : parts[0];
+        let ext = path.extname(file);
 
-        return namespace + path.resolve(path.dirname(current), file.endsWith('.js')? file : file + '.js');
+        return namespace + path.resolve(path.dirname(current), ext? file : file + '.js');
     }
 }
 
@@ -148,7 +149,7 @@ async function load (context, target, current) {
  */
 async function transform (context, code, filepath) {
     let result = await callPluginCompileMethod(context, 'transform', code, filepath);
-    if (result) {
+    if (result !== null && result !== undefined) {
         return typeof result === 'object'? result : { code: result };
     }
 
@@ -236,6 +237,7 @@ async function generate (context) {
         // readable for advanced debugging situations.
         code = code.replace(/'/g, '\\\'')
                    .replace(/\\n/g, '\\\\n')
+                   .replace(/\\r/g, '\\\\r')
                    .replace(/(\r)?\n/g, '\\n\\\n')
                    .replace(/\/\/# sourceMappingURL=(.*?)$/g, '') // remove existing sourcemapurls
 
@@ -307,13 +309,8 @@ async function generate (context) {
 async function bundle (context, input, callback) {
     let start = Date.now();
 
-    // If the file changed, we need to invalidate it.
-    if (context.files[input]) {
-        context.files[input].invalidate = true;
-    }
-
     try {
-        await parse(context, input, input);
+        await parse(context, input, process.cwd() + '/__entry__');
 
         context.options.plugins.forEach(plugin => {
             if (plugin.ongenerate) {
@@ -367,6 +364,13 @@ function nollup (options, callback) {
     // TODO: Probably need to make this more flexible. 
     let watcher = chokidar.watch(path.dirname(options.input));
     watcher.on('change', file => {
+        let fullInputPath = resolvePath(file, path.dirname(options.input));  
+          
+        // If the file changed, we need to invalidate it.
+        if (context.files[fullInputPath]) {
+            context.files[fullInputPath].invalidate = true;
+        }
+
         bundle(context, file, callback);
     });
 
