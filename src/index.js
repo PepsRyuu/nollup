@@ -171,6 +171,11 @@ async function parse (context, target, current) {
     // If false, module is not included.
     if (filepath) {
 
+        // If the file isn't found, it breaks compilation when saving again.
+        if (!fs.existsSync(filepath)) {
+            return filepath;
+        }
+
         if (!context.files[filepath]) {
             context.files[filepath] = {
                 index: context.filesIndex++,
@@ -228,6 +233,11 @@ async function generate (context) {
         // Inject require numbers into module code.
         code = code.replace(/__nollup__(\d+)/g, (match, index) => {
             let dependency = dependencies[index];
+
+            if (!context.files[dependency]) {
+                throw new Error('File not found: ' + dependency);
+            }
+
             return context.files[dependency].index;
         });
         
@@ -235,11 +245,11 @@ async function generate (context) {
         // to escape line breaks and quotes. Using a multiline
         // approach here so that the compiled code is still
         // readable for advanced debugging situations.
-        code = code.replace(/'/g, '\\\'')
-                   .replace(/\\n/g, '\\\\n')
-                   .replace(/\\r/g, '\\\\r')
+        code = code
+                   .replace(/\\/g, '\\\\')
+                   .replace(/'/g, '\\\'')
                    .replace(/(\r)?\n/g, '\\n\\\n')
-                   .replace(/\/\/# sourceMappingURL=(.*?)$/g, '') // remove existing sourcemapurls
+                   .replace(/\/\/# sourceMappingURL=(.*?)($|\n)/g, '') // remove existing sourcemapurls
 
 
         // Transform the source path so that they display well in the browser debugger.
@@ -255,7 +265,7 @@ async function generate (context) {
         }
 
         return [
-            'function (require, module) {',
+            'function (require, module, exports) {',
             'eval(\'' + code + '\')',
             '},'
         ].join('\n');
@@ -277,7 +287,7 @@ async function generate (context) {
 
             modules[number](function (number) {
                 return require(number);
-            }, module);
+            }, module, module.exports);
 
             installed[number] = module;
         }

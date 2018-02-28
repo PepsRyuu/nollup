@@ -8,6 +8,7 @@
 * When making changes to files, Rollup has to recompile the entire bundle due to the tree-shaking optimisations. This can lead to slow rebuild times.
 * Wanted something similar to Webpack development flow, but with the simplicity of the Rollup configuration and plugin ecosystem.
 * To give developers a foundation for implementing Hot Module Replacement when using Rollup.
+* While Rollup does have watching functionality, it requires a file output to be defined.
 
 ## What does this do?
 
