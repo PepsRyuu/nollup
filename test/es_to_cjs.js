@@ -34,8 +34,8 @@ let es_to_cjs = require('../src/es_to_cjs');
     input: 'export class Hello {};',
     output: 'module.exports.Hello = class Hello {};'
 }, {
-    input: 'export function Hello {};',
-    output: 'module.exports.Hello = function Hello {};'
+    input: 'export function Hello () {};',
+    output: 'module.exports.Hello = function Hello () {};'
 }, {
     input: 'export {name1, name2};',
     output: 'module.exports.name1 = name1, module.exports.name2 = name2;'

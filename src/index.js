@@ -3,6 +3,36 @@ let fs = require('fs');
 let path = require('path');
 let chokidar = require('chokidar');
 let ConvertSourceMap = require('convert-source-map');
+let acorn = require('acorn');
+
+/**
+ * Some APIs such as rollup-plugin-commonjs use the transform context
+ * methods to parse the code rather than importing acorn themselves.
+ *
+ * @method createTransformContext
+ * @return {Object}
+ */
+function createTransformContext () {
+    let defaultAcornOptions = {
+        ecmaVersion: 2018,
+        sourceType: 'module',
+        preserveParens: false
+    };
+
+    return {
+        parse (code, options = {}) {
+            return acorn.parse(code, Object.assign({}, defaultAcornOptions, options));
+        },
+
+        warn (e) {
+            console.warn(e);
+        },
+
+        error (e) {
+            throw e;
+        }
+    }
+}
 
 /**
  * Resolves the target path against the current path.
@@ -36,14 +66,14 @@ function resolvePath (target, current) {
  * @param {...} args
  * @return {Promise}
  */
-async function callPluginMethod (plugin, method, ...args) {
+async function callPluginMethod (thisValue, plugin, method, ...args) {
     if (plugin[method]) {
         let value;
 
         if (typeof plugin[method] === 'string') {
             value = plugin[method];
         } else {
-            let hr = plugin[method](...args);
+            let hr = plugin[method].call(thisValue, ...args);
             if (hr instanceof Promise) {
                 value = await hr;
             } else {
@@ -69,7 +99,7 @@ async function callPluginTextMethod (context, method) {
     let output = '';
 
     for (let i = 0; i < plugins.length; i++) {
-        let value = await callPluginMethod(plugins[i], method);
+        let value = await callPluginMethod(null, plugins[i], method);
 
         if (value) {
             output += value;
@@ -89,11 +119,11 @@ async function callPluginTextMethod (context, method) {
  * @param {...} args
  * @return {Promise}
  */
-async function callPluginCompileMethod (context, method, ...args) {
+async function callPluginCompileMethod (context, thisValue, method, ...args) {
     let { plugins } = context.options;
 
     for (let i = 0; i < plugins.length; i++) {
-        let value = await callPluginMethod(plugins[i], method, ...args);
+        let value = await callPluginMethod(thisValue, plugins[i], method, ...args);
         
         if (value !== null && value !== undefined) {
             return value;
@@ -112,7 +142,7 @@ async function callPluginCompileMethod (context, method, ...args) {
  * @return {Promise}
  */
 async function resolveId (context, target, current) {
-    let result = await callPluginCompileMethod(context, 'resolveId', target, current);
+    let result = await callPluginCompileMethod(context, null, 'resolveId', target, current);
 
     // Explicitly checked for so that modules can be excluded.
     if (result === false) {
@@ -133,7 +163,7 @@ async function resolveId (context, target, current) {
  * @return {Promise}
  */
 async function load (context, target, current) {
-    let hr = await callPluginCompileMethod(context, 'load', target);
+    let hr = await callPluginCompileMethod(context, null, 'load', target);
     return hr || fs.readFileSync(target, 'utf8');
 }
 
@@ -148,7 +178,7 @@ async function load (context, target, current) {
  * @return {Promise}
  */
 async function transform (context, code, filepath) {
-    let result = await callPluginCompileMethod(context, 'transform', code, filepath);
+    let result = await callPluginCompileMethod(context, createTransformContext(), 'transform', code, filepath);
     if (result !== null && result !== undefined) {
         return typeof result === 'object'? result : { code: result };
     }
@@ -165,34 +195,22 @@ async function transform (context, code, filepath) {
  * @param {String} current
  * @return {Promise}
  */
-async function parse (context, target, current) {
-    let filepath = await resolveId(context, target, current);
-
+async function parse (context, filepath, current) {
     // If false, module is not included.
     if (filepath) {
 
-        // If the file isn't found, it breaks compilation when saving again.
-        if (!fs.existsSync(filepath)) {
-            return filepath;
-        }
-
-        if (!context.files[filepath]) {
-            context.files[filepath] = {
-                index: context.filesIndex++,
-                invalidate: true
-            }
-        }
-
         let file = context.files[filepath];
 
-        if (file.invalidate) {
+        if (!file) {
+            file = {};
+            context.files[filepath] = file;
+
             let rawCode = await load(context, filepath, current);
             let { code, map } = await transform(context, rawCode, filepath);
-            let { dependencies, output} = es_to_cjs(code);
+            let { dependencies, output } = es_to_cjs(code);
 
             file.code = output;
             file.dependencies = dependencies || [];
-            file.invalidate = false;
             file.map = map;
 
             // Source maps sometimes don't have sources.
@@ -202,16 +220,32 @@ async function parse (context, target, current) {
                 map.sources[0] = filepath;
                 map.sourcesContent[0]  = rawCode;
             }
-        }
+        }       
         
         let dependencies = file.dependencies;
 
         for (let i = 0; i < dependencies.length; i++) {
-            dependencies[i] = await parse(context, dependencies[i], filepath);
+            dependencies[i] = await resolveId(context, dependencies[i], filepath);
+        }
+
+        let errorThrown = false;
+
+        for (let i = 0; i < dependencies.length; i++) {
+            // If one of these fails at all, then the rest won't get parsed again on a file change because we don't parse the full tree of code.
+            try {
+                await parse(context, dependencies[i], filepath);
+            } catch (e) {
+                errorThrown = e;
+                delete context.files[dependencies[i]];
+            }
+            
+        }
+
+        if (errorThrown) {
+            delete context.files[filepath];
+            throw errorThrown;
         }
     }
-
-    return filepath;
 }
 
 /**
@@ -227,6 +261,9 @@ async function generate (context) {
     let banner = await callPluginTextMethod(context, 'banner');
     let footer = await callPluginTextMethod(context, 'footer');
 
+    let file_index_map = Object.keys(context.files);
+    let main_entry = file_index_map.indexOf(context.options.input);
+
     let files = Object.keys(context.files).map(filepath => {
         let { code, map, dependencies } = context.files[filepath];
        
@@ -238,7 +275,7 @@ async function generate (context) {
                 throw new Error('File not found: ' + dependency);
             }
 
-            return context.files[dependency].index;
+            return file_index_map.indexOf(dependency);
         });
         
         // Turning the code into eval statements, so we need
@@ -266,7 +303,7 @@ async function generate (context) {
 
         return [
             'function (require, module, exports) {',
-            'eval(\'' + code + '\')',
+            'eval(\'"use strict";' + code + '\')',
             '},'
         ].join('\n');
 
@@ -295,7 +332,7 @@ async function generate (context) {
         return installed[number].exports;
     };
 
-    require(0);
+    require(${main_entry});
 })([
         `,
         files,
@@ -320,6 +357,7 @@ async function bundle (context, input, callback) {
     let start = Date.now();
 
     try {
+        context.processing = true;
         await parse(context, input, process.cwd() + '/__entry__');
 
         context.options.plugins.forEach(plugin => {
@@ -337,8 +375,10 @@ async function bundle (context, input, callback) {
             time: Date.now() - start 
         };
 
+        context.processing = false;
         callback(output, stats);
     } catch (e) {
+        context.processing = false;
         callback(undefined, undefined, e);
     }
 }
@@ -356,8 +396,8 @@ async function bundle (context, input, callback) {
 function nollup (options, callback) {
     let context = {
         files: {},
-        filesIndex: 0,
-        options
+        options,
+        processing: false
     };
 
     // Stub plugins if needed
@@ -374,14 +414,18 @@ function nollup (options, callback) {
     // TODO: Probably need to make this more flexible. 
     let watcher = chokidar.watch(path.dirname(options.input));
     watcher.on('change', file => {
+        if (context.processing) {
+            return;
+        }
+
         let fullInputPath = resolvePath(file, path.dirname(options.input));  
           
         // If the file changed, we need to invalidate it.
         if (context.files[fullInputPath]) {
-            context.files[fullInputPath].invalidate = true;
+            delete context.files[fullInputPath];
         }
 
-        bundle(context, file, callback);
+        bundle(context, options.input, callback);
     });
 
     // Let's start compiling!
