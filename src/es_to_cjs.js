@@ -68,8 +68,16 @@ module.exports = function (input) {
         }
 
         if (node.type === 'ExportNamedDeclaration') {
+
             if (node.declaration) {
-                s.overwrite(node.start, node.declaration.start, `module.exports.${node.declaration.id.name} = `)
+                if (node.declaration.id) {
+                    s.overwrite(node.start, node.declaration.start, `module.exports.${node.declaration.id.name} = `)
+                } else if (node.declaration.declarations) {
+                    s.overwrite(node.start, node.declaration.declarations[0].start, ''); // remove export and "var/let/const".
+                    node.declaration.declarations.forEach(node => {
+                        s.overwrite(node.id.start, node.id.end, `module.exports.${node.id.name}`)
+                    });
+                }
             } else if (node.specifiers) {
                 let output = [];
 

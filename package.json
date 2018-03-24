@@ -1,6 +1,6 @@
 {
   "name": "nollup",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "main": "src/index.js",
   "dependencies": {
     "acorn": "^5.5.3",

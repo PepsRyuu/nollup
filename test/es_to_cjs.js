@@ -42,6 +42,15 @@ let es_to_cjs = require('../src/es_to_cjs');
 }, {
     input: 'export {hello as world, name};',
     output: 'module.exports.world = hello, module.exports.name = name;'
+}, {
+    input: 'export var MyVar1 = 123;',
+    output: 'module.exports.MyVar1 = 123;'
+}, {
+    input: 'export var MyVar1 = () => {}, MyVar2 = 456;',
+    output: 'module.exports.MyVar1 = () => {}, module.exports.MyVar2 = 456;'
+}, {
+    input: 'export const MyVar1 = () => {}, MyVar2 = 456;',
+    output: 'module.exports.MyVar1 = () => {}, module.exports.MyVar2 = 456;'
 }].forEach(test => {
     let { output } = es_to_cjs(test.input);
     if (output === test.output) {
