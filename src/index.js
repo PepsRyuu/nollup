@@ -44,7 +44,7 @@ function createTransformContext () {
  */
 function resolvePath (target, current) {
     if (path.isAbsolute(target)) {
-        return target;
+        return path.normalize(target);
     } else {
         // Plugins like CommonJS have namespaced imports.
         let parts = target.split(':');
@@ -52,7 +52,7 @@ function resolvePath (target, current) {
         let file = parts.length === 2? parts[1] : parts[0];
         let ext = path.extname(file);
 
-        return namespace + path.resolve(path.dirname(current), ext? file : file + '.js');
+        return namespace + path.normalize(path.resolve(path.dirname(current), ext? file : file + '.js'));
     }
 }
 
@@ -149,7 +149,8 @@ async function resolveId (context, target, current) {
         return false;
     }
 
-    return result || resolvePath(target, current);
+    result = result || resolvePath(target, current);
+    return path.normalize(result);
 }
 
 /**
@@ -203,7 +204,6 @@ async function parse (context, filepath, current) {
 
         if (!file) {
             file = {};
-            context.files[filepath] = file;
 
             let rawCode = await load(context, filepath, current);
             let { code, map } = await transform(context, rawCode, filepath);
@@ -220,6 +220,8 @@ async function parse (context, filepath, current) {
                 map.sources[0] = filepath;
                 map.sourcesContent[0]  = rawCode;
             }
+
+            context.files[filepath] = file;
         }       
         
         let dependencies = file.dependencies;
@@ -235,7 +237,7 @@ async function parse (context, filepath, current) {
             try {
                 await parse(context, dependencies[i], filepath);
             } catch (e) {
-                errorThrown = e;
+                errorThrown = new Error('Error in ' + dependencies[i] + '\n' + e.stack);
                 delete context.files[dependencies[i]];
             }
             
@@ -332,7 +334,7 @@ async function generate (context) {
         return installed[number].exports;
     };
 
-    require(${main_entry});
+    return require(${main_entry});
 })([
         `,
         files,

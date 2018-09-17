@@ -1,6 +1,6 @@
 let es_to_cjs = require('../src/es_to_cjs');
 
-[{
+let tests = [{
     input: 'import Hello from \'./world\';',
     output: 'var _i0 = require(__nollup__0); var Hello = _i0.default;'
 }, {
@@ -51,15 +51,18 @@ let es_to_cjs = require('../src/es_to_cjs');
 }, {
     input: 'export const MyVar1 = () => {}, MyVar2 = 456;',
     output: 'module.exports.MyVar1 = () => {}, module.exports.MyVar2 = 456;'
-}].forEach(test => {
-    let { output } = es_to_cjs(test.input);
-    if (output === test.output) {
-        console.log('PASS', test.input);
-    } else {
-        console.log('--------');
-        console.log('FAIL', test.input);
-        console.log('   Expected: ' + test.output);
-        console.log('     Actual: ' + output);
-        console.log('--------');
-    }
+}];
+
+describe ('es_to_cjs', () => {
+    tests.forEach(test => {
+        it(test.input, () => {
+            let { output } = es_to_cjs(test.input);
+            if (output !== test.output) {
+                throw new Error(`
+                    Expected: ${test.output}
+                    Actual: ${output}
+                `)
+            }
+        });
+    })
 });
