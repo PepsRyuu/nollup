@@ -64,19 +64,27 @@ module.exports = function (input) {
         } 
 
         if (node.type === 'ExportDefaultDeclaration') {
-            s.overwrite(node.start, node.declaration.start, `module.exports.default = `);
+            if (node.declaration.id) {
+                s.overwrite(node.start, node.declaration.start, '');
+                s.appendRight(node.declaration.end, `; module.exports.default = ${node.declaration.id.name};`);
+            } else {
+                s.overwrite(node.start, node.declaration.start, `module.exports.default = `);
+            }
         }
 
         if (node.type === 'ExportNamedDeclaration') {
 
             if (node.declaration) {
                 if (node.declaration.id) {
-                    s.overwrite(node.start, node.declaration.start, `module.exports.${node.declaration.id.name} = `)
+                    s.overwrite(node.start, node.declaration.start, '');
+                    s.appendRight(node.declaration.end, `; module.exports.${node.declaration.id.name} = ${node.declaration.id.name};`);
                 } else if (node.declaration.declarations) {
-                    s.overwrite(node.start, node.declaration.declarations[0].start, ''); // remove export and "var/let/const".
-                    node.declaration.declarations.forEach(node => {
-                        s.overwrite(node.id.start, node.id.end, `module.exports.${node.id.name}`)
-                    });
+                    s.overwrite(node.start, node.declaration.start, '');
+
+                    let output = '; ' + node.declaration.declarations.map(node => {
+                        return `module.exports.${node.id.name} = ${node.id.name}`;
+                    }).join(', ') + ';';
+                    s.appendRight(node.declaration.end, output);
                 }
             } else if (node.specifiers) {
                 let output = [];

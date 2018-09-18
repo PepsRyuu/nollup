@@ -25,17 +25,26 @@ let tests = [{
     input: 'import Hello, * as World from "./file";',
     output: 'var _i0 = require(__nollup__0); var Hello = _i0.default, World = _i0;'
 }, {
+    input: 'export default Hello;',
+    output: 'module.exports.default = Hello;'
+}, {
     input: 'export default 123;',
     output: 'module.exports.default = 123;'
 }, {
     input: 'export default class Hello {};',
-    output: 'module.exports.default = class Hello {};'
+    output: 'class Hello {}; module.exports.default = Hello;;'
+}, {
+    input: 'export default class Hello {}',
+    output: 'class Hello {}; module.exports.default = Hello;'
 }, {
     input: 'export class Hello {};',
-    output: 'module.exports.Hello = class Hello {};'
+    output: 'class Hello {}; module.exports.Hello = Hello;;'
+}, {
+    input: 'export class Hello {}',
+    output: 'class Hello {}; module.exports.Hello = Hello;'
 }, {
     input: 'export function Hello () {};',
-    output: 'module.exports.Hello = function Hello () {};'
+    output: 'function Hello () {}; module.exports.Hello = Hello;;'
 }, {
     input: 'export {name1, name2};',
     output: 'module.exports.name1 = name1, module.exports.name2 = name2;'
@@ -44,13 +53,16 @@ let tests = [{
     output: 'module.exports.world = hello, module.exports.name = name;'
 }, {
     input: 'export var MyVar1 = 123;',
-    output: 'module.exports.MyVar1 = 123;'
+    output: 'var MyVar1 = 123;; module.exports.MyVar1 = MyVar1;'
 }, {
     input: 'export var MyVar1 = () => {}, MyVar2 = 456;',
-    output: 'module.exports.MyVar1 = () => {}, module.exports.MyVar2 = 456;'
+    output: 'var MyVar1 = () => {}, MyVar2 = 456;; module.exports.MyVar1 = MyVar1, module.exports.MyVar2 = MyVar2;'
+}, {
+    input: 'export var MyVar1 = () => {}, MyVar2 = 456',
+    output: 'var MyVar1 = () => {}, MyVar2 = 456; module.exports.MyVar1 = MyVar1, module.exports.MyVar2 = MyVar2;'
 }, {
     input: 'export const MyVar1 = () => {}, MyVar2 = 456;',
-    output: 'module.exports.MyVar1 = () => {}, module.exports.MyVar2 = 456;'
+    output: 'const MyVar1 = () => {}, MyVar2 = 456;; module.exports.MyVar1 = MyVar1, module.exports.MyVar2 = MyVar2;'
 }];
 
 describe ('es_to_cjs', () => {

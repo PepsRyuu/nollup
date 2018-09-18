@@ -256,4 +256,17 @@ describe('Nollup', function () {
             }]
         })
     });
+
+    it ('Scenario: Check different export techniques', function (done) {
+        setErrorCallback(done);
+
+        bundle('export-checks', (entry) => {
+            asyncExpect(() => expect(entry.MyVar).to.equal('MyVar'));
+            asyncExpect(() => expect(entry.MyVarAlias).to.equal('MyVar'));
+            asyncExpect(() => expect(entry.MyClass.prototype.getValue()).to.equal('MyClass'));
+            asyncExpect(() => expect(entry.MyClassAlias.prototype.getValue()).to.equal('MyClass'));
+            asyncExpect(() => expect(entry.default).to.equal('MyVarMyVarMyVar'));
+            done();
+        }) 
+    });
 });

@@ -196,7 +196,12 @@ async function transform (context, code, filepath) {
  * @param {String} current
  * @return {Promise}
  */
-async function parse (context, filepath, current) {
+async function parse (context, filepath, current, level) {
+
+    if (level >= 255) {
+        throw new Error('Maximum parse call stack exceeded.');
+    }
+
     // If false, module is not included.
     if (filepath) {
 
@@ -235,9 +240,9 @@ async function parse (context, filepath, current) {
         for (let i = 0; i < dependencies.length; i++) {
             // If one of these fails at all, then the rest won't get parsed again on a file change because we don't parse the full tree of code.
             try {
-                await parse(context, dependencies[i], filepath);
+                await parse(context, dependencies[i], filepath, level + 1);
             } catch (e) {
-                errorThrown = new Error('Error in ' + dependencies[i] + '\n' + e.stack);
+                errorThrown = new Error(e.message + '\n' + ' --- ' + dependencies[i]);
                 delete context.files[dependencies[i]];
             }
             
@@ -360,7 +365,7 @@ async function bundle (context, input, callback) {
 
     try {
         context.processing = true;
-        await parse(context, input, process.cwd() + '/__entry__');
+        await parse(context, input, process.cwd() + '/__entry__', 0);
 
         context.options.plugins.forEach(plugin => {
             if (plugin.ongenerate) {
