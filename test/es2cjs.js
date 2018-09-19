@@ -1,4 +1,4 @@
-let es_to_cjs = require('../src/es_to_cjs');
+let es_to_cjs = require('../lib/__es2cjs');
 
 let tests = [{
     input: 'import Hello from \'./world\';',

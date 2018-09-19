@@ -8,5 +8,6 @@ node_modules/
 .eslintcache
 target/
 *.stackdump
+package-lock.json
 
 NOTES
