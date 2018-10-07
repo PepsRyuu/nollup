@@ -3,21 +3,6 @@ let path = require('path');
 let expect = require('chai').expect;
 let fs_impl = require('fs');
 
-let chokidar = {
-    watch: function () {
-        return {
-            on: (event, callback) => {
-                this.callback = callback;
-            }
-        }
-    },
-
-    trigger: function (file) {
-        let fullPath = path.resolve(__dirname, `./packages/${file}.js`);
-        this.callback(fullPath);
-    }
-};
-
 let fs = {
     _stubs: {},
 
@@ -39,29 +24,22 @@ let fs = {
     }
 }
 
-let nollup = proxyquire('../src/index', { fs, chokidar });
+let nollup = proxyquire('../lib/index', { fs });
 
-function bundle (package, callback, config) {
+async function createNollup (package, config) {
     config = config || {};
     config.input = path.resolve(__dirname,`./packages/${package}/index.js`);
+    let bundle = await nollup(config);
 
-    nollup(config, (output, stats, err) => {
-        callback(eval(output && output.code), err);
-    });
-}
+    return {
+        invalidate: function (file) {
+            return bundle.invalidate(path.resolve(__dirname, `./packages/${file}.js`));
+        },
 
-let asyncErrorCallback;
-
-function setErrorCallback (fn) {
-    asyncErrorCallback = fn;
-}
-
-function asyncExpect(fn) {
-    try {
-        fn();
-    } catch (e) {
-        asyncErrorCallback(e);
-        throw e;
+        generate: async function () {
+            let output = await bundle.generate();
+            return eval(output && output.code);
+        }
     }
 }
 
@@ -70,62 +48,58 @@ describe('Nollup', function () {
         fs.reset();
     })
 
-    it ('should compile simple hello world app', function (done) {
-        setErrorCallback(done);
-        bundle('hello-world', (entry) => {
-            asyncExpect(() => expect(entry.default).to.equal('hello world'));
-            done();
-        })        
+    it ('should compile simple hello world app', async function () {
+        let bundle = await createNollup('hello-world');
+        let entry = await bundle.generate();
+        expect(entry.default).to.equal('hello world');      
     });
 
-    it ('should compile module with multiple imports', function (done) {
-        setErrorCallback(done);
-
-        bundle('multi-module', (entry) => {
-            asyncExpect(() => expect(entry.default.message).to.equal('hello world'));
-            asyncExpect(() => expect(entry.default.sum).to.equal(6));
-            done();
-        });        
+    it ('should compile module with multiple imports', async function () {
+        let bundle = await createNollup('multi-module');
+        let entry = await bundle.generate();
+        expect(entry.default.message).to.equal('hello world');
+        expect(entry.default.sum).to.equal(6);       
     });
 
-    it ('should throw error if failed to find file', function (done) {
-        setErrorCallback(done);
-
+    it ('should throw error if failed to find file', async function () {
         fs.stub('multi-module/message/hello', () => {
             throw new Error ('File not found');
         });
 
-        bundle('multi-module', (entry, err) => {
-            asyncExpect(() => expect(err.message.indexOf('File not found') > -1).to.be.true);
-            done();
-        });
+        let bundle = await createNollup('multi-module');
+
+        try {
+            await bundle.generate();
+            throw new Error('Should not reach here');
+        } catch (e) {
+            expect(e.message.indexOf('File not found') > -1).to.be.true;
+        }
     });
 
-    it ('should recompile successfully is file was missing and is found again', function (done) {
-        setErrorCallback(done);
-
+    it ('should recompile successfully is file was missing and is found again', async function () {
         fs.stub('multi-module/message/hello', () => {
             throw new Error('File not found');
         });
 
-        let phase = 0;
+        let failed = false;
+        let bundle = await createNollup('multi-module');
 
-        bundle('multi-module', (entry, err) => {
-            if (phase === 0) {
-                phase++;
-                asyncExpect(() => expect(err).not.to.be.undefined);
-                fs.reset();
-                chokidar.trigger('multi-module/message/hello');
-            } else if (phase === 1) {
-                asyncExpect(() => expect(entry.default.message).to.equal('hello world'));
-                done();
+        try {
+            await bundle.generate();
+            failed = true;
+        } catch (e) {
+            if (failed) {
+                throw new Error('Bundle generated when it shouldnt have');
             }
-        });
+
+            fs.reset();
+            bundle.invalidate('multi-module/message/hello');
+            let entry = await bundle.generate();
+            expect(entry.default.message).to.equal('hello world');
+        }
     });
 
-    it ('Scenario: Module mistyped module that exists, and fixed itself afterwards', function (done) {
-        setErrorCallback(done);
-
+    it ('Scenario: Module mistyped module that exists, and fixed itself afterwards', async function () {
         fs.stub('multi-module/message/index', () => {
             return `
                 import hello from './hello';
@@ -134,23 +108,48 @@ describe('Nollup', function () {
             `;
         });
 
-        let phase = 0;
+        let failed = false;
+        let bundle = await createNollup('multi-module');
 
-        bundle('multi-module', (entry, err) => {
-            if (phase === 0) {
-                phase++;
-                asyncExpect(() => expect(err).not.to.be.undefined);
-                fs.reset();
-                chokidar.trigger('multi-module/message/index');
-            } else if (phase === 1) {
-                asyncExpect(() => expect(entry.default.message).to.equal('hello world'));
-                done();
+        try {
+            await bundle.generate();
+            failed = true;
+        } catch (e) {
+            if (failed) {
+                throw new Error('Bundle shouldnt have generated');
             }
-        })
+
+            fs.reset();
+            bundle.invalidate('multi-module/message/index');
+            let entry = await bundle.generate();
+            expect(entry.default.message).to.equal('hello world');
+        }
     });
 
-    it ('Scenario: Module adds a new module', function (done) {
-        setErrorCallback(done);
+    it ('Scenario: Module adds a new module', async function () {
+        fs.stub('multi-module/message/index', () => {
+            return `
+                import hello from './hello';
+                export default hello;
+            `;
+        });
+
+        let bundle = await createNollup('multi-module');
+        let entry = await bundle.generate();
+        expect(entry.default.message).to.equal('hello');
+
+        fs.reset();
+
+        bundle.invalidate('multi-module/message/index');
+        entry = await bundle.generate();
+        expect(entry.default.message).to.equal('hello world');
+    });
+
+    it ('Scenario: Module removes a module', async function () {
+        let phase = 0;
+
+        let bundle = await createNollup('multi-module');
+        await bundle.generate();
 
         fs.stub('multi-module/message/index', () => {
             return `
@@ -159,61 +158,18 @@ describe('Nollup', function () {
             `;
         });
 
-        let phase = 0;
-
-        bundle('multi-module', (entry, err) => {
-            if (phase === 0) {
-                phase++;
-                asyncExpect(() => expect(err).to.be.undefined);
-                fs.reset();
-                chokidar.trigger('multi-module/message/index');
-            } else if (phase === 1) {
-                asyncExpect(() => expect(entry.default.message).to.equal('hello world'));
-                done();
-            }
-        });
+        bundle.invalidate('multi-module/message/index');
+        let entry = await bundle.generate();
+        expect(entry.default.message).to.equal('hello');
+        fs.reset();
     });
 
-    it ('Scenario: Module removes a module', function (done) {
-        setErrorCallback(done);
+    it ('Scenario: Module adds a module that fails to transform', async function () {
         let phase = 0;
+        let failed = false;
 
-        bundle('multi-module', (entry, err) => {
-            if (phase === 0) {
-                phase++;
-                asyncExpect(() => expect(err).to.be.undefined);
-                fs.stub('multi-module/message/index', () => {
-                    return `
-                        import hello from './hello';
-                        export default hello;
-                    `;
-                });                
-                chokidar.trigger('multi-module/message/index');
-            } else if (phase === 1) {
-                asyncExpect(() => expect(entry.default.message).to.equal('hello'));
-                fs.reset();
-                done();
-            }
-        });
-    });
-
-    it ('Scenario: Module adds a module that fails to transform', function (done) {
-        setErrorCallback(done);
-
-        let phase = 0;
-
-        bundle('multi-module', (entry, err) => {
-            if (phase === 0) {
-                phase++;
-                asyncExpect(() => expect(err).not.to.be.undefined);
-                chokidar.trigger('multi-module/message/index');
-            } else if (phase === 1) {
-                asyncExpect(() => expect(entry.default.message).to.equal('hello world'));
-                fs.reset();
-                done();
-            }
-        }, {
-            plugins: [{
+        let bundle = await createNollup('multi-module', {
+             plugins: [{
                 transform: (code, id) => {
                     if (phase === 0 && id.indexOf('message') > 0) {
                         throw new Error('transform fail');
@@ -224,49 +180,68 @@ describe('Nollup', function () {
                     }
                 }
             }]
-        })
+        });
+
+        try {
+            await bundle.generate();
+            failed = true;
+        } catch (e) {
+            if (failed) {
+                throw new Error('should have failed');
+            }
+
+            phase++;
+            let entry = await bundle.generate();
+            expect(entry.default.message).to.equal('hello world');
+            fs.reset();
+        }
+        
+        
     });
 
-    it ('Scenario: Module whose dependency fails resolveId plugin', function (done) {
-        setErrorCallback(done);
-
+    it ('Scenario: Module whose dependency fails resolveId plugin', async function () {
         let phase = 0;
+        let failed = false;
 
-        bundle('multi-module', (entry, err) => {
-            if (phase === 0) {
-                phase++;
-                asyncExpect(() => expect(err).not.to.be.undefined);
-                chokidar.trigger('multi-module/message/index');
-            } else if (phase === 1) {
-                asyncExpect(() => expect(entry.default.message).to.equal('hello world'));
-                fs.reset();
-                done();
-            }
-        }, {
-            plugins: [{
-                transform: (code, id) => {
+        let bundle = await createNollup('multi-module', {
+             plugins: [{
+                resolveId: (id) => {
                     if (phase === 0 && id.indexOf('message') > 0) {
-                        throw new Error('transform fail');
+                        throw new Error('resolveId fail');
                     }
 
-                    return {
-                        code
-                    }
+                    return null;
                 }
             }]
-        })
+        });
+
+        try {
+            await bundle.generate();
+            failed = true;
+        } catch (e) {
+            if (failed) {
+                throw new Error('should have failed');
+            }
+
+            phase++;
+            bundle.invalidate('multi-module/message/index');
+
+            let entry = await bundle.generate();
+            expect(entry.default.message).to.equal('hello world');
+            fs.reset();
+        }
+        
+       
+
     });
 
-    it ('Scenario: Check different export techniques', function (done) {
-        setErrorCallback(done);
-
-        bundle('export-checks', (entry) => {
-            asyncExpect(() => expect(entry.MyVar).to.equal('MyVar'));
-            asyncExpect(() => expect(entry.MyVarAlias).to.equal('MyVar'));
-            asyncExpect(() => expect(entry.MyClass.prototype.getValue()).to.equal('MyClass'));
-            asyncExpect(() => expect(entry.MyClassAlias.prototype.getValue()).to.equal('MyClass'));
-            asyncExpect(() => expect(entry.default).to.equal('MyVarMyVarMyVar'));
-            done();
-        }) 
+    it ('Scenario: Check different export techniques', async function () {
+        let bundle = await createNollup('export-checks');
+        let entry = await bundle.generate();
+        expect(entry.MyVar).to.equal('MyVar');
+        expect(entry.MyVarAlias).to.equal('MyVar');
+        expect(entry.MyClass.prototype.getValue()).to.equal('MyClass');
+        expect(entry.MyClassAlias.prototype.getValue()).to.equal('MyClass');
+        expect(entry.default).to.equal('MyVarMyVarMyVar');
     });
 });
