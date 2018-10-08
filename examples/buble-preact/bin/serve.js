@@ -1,7 +1,7 @@
 let express = require('express');
 let fallback = require('express-history-api-fallback');
 let config = require('./config');
-let nollupDevServer = require('../../lib/dev-middleware');
+let nollupDevServer = require('../../../lib/dev-middleware');
 let app = express();
 
 app.use(nollupDevServer(app, config, {
