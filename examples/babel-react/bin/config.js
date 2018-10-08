@@ -21,7 +21,11 @@ module.exports = {
         babel({
             exclude: 'node_modules/**'
         }),
-        commonjs(),
+        commonjs({
+            namedExports: {
+                'node_modules/react/cjs/react.development.js': ['Component']
+            }
+        }),
         alias({
             react: path.resolve(
                 process.cwd(),

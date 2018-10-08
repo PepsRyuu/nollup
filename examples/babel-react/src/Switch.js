@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { Component } from 'react';
 import './Switch.css';
 
-export default class Switch extends React.Component {
+export default class Switch extends Component {
     constructor () {
         super();
 
