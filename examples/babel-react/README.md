@@ -21,6 +21,42 @@ On an early 2013 15" Macbook Pro:
 First compile time: ~1800ms
 Hot reload compile time: ~130ms
 
+## Named Exports
+
+In order to use the following syntax 
+
+```
+import React, { Component } from 'react';
+
+
+class Counter extends Component {
+    ...
+}
+```
+
+...as opposed to...
+
+```
+import React} from 'react';
+
+
+class Counter extends React.Component {
+    ...
+}
+```
+
+The named exports option must be set:
+
+```
+commonjs({
+    namedExports: {
+        'node_modules/react/cjs/react.development.js': ['Component']
+    }
+}),
+```
+
+See [here](https://github.com/rollup/rollup-plugin-commonjs#custom-named-exports) for more details.
+
 ## What about React Hot Loader?
 
 It is possible to get React Hot Loader (RHL) working. However there's numerous issues, but there is workarounds as listed below.
@@ -90,26 +126,26 @@ The workaround for this is to copy out the Babel plugin from ```node_modules```,
             enterModule && enterModule(module);
         })();
     `, templateOptions);
-
+    
     ----
-
+    
     var buildTagger = template(`
         (function () {
             var reactHotLoader = __reactHotLoader.default; // Reference the import instead
             var leaveModule = __reactHotLoader.leaveModule;
-
+    
             if (!reactHotLoader) {
                 return;
             }
-
+    
             REGISTRATIONS
-
+    
             leaveModule(module);
         }());
     `, templateOptions);
-
+    
     ---
-
+    
     if (registrations && registrations.length && !shouldIgnoreFile(file.opts.filename)) {
         node.body.unshift(headerTemplate());
         node.body.unshift(template('import * as __reactHotLoader from \'react-hot-loader\';')()); // add this line
