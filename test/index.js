@@ -53,7 +53,7 @@ describe('Nollup', function () {
         let entry = await bundle.generate();
         expect(entry.default).to.equal('hello world');      
     });
-
+    
     it ('should compile module with multiple imports', async function () {
         let bundle = await createNollup('multi-module');
         let entry = await bundle.generate();
