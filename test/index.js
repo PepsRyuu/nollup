@@ -244,4 +244,12 @@ describe('Nollup', function () {
         expect(entry.MyClassAlias.prototype.getValue()).to.equal('MyClass');
         expect(entry.default).to.equal('MyVarMyVarMyVar');
     });
+
+    it ('Scenario: Check export all', async function () {
+        let bundle = await createNollup('export-all');
+        let entry = await bundle.generate();
+        expect(entry.message1).to.equal('hello');
+        expect(entry.message2).to.equal('world');
+        expect(entry.default).to.be.undefined;
+    });
 });

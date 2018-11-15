@@ -35,4 +35,3 @@ See ```example-project``` on how to use.
 * No support for live-bindings. Not sure if I want to sacrifice debugging capabilities for a feature not used often.
 * No support for circular imports.
 
-Contributions to help fix these are welcome.

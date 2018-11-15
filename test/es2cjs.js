@@ -63,6 +63,15 @@ let tests = [{
 }, {
     input: 'export const MyVar1 = () => {}, MyVar2 = 456;',
     output: 'const MyVar1 = () => {}, MyVar2 = 456;; module.exports.MyVar1 = MyVar1, module.exports.MyVar2 = MyVar2;'
+}, {
+    input: 'export { MyVar } from "./file"',
+    output: 'var _i0 = require(__nollup__0);module.exports.MyVar = _i0.MyVar;'
+}, {
+    input: 'export { default } from "./file";',
+    output: 'var _i0 = require(__nollup__0);module.exports.default = _i0.default;'
+}, {
+    input: 'export * from "./file"',
+    output: 'var _i0 = require(__nollup__0);for(var k in _i0){k !== "default" && (module.exports[k] = _i0[k])}'
 }];
 
 describe ('es_to_cjs', () => {
