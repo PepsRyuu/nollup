@@ -252,4 +252,18 @@ describe('Nollup', function () {
         expect(entry.message2).to.equal('world');
         expect(entry.default).to.be.undefined;
     });
+
+    it ('Scenario: Check commonjs export all', async function () {
+        let bundle = await createNollup('export-all-from-es');
+        let entry = await bundle.generate();
+        expect(entry.message1).to.equal('hello');
+        expect(entry.message2).to.equal('world');
+        expect(entry.default).to.be.undefined;
+    });
+
+    it ('Scenario: Check commonjs export default', async function () {
+        let bundle = await createNollup('import-default-from-es');
+        let entry = await bundle.generate();
+        expect(entry.default).to.equal(123);
+    });
 });
