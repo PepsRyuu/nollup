@@ -1,6 +1,6 @@
 let express = require('express');
 let fallback = require('express-history-api-fallback');
-let config = require('./config');
+let config = require(process.cwd() + '/rollup.config.js');
 let nollupDevServer = require('../../lib/dev-middleware');
 let app = express();
 

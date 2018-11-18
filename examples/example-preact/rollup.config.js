@@ -1,6 +1,6 @@
 let node_resolve = require('rollup-plugin-node-resolve');
 let buble = require('rollup-plugin-buble');
-let style_link = require('./rollup-plugin-style-link');
+let style_link = require('../plugins/rollup-plugin-style-link');
 let jscc = require('rollup-plugin-jscc');
 
 module.exports = {

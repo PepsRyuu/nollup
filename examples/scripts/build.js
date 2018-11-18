@@ -2,7 +2,7 @@ process.env.NODE_ENV = 'production';
 
 let fs = require('fs-extra');
 let rollup = require('rollup');
-let config = require('./config');
+let config = require(process.cwd() + '/rollup.config.js');
 let md5 = require('md5-file');
 
 if (!fs.existsSync('dist')) {
