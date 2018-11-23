@@ -6,7 +6,8 @@ let app = express();
 
 app.use(nollupDevServer(app, config, {
     watch: process.cwd() + '/src',
-    hot: true
+    hot: true,
+    verbose: false
 }));
 
 app.use(express.static('./'));
