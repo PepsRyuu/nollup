@@ -14,22 +14,24 @@ module.exports = function () {
 
             if (process.env.NODE_ENV !== 'production') {
                 return `
-                    function reload () {
-                        let link = document.querySelector('link');
-                        if (link.href.indexOf('${filename}') > -1) {
-                            link.href = '${filename}' + '?' + Date.now();
+                    if (module && module.hot) {
+                        function reload () {
+                            let link = document.querySelector('link');
+                            if (link.href.indexOf('${filename}') > -1) {
+                                link.href = '${filename}' + '?' + Date.now();
+                            }
                         }
-                    }
 
-                    // Using this approach so that when new files
-                    // are added, they're immediately evaluated.
-                    if (this.__styleLinkTimeout) {
-                        cancelAnimationFrame(this.__styleLinkTimeout);
-                    }
+                        // Using this approach so that when new files
+                        // are added, they're immediately evaluated.
+                        if (this.__styleLinkTimeout) {
+                            cancelAnimationFrame(this.__styleLinkTimeout);
+                        }
 
-                    requestAnimationFrame(reload);  
-                    module.hot.dispose(reload)
-                    module.hot.accept(reload);
+                        requestAnimationFrame(reload);  
+                        module.hot.dispose(reload)
+                        module.hot.accept(reload);
+                    }
                 `;
             }
             

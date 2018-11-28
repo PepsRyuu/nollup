@@ -24,7 +24,11 @@
 
 ## Examples
 
-See ```example-project``` on how to use.
+See ```examples``` directory on how to use.
+
+## API
+
+See [API](API.md) for information on how to use the JavaScript API.
 
 ## Caveats
 
@@ -34,4 +38,6 @@ See ```example-project``` on how to use.
 * Does not attempt to parse "require" calls anywhere.
 * No support for live-bindings. Not sure if I want to sacrifice debugging capabilities for a feature not used often.
 * No support for circular imports.
+
+Contributions are welcome.
 
