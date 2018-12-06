@@ -1,6 +1,6 @@
 let node_resolve = require('rollup-plugin-node-resolve');
 let buble = require('rollup-plugin-buble');
-let style_link = require('../plugins/rollup-plugin-style-link');
+let hotcss = require('rollup-plugin-hot-css');
 let jscc = require('rollup-plugin-jscc');
 
 module.exports = {
@@ -17,7 +17,10 @@ module.exports = {
                 _DEBUG: (process.env.NODE_ENV !== 'production')
             }
         }),
-        style_link(),
+        hotcss({
+            hot: process.env.NODE_ENV !== 'production',
+            filename: 'styles._hash_.css'
+        }),
         buble({
             jsx: 'h'
         }),

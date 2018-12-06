@@ -1,7 +1,7 @@
 let node_resolve = require('rollup-plugin-node-resolve');
 let babel = require('rollup-plugin-babel');
-let style_link = require('../plugins/rollup-plugin-style-link');
-let commonjs = require('../plugins/rollup-plugin-commonjs');
+let hotcss = require('rollup-plugin-hot-css');
+let commonjs = require('rollup-plugin-commonjs-alternate');
 let replace = require('rollup-plugin-replace');
 let jscc = require('rollup-plugin-jscc');
 
@@ -22,7 +22,10 @@ module.exports = {
         replace({
             'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
         }),
-        style_link(),
+        hotcss({
+            hot: process.env.NODE_ENV !== 'production',
+            filename: 'styles._hash_.css'
+        }),
         babel(),
         node_resolve(),
         commonjs({
