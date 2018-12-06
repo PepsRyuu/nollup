@@ -22,6 +22,7 @@ build();
 ```
 input,
 plugins,
+external,
 
 // For asset emission only, code splitting not yet available.
 experimentalCodeSplitting
@@ -32,6 +33,7 @@ experimentalCodeSplitting
 ```
 file, // This is what the entry point will be called when generating.
 format, // Format is always 'iife'. No support for other formats.
+globals, // Remap global inputs to their window variables.
 ```
 
 ### Methods

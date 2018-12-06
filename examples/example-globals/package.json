@@ -1,0 +1,7 @@
+{
+    "scripts": {
+        "clean": "rm -rf target && rm -rf dist",
+        "start": "node ../scripts/serve.js",
+        "build": "npm run clean && node ../scripts/build.js"
+    }
+}
