@@ -1,7 +1,7 @@
 {
   "name": "nollup",
   "description": "Rollup-compatible bundler for development.",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "main": "lib/index.js",
   "scripts": {
     "test": "mocha-istanbul-ui \"test/*.js\" --instrument --console --once",
