@@ -252,4 +252,21 @@ describe('Nollup', function () {
         expect(entry.message2).to.equal('world');
         expect(entry.default).to.be.undefined;
     });
+
+    it ('Scenario: Empty source map in transform', async function () {
+        let bundle = await createNollup('empty-source-mapping', {
+            plugins: [{
+                transform (code, id) {
+                    if (path.extname(id) === '.json') {
+                        return {
+                            code: `export default ${code}`,
+                            map: { mappings: '' }
+                        };
+                    }
+                }
+            }]
+        });
+        let entry = await bundle.generate();
+        expect(entry.default.message).to.equal('hello');
+    });
 });
