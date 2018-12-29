@@ -13,18 +13,19 @@ console.log('Compiling...');
 
 async function compile () {
     let bundle = await rollup.rollup(config);
-    let output = (await bundle.generate(config.output)).output;
+    let { output } = await bundle.generate(config.output);
 
-    Object.keys(output).forEach(filename => {
-        let content = output[filename].code || output[filename];
-        fs.writeFileSync('dist/' + filename, content);
+    output.forEach(obj => {
+        let content = obj.isAsset? obj.source : obj.code;
+        fs.writeFileSync('dist/' + obj.fileName, content);
     });
 
     console.log('Copying public files...');
     fs.copySync('./public', './dist/');
 
     console.log('Applying hashes...');
-    Object.keys(output).forEach(file => {
+    output.forEach(obj => {
+        let file = obj.fileName;
         let path = 'dist/' + file;
         let hash = md5.sync(path).substring(0, 8);
         fs.renameSync(path, path.replace('_hash_', hash));

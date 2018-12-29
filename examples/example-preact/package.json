@@ -9,7 +9,7 @@
     },
     "devDependencies": {
         "rollup-plugin-buble": "^0.19.2",
-        "rollup-plugin-hot-css": "0.0.1",
+        "rollup-plugin-hot-css": "0.0.3",
         "rollup-plugin-jscc": "^0.3.3",
         "rollup-plugin-node-resolve": "^3.4.0"
     }

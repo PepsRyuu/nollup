@@ -1,9 +1,8 @@
 module.exports = {
     input: './src/main.js',
-    experimentalCodeSplitting: true,
     output: {
         file: 'app._hash_.js',
-        format: 'iife',
+        format: 'esm',
         globals: {
             'jquery': '$',
             'maths': 'Math'

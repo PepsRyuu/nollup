@@ -1,3 +1,5 @@
+process.env.NODE_ENV = 'development';
+
 let express = require('express');
 let fallback = require('express-history-api-fallback');
 let config = require(process.cwd() + '/rollup.config.js');

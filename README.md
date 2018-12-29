@@ -26,9 +26,33 @@
 
 See ```examples``` directory on how to use.
 
+## CLI
+
+Nollup provides a dev server which can be used as a CLI command.
+
+```
+    "scripts": {
+        "start": "nollup -c"
+    }
+```
+
+The following flags can be passed into Nollup:
+
+* **-c | --config [file]** - Pass a configuration file. By default it will look for ```rollup.config.js``` but can be specified otherwise.
+* **--content-base [folder]** - Folder to serve static content from. By default it will be looking in ```'./```.
+* **--history-api-fallback** - If set, it will fallback to ```index.html``` if accessing a route that doesn't exist.
+* **--hot** - Enable Hot Module Replacement.
+* **--port [value]** - Port number to run server on. Default is ```8080```.
+* **--verbose** - If set, there's verbose logging.
+
 ## API
 
 See [API](API.md) for information on how to use the JavaScript API.
+
+## Rollup Plugins with Nollup Enhancements
+
+* [rollup-plugin-hot-css](https://github.com/PepsRyuu/rollup-plugin-hot-css) - Load CSS files with HMR support.
+* [rollup-plugin-commonjs-alternate](https://github.com/PepsRyuu/rollup-plugin-commonjs-alternate) - CommonJS loader that supports React Hot Loader.
 
 ## Caveats
 

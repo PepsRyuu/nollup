@@ -4,21 +4,28 @@
   "version": "0.3.0",
   "main": "lib/index.js",
   "scripts": {
-    "test": "mocha-istanbul-ui \"test/*.js\" --instrument --console --once",
-    "test:ui": "mocha-istanbul-ui \"test/*.js\" --instrument"
+    "test": "mocha-istanbul-ui \"test/cases/**/*.js\" --instrument --console --once",
+    "test:ui": "mocha-istanbul-ui \"test/cases/**/*.js\" --instrument"
+  },
+  "bin": {
+    "nollup": "./lib/cli.js"
   },
   "dependencies": {
-    "acorn": "^5.5.3",
+    "acorn": "^6.0.4",
+    "acorn-dynamic-import": "^4.0.0",
+    "acorn-walk": "^6.1.1",
     "chokidar": "^2.0.2",
     "convert-source-map": "^1.5.1",
+    "express": "^4.16.3",
+    "express-history-api-fallback": "^2.2.1",
     "express-ws": "^4.0.0",
     "magic-string": "^0.24.0",
     "source-map": "^0.5.6"
   },
   "devDependencies": {
     "chai": "^4.1.2",
-    "express": "^4.16.3",
     "mocha-istanbul-ui": "0.0.8",
-    "proxyquire": "^2.0.1"
+    "proxyquire": "^2.0.1",
+    "rollup": "^1.0.0"
   }
 }

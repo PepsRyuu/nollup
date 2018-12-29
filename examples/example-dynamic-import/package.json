@@ -10,6 +10,7 @@
     },
     "devDependencies": {
         "@babel/core": "^7.1.6",
+        "@babel/plugin-syntax-dynamic-import": "^7.2.0",
         "@babel/preset-react": "^7.0.0",
         "react-hot-loader": "4.3.12",
         "rollup-plugin-babel": "^4.0.3",

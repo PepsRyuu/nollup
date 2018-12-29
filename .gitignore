@@ -9,5 +9,5 @@ node_modules/
 target/
 *.stackdump
 package-lock.json
-
+*.tgz
 NOTES

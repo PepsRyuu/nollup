@@ -1,4 +1,4 @@
-let es_to_cjs = require('../lib/__es2cjs');
+let es_to_cjs = require('../../lib/impl/ImportExportResolver');
 
 let tests = [{
     input: 'import Hello from \'./world\';',
@@ -190,9 +190,7 @@ let external_tests = [{
 describe('es_to_cs_externals', () => {
     external_tests.forEach(test => {
         it(test.input, () => {
-            let { output } = es_to_cjs(test.input, {
-                options: test.config
-            });
+            let { output } = es_to_cjs(test.input, test.config);
             if (output !== test.output) {
                 throw new Error(`
                     Expected: ${test.output}

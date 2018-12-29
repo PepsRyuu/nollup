@@ -1,6 +1,7 @@
 # API Documentation
 
 Nollup follows closely to the API defined by Rollup so that it can be easily swapped.
+As of writing this, this API is aligned with ```1.0.0``` of Rollup.
 
 ```
 async function build () {
@@ -8,7 +9,7 @@ async function build () {
     let bundle = await nollup(inputOptions);
 
     // Generate code
-    let { code } = await bundle.generate(outputOptions);
+    let { output } = await bundle.generate(outputOptions);
 
     // Unlike Rollup, there's no write method.
     // Code should be served from memory.
@@ -22,18 +23,18 @@ build();
 ```
 input,
 plugins,
-external,
-
-// For asset emission only, code splitting not yet available.
-experimentalCodeSplitting
+external
 ```
 
 ### Supported Output Options
 
 ```
 file, // This is what the entry point will be called when generating.
-format, // Format is always 'iife'. No support for other formats.
+format, // Format is always 'esm' or 'iife'. No support for other formats.
 globals, // Remap global inputs to their window variables.
+assetFileNames, // filename pattern for assets
+chunkFileNames, // filename pattern for chunks
+entryFileNames, // filename pattern for entries
 ```
 
 ### Methods
@@ -45,17 +46,28 @@ it will see the file has been invalidated and it will re-compile that file.
 
 ***Promise&lt;Object&gt;* generate()**
 
-Generates the bundle. Returns a promise which contains an object. The object will
+Generates the bundle. Returns a promise which contains an array of objects. The objects will
 have the following:
 
 ```
 { 
     code, 
     fileName, 
-    isEntry, 
-    modules 
+    isEntry,
+    isDynamicEntry,
+    modules,
+    exports
 }
 ``` 
+Or if it's an asset:
+
+```
+{
+    isAsset,
+    source,
+    fileName
+}
+```
 
 ### Plugin Hooks
 
@@ -69,6 +81,7 @@ outro,
 banner,
 footer,
 generateBundle,
+resolveDynamicImport,
 resolveId,
 load,
 transform
@@ -93,6 +106,18 @@ this.warn(warning)
 
 ```
 this.emitAsset(assetName, source)
+```
+
+```
+this.resolveId(importee, importer)
+```
+
+```
+this.setAssetSource(assetId, source);
+```
+
+```
+this.getAssetFileName(assetId)
 ```
 
 ### Custom Plugin Hooks
