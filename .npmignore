@@ -3,3 +3,7 @@ examples/
 NOTES
 example-project/
 package-lock.json
+target/
+.travis.yml
+API.md
+*.tgz

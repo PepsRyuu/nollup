@@ -5,10 +5,9 @@ let jscc = require('rollup-plugin-jscc');
 
 module.exports = {
     input: './src/main.js',
-    experimentalCodeSplitting: true, // needed for asset emission
     output: {
         file: 'app._hash_.js',
-        format: 'iife',
+        format: 'esm',
         assetFileNames: '[name][extname]'
     },
     plugins: [
