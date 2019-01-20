@@ -1,7 +1,7 @@
 module.exports = {
     input: './src/main.js',
     output: {
-        file: 'app._hash_.js',
+        dir: 'dist',
         format: 'esm',
         globals: {
             'jquery': '$',

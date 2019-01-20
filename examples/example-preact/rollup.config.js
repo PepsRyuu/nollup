@@ -2,13 +2,15 @@ let node_resolve = require('rollup-plugin-node-resolve');
 let buble = require('rollup-plugin-buble');
 let hotcss = require('rollup-plugin-hot-css');
 let jscc = require('rollup-plugin-jscc');
+let static_files = require('rollup-plugin-static-files');
 
 module.exports = {
     input: './src/main.js',
     output: {
-        file: 'app._hash_.js',
+        dir: 'dist',
         format: 'esm',
-        assetFileNames: '[name][extname]'
+        entryFileNames: '[name].[hash].js',
+        assetFileNames: '[name].[hash][extname]'
     },
     plugins: [
         jscc({
@@ -18,11 +20,14 @@ module.exports = {
         }),
         hotcss({
             hot: process.env.NODE_ENV !== 'production',
-            filename: 'styles._hash_.css'
+            filename: 'styles.css'
         }),
         buble({
             jsx: 'h'
         }),
-        node_resolve()
+        node_resolve(),
+        process.env.NODE_ENV === 'production' && static_files({
+            include: ['./public']
+        })
     ]
 }
