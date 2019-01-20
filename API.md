@@ -37,6 +37,11 @@ chunkFileNames, // filename pattern for chunks
 entryFileNames, // filename pattern for entries
 ```
 
+**Note:** ```[hash]``` is not converted. This is intentional so that the generated
+files can be easily referenced using files such as ```index.html```. For building,
+it's recommend to use [rollup-plugin-static-files](https://github.com/PepsRyuu/rollup-plugin-static-files)
+which will automatically inject the hash values Rollup generates into your HTML files.
+
 ### Methods
 
 ***void* invalidate(*String* file)**

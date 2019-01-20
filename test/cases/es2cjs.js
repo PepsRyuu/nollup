@@ -31,6 +31,15 @@ let tests = [{
     input: 'export default 123;',
     output: 'module.exports.default = 123;'
 }, {
+    input: 'export default () => {};',
+    output: 'module.exports.default = () => {};'
+}, {
+    input: 'export default (() => {});',
+    output: 'module.exports.default = (() => {});'
+}, /* {
+    input: 'export default(() => {});',
+    output: 'module.exports.default = (() => {});'
+},*/ {
     input: 'export default class Hello {};',
     output: 'class Hello {}; module.exports.default = Hello;;'
 }, {

@@ -36,14 +36,39 @@ Nollup provides a dev server which can be used as a CLI command.
     }
 ```
 
-The following flags can be passed into Nollup:
+See "Nollup Options" for list of available flags.
 
-* **-c | --config [file]** - Pass a configuration file. By default it will look for ```rollup.config.js``` but can be specified otherwise.
-* **--content-base [folder]** - Folder to serve static content from. By default it will be looking in ```'./```.
-* **--history-api-fallback** - If set, it will fallback to ```index.html``` if accessing a route that doesn't exist.
-* **--hot** - Enable Hot Module Replacement.
-* **--port [value]** - Port number to run server on. Default is ```8080```.
-* **--verbose** - If set, there's verbose logging.
+## .nolluprc
+
+Configuration file that can be used to pass configuration instead of as flags through the CLI. 
+
+```
+{
+    "hot": true,
+    "contentBase": "./public"
+}
+```
+
+A JavaScript file called ```.nolluprc.js``` can be used instead.
+
+```
+module.exports = {
+    hot: true,
+    contentBase: './public'
+};
+```
+
+See "Nollup Options" for list of available options.
+
+## Nollup Options
+
+* ***String* config | -c | --config [file]** - Pass a configuration file. By default it will look for ```rollup.config.js``` but can be specified otherwise.
+* ***String* contentBase | --content-base [folder]** - Folder to serve static content from. By default it will be looking in ```'./```.
+* ***Boolean* historyApiFallback | --history-api-fallback** - If set, it will fallback to ```index.html``` if accessing a route that doesn't exist.
+* ***Boolean* hot | --hot** - Enable Hot Module Replacement.
+* ***Number* port | --port [value]** - Port number to run server on. Default is ```8080```.
+* ***Boolean* verbose | --verbose** - If set, there's verbose logging.
+* ***Object* proxy** - Object keys are paths to match. Value is domain to redirect to. ```"/api": "http://localhost:8080"``` will have a request such as ```/api/todos``` redirect to ```http://localhost:8080/api/todos```  
 
 ## API
 
