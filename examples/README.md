@@ -2,7 +2,6 @@
 
 ## Getting Started
 
-* Install packages inside ```/examples``` with ```npm install```.
 * Install packages inside the example you want to run.
 * Start the example inside the example directory with ```npm start```.
 * You can also build the project with Rollup using ```npm run build```.

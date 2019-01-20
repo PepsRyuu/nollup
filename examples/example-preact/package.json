@@ -1,16 +1,19 @@
 {
     "scripts": {
         "clean": "rm -rf target && rm -rf dist",
-        "start": "node ../scripts/serve.js",
-        "build": "npm run clean && node ../scripts/build.js"
+        "start": "cross-env NODE_ENV=development node ../../lib/cli.js -c --hot --content-base public --port 9001",
+        "build": "npm run clean && cross-env NODE_ENV=production rollup -c"
     },
     "dependencies": {
         "preact": "^8.3.1"
     },
     "devDependencies": {
+        "cross-env": "^5.2.0",
+        "rollup": "^1.1.1",
         "rollup-plugin-buble": "^0.19.2",
-        "rollup-plugin-hot-css": "0.0.3",
+        "rollup-plugin-hot-css": "0.0.4",
         "rollup-plugin-jscc": "^0.3.3",
-        "rollup-plugin-node-resolve": "^3.4.0"
+        "rollup-plugin-node-resolve": "^3.4.0",
+        "rollup-plugin-static-files": "0.0.1"
     }
 }

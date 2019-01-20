@@ -1,7 +1,10 @@
 {
     "scripts": {
         "clean": "rm -rf target && rm -rf dist",
-        "start": "node ../scripts/serve.js",
-        "build": "npm run clean && node ../scripts/build.js"
+        "start": "node ../../lib/cli.js -c --content-base public --port 9001",
+        "build": "npm run clean && rollup -c"
+    },
+    "devDependencies": {
+        "rollup": "^1.1.1"
     }
 }

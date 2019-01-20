@@ -76,7 +76,7 @@ describe ('Options: output.entryFileNames', () => {
             format: 'esm'
         });
 
-        expect(output[0].fileName).to.equal('main._hash_.js');
+        expect(output[0].fileName).to.equal('main.[hash].js');
         fs.reset();
     })
 });

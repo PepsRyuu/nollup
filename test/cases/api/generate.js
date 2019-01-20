@@ -53,7 +53,7 @@ describe ('API: generate', () => {
         expect(output.length).to.equal(2);
         expect(output[1].isAsset).to.be.true;
         expect(!output[1].isEntry).to.be.true;
-        expect(output[1].fileName).to.equal('assets/style-_hash_.css');
+        expect(output[1].fileName).to.equal('assets/style-[hash].css');
         expect(output[1].source).to.equal('*{color: blue}');
         expect(output[0].isEntry).to.be.true;
         fs.reset();
