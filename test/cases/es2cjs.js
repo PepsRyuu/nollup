@@ -55,11 +55,11 @@ let tests = [{
     input: 'export function Hello () {};',
     output: 'function Hello () {}; module.exports.Hello = Hello;;'
 }, {
-    input: 'export {name1, name2};',
-    output: 'module.exports.name1 = name1;module.exports.name2 = name2;'
+    input: 'let name1 = 123, name2 = 456; export {name1, name2};',
+    output: 'let name1 = 123, name2 = 456; module.exports.name1 = name1;module.exports.name2 = name2;'
 }, {
-    input: 'export {hello as world, name};',
-    output: 'module.exports.world = hello;module.exports.name = name;'
+    input: 'let hello = 123, name = 456; export {hello as world, name};',
+    output: 'let hello = 123, name = 456; module.exports.world = hello;module.exports.name = name;'
 }, {
     input: 'export var MyVar1 = 123;',
     output: 'var MyVar1 = 123;; module.exports.MyVar1 = MyVar1;'
