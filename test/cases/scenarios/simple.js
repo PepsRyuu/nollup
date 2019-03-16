@@ -185,8 +185,6 @@ describe('Nollup', function () {
             expect(entry.default.message).to.equal('hello world');
             fs.reset();
         }
-        
-        
     });
 
     it ('Scenario: Module whose dependency fails resolveId plugin', async function () {
@@ -258,5 +256,11 @@ describe('Nollup', function () {
         });
         let entry = await bundle.generate();
         expect(entry.default.message).to.equal('hello');
+    });
+
+    it ('Scenario: Circular Dependencies', async function () {
+        let bundle = await createNollup('circular');
+        let entry = await bundle.generate();
+        expect(entry.default).to.equal('A2 - A3 - A1');
     });
 });
