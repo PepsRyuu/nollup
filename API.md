@@ -23,7 +23,8 @@ build();
 ```
 input,
 plugins,
-external
+external,
+acornInjectPlugins
 ```
 
 ### Supported Output Options
@@ -171,6 +172,7 @@ app.use(nollupDevServer(app, config, {
 * ***String* watch -** Directory to watch for changes in order to rebuild.
 * ***Boolean* hot -** If true, Hot Module Replacement will be enabled and injected into the bundle.
 * ***Boolean* verbose -** If true, will print status of HMR to developer console.
+* ***String* hmrHost -** Host to connect to for HMR. Default is ```window.location.host```.
 
 ## Hot Module Replacement
 

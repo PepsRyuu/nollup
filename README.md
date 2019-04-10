@@ -68,7 +68,8 @@ See "Nollup Options" for list of available options.
 * ***Boolean* hot | --hot** - Enable Hot Module Replacement.
 * ***Number* port | --port [value]** - Port number to run server on. Default is ```8080```.
 * ***Boolean* verbose | --verbose** - If set, there's verbose logging.
-* ***Object* proxy** - Object keys are paths to match. Value is domain to redirect to. ```"/api": "http://localhost:8080"``` will have a request such as ```/api/todos``` redirect to ```http://localhost:8080/api/todos```  
+* ***Object* proxy** - Object keys are paths to match. Value is domain to redirect to. ```"/api": "http://localhost:8080"``` will have a request such as ```/api/todos``` redirect to ```http://localhost:8080/api/todos``` 
+* ***String* hmrHost | --hmr-host [host]** - Host to connect to for HMR. Default is ```window.location.host```.
 
 ## API
 

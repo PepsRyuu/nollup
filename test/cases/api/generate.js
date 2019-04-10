@@ -72,19 +72,22 @@ describe ('API: generate', () => {
         });
 
         expect(output.length).to.equal(2);
-        expect(output[0].isEntry).to.be.true;
-        expect(!output[0].isAsset).to.be.true;
-        expect(output[0].fileName).to.equal('main1.js');
-        expect(output[0].code.indexOf('module.exports.default = 123') > -1).to.be.true;
-        expect(output[0].code.indexOf('module.exports.default = 456') > -1).to.be.false;
-        expect(output[0].map).to.be.null;
 
-        expect(output[1].isEntry).to.be.true;
-        expect(!output[1].isAsset).to.be.true;
-        expect(output[1].fileName).to.equal('main2.js');
-        expect(output[1].code.indexOf('module.exports.default = 456') > -1).to.be.true;
-        expect(output[1].code.indexOf('module.exports.default = 123') > -1).to.be.false;
-        expect(output[1].map).to.be.null;
+        let main1 = output.find(o => o.fileName === 'main1.js');
+        expect(main1.isEntry).to.be.true;
+        expect(!main1.isAsset).to.be.true;
+        expect(main1.fileName).to.equal('main1.js');
+        expect(main1.code.indexOf('module.exports.default = 123') > -1).to.be.true;
+        expect(main1.code.indexOf('module.exports.default = 456') > -1).to.be.false;
+        expect(main1.map).to.be.null;
+
+        let main2 = output.find(o => o.fileName === 'main2.js');
+        expect(main2.isEntry).to.be.true;
+        expect(!main2.isAsset).to.be.true;
+        expect(main2.fileName).to.equal('main2.js');
+        expect(main2.code.indexOf('module.exports.default = 456') > -1).to.be.true;
+        expect(main2.code.indexOf('module.exports.default = 123') > -1).to.be.false;
+        expect(main2.map).to.be.null;
         fs.reset();
     });
 
@@ -100,10 +103,12 @@ describe ('API: generate', () => {
             format: 'esm'
         });
 
-        expect(Object.keys(output[0].modules).length).to.equal(1);
-        expect(output[0].modules[path.resolve(process.cwd(), './src/main1.js')]).not.to.be.undefined;
-        expect(Object.keys(output[1].modules).length).to.equal(1);
-        expect(output[1].modules[path.resolve(process.cwd(), './src/main2.js')]).not.to.be.undefined;
+        let main1 = output.find(o => o.fileName === 'main1.js');
+        expect(Object.keys(main1.modules).length).to.equal(1);
+        expect(main1.modules[path.resolve(process.cwd(), './src/main1.js')]).not.to.be.undefined;
+        let main2 = output.find(o => o.fileName === 'main2.js');
+        expect(Object.keys(main2.modules).length).to.equal(1);
+        expect(main2.modules[path.resolve(process.cwd(), './src/main2.js')]).not.to.be.undefined;
         fs.reset();
     });
 
@@ -123,30 +128,33 @@ describe ('API: generate', () => {
 
         expect(output.length).to.equal(4);
 
-        expect(output[0].isEntry).to.be.true;
-        expect(output[0].fileName).to.equal('main1.js');
-        expect(output[0].code.indexOf('require.dynamic(\\\'./chunk-') > -1).to.be.true;
-        expect(Object.keys(output[0].modules).length).to.equal(1);
-        expect(output[0].modules[path.resolve(process.cwd(), './src/main1.js')]).not.to.be.undefined;
+        let main1 = output.find(o => o.fileName === 'main1.js');
+        expect(main1.isEntry).to.be.true;
+        expect(main1.fileName).to.equal('main1.js');
+        expect(main1.code.indexOf('require.dynamic(\\\'./chunk-') > -1).to.be.true;
+        expect(Object.keys(main1.modules).length).to.equal(1);
+        expect(main1.modules[path.resolve(process.cwd(), './src/main1.js')]).not.to.be.undefined;
 
-        expect(output[1].isEntry).to.be.true;
-        expect(output[1].fileName).to.equal('main2.js');
-        expect(output[1].code.indexOf('require.dynamic(\\\'./chunk-') > -1).to.be.true;
-        expect(Object.keys(output[1].modules).length).to.equal(1);
-        expect(output[1].modules[path.resolve(process.cwd(), './src/main2.js')]).not.to.be.undefined;
+        let main2 = output.find(o => o.fileName === 'main2.js');
+        expect(main2.isEntry).to.be.true;
+        expect(main2.fileName).to.equal('main2.js');
+        expect(main2.code.indexOf('require.dynamic(\\\'./chunk-') > -1).to.be.true;
+        expect(Object.keys(main2.modules).length).to.equal(1);
+        expect(main2.modules[path.resolve(process.cwd(), './src/main2.js')]).not.to.be.undefined;
 
+        let dynamic = output.find(o => o.fileName === 'chunk-dynamic-[hash].js');
+        expect(dynamic.isDynamicEntry).to.be.true;
+        expect(dynamic.fileName.startsWith('chunk-')).to.be.true;
+        expect(dynamic.code.indexOf('require.dynamic(\\\'./chunk-') > -1).to.be.true;
+        expect(Object.keys(dynamic.modules).length).to.equal(1);
+        expect(dynamic.modules[path.resolve(process.cwd(), './src/dynamic.js')]).not.to.be.undefined;
 
-        expect(output[2].isDynamicEntry).to.be.true;
-        expect(output[2].fileName.startsWith('chunk-')).to.be.true;
-        expect(output[2].code.indexOf('require.dynamic(\\\'./chunk-') > -1).to.be.true;
-        expect(Object.keys(output[2].modules).length).to.equal(1);
-        expect(output[2].modules[path.resolve(process.cwd(), './src/dynamic.js')]).not.to.be.undefined;
-
-        expect(output[3].isDynamicEntry).to.be.true;
-        expect(output[3].fileName.startsWith('chunk-')).to.be.true;
-        expect(output[3].code.indexOf('require.dynamic(\\\'./chunk-') > -1).to.be.false;
-        expect(output[3].modules[path.resolve(process.cwd(), './src/subdynamic.js')]).not.to.be.undefined;
-        expect(Object.keys(output[3].modules).length).to.equal(1);
+        let subdynamic = output.find(o => o.fileName === 'chunk-subdynamic-[hash].js');
+        expect(subdynamic.isDynamicEntry).to.be.true;
+        expect(subdynamic.fileName.startsWith('chunk-')).to.be.true;
+        expect(subdynamic.code.indexOf('require.dynamic(\\\'./chunk-') > -1).to.be.false;
+        expect(subdynamic.modules[path.resolve(process.cwd(), './src/subdynamic.js')]).not.to.be.undefined;
+        expect(Object.keys(subdynamic.modules).length).to.equal(1);
 
         fs.reset();
     });

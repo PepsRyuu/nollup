@@ -21,8 +21,9 @@ describe ('Options: output.chunkFileNames', () => {
             format: 'esm'
         });
 
-        expect(output[0].fileName).to.equal('main.js');
-        expect(/^chunk\-(.*?).js$/.test(output[1].fileName)).to.be.true;
+        expect(output.length).to.equal(2);
+        expect(output.find(o => o.fileName === 'main.js').fileName).not.to.be.undefined;
+        expect(output.find(o => o.fileName.match(/^chunk\-(.*?).js$/) !== null)).not.to.be.undefined;
     });
 
     it ('should allow to be overrided', async () => {
@@ -31,8 +32,9 @@ describe ('Options: output.chunkFileNames', () => {
             chunkFileNames: 'lol-[format].js'
         });
 
-        expect(output[0].fileName).to.equal('main.js');
-        expect(/^lol\-esm.js$/.test(output[1].fileName)).to.be.true;
+        expect(output.length).to.equal(2);
+        expect(output.find(o => o.fileName === 'main.js').fileName).not.to.be.undefined;
+        expect(output.find(o => o.fileName.match(/^lol\-esm.js$/) !== null)).not.to.be.undefined;
     });
 
     it ('should be used as the import name', async () => {
@@ -41,6 +43,7 @@ describe ('Options: output.chunkFileNames', () => {
             chunkFileNames: 'lol-[format].js'
         });
 
-        expect(output[0].code.indexOf('require.dynamic(\\\'./lol-esm.js\\\')') > -1).to.be.true;
+        let file = output.find(o => o.fileName === 'main.js');
+        expect(file.code.indexOf('require.dynamic(\\\'./lol-esm.js\\\')') > -1).to.be.true;
     });
 });

@@ -47,10 +47,13 @@ describe ('Options: Input', () => {
             format: 'esm'
         });
 
-        expect(output[0].fileName).to.equal('a.js');
-        expect(output[0].isEntry).to.be.true;
-        expect(output[1].fileName).to.equal('b.js');
-        expect(output[1].isEntry).to.be.true;
+        let file_a = output.find(o => o.fileName === 'a.js');
+        expect(file_a.fileName).to.equal('a.js');
+        expect(file_a.isEntry).to.be.true;
+
+        let file_b = output.find(o => o.fileName === 'b.js');
+        expect(file_b.fileName).to.equal('b.js');
+        expect(file_b.isEntry).to.be.true;
 
         fs.reset();
     });
@@ -66,10 +69,14 @@ describe ('Options: Input', () => {
         let { output } = await bundle.generate({
             format: 'esm'
         });
-        expect(output[0].fileName).to.equal('main1.js');
-        expect(output[0].isEntry).to.be.true;
-        expect(output[1].fileName).to.equal('main2.js');
-        expect(output[1].isEntry).to.be.true;
+
+        let main1 = output.find(o => o.fileName === 'main1.js');
+        expect(main1.fileName).to.equal('main1.js');
+        expect(main1.isEntry).to.be.true;
+
+        let main2 = output.find(o => o.fileName === 'main2.js');
+        expect(main2.fileName).to.equal('main2.js');
+        expect(main2.isEntry).to.be.true;
 
         fs.reset();
     })
