@@ -70,6 +70,8 @@ See "Nollup Options" for list of available options.
 * ***Boolean* verbose | --verbose** - If set, there's verbose logging.
 * ***Object* proxy** - Object keys are paths to match. Value is domain to redirect to. ```"/api": "http://localhost:8080"``` will have a request such as ```/api/todos``` redirect to ```http://localhost:8080/api/todos``` 
 * ***String* hmrHost | --hmr-host [host]** - Host to connect to for HMR. Default is ```window.location.host```.
+* ***Function* before** - Receives Express app as argument. Allows for middleware before internally used middleware.
+* ***Function* after** - Receives Express app as argument. Allows for middleware after internally used middleware.
 
 ## API
 
