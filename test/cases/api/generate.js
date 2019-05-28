@@ -51,11 +51,15 @@ describe ('API: generate', () => {
 
         let { output } = await bundle.generate({ format: 'esm' });
         expect(output.length).to.equal(2);
-        expect(output[1].isAsset).to.be.true;
-        expect(!output[1].isEntry).to.be.true;
-        expect(output[1].fileName).to.equal('assets/style-[hash].css');
-        expect(output[1].source).to.equal('*{color: blue}');
-        expect(output[0].isEntry).to.be.true;
+
+        let asset = output.find(o => o.fileName.indexOf('style') > -1);
+        expect(asset.isAsset).to.be.true;
+        expect(!asset.isEntry).to.be.true;
+        expect(asset.fileName).to.equal('assets/style-[hash].css');
+        expect(asset.source).to.equal('*{color: blue}');
+
+        let main = output.find(o => o.fileName.indexOf('main') > -1);
+        expect(main.isEntry).to.be.true;
         fs.reset();
     });
 
@@ -77,16 +81,16 @@ describe ('API: generate', () => {
         expect(main1.isEntry).to.be.true;
         expect(!main1.isAsset).to.be.true;
         expect(main1.fileName).to.equal('main1.js');
-        expect(main1.code.indexOf('module.exports.default = 123') > -1).to.be.true;
-        expect(main1.code.indexOf('module.exports.default = 456') > -1).to.be.false;
+        expect(main1.code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.true; 
+        expect(main1.code.indexOf(`__e__(\\'default\\', 456)`) > -1).to.be.false;
         expect(main1.map).to.be.null;
 
         let main2 = output.find(o => o.fileName === 'main2.js');
         expect(main2.isEntry).to.be.true;
         expect(!main2.isAsset).to.be.true;
         expect(main2.fileName).to.equal('main2.js');
-        expect(main2.code.indexOf('module.exports.default = 456') > -1).to.be.true;
-        expect(main2.code.indexOf('module.exports.default = 123') > -1).to.be.false;
+        expect(main2.code.indexOf(`__e__(\\'default\\', 456)`) > -1).to.be.true;
+        expect(main2.code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.false;
         expect(main2.map).to.be.null;
         fs.reset();
     });

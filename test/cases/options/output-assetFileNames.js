@@ -29,7 +29,8 @@ describe ('Options: output.assetFileNames', () => {
             format: 'esm'
         });
 
-        expect(/assets\/style-(.*?)\.css/.test(output[1].fileName)).to.be.true;
+        let file = output.find(o => o.fileName.indexOf('style') > -1);
+        expect(/assets\/style-(.*?)\.css/.test(file.fileName)).to.be.true;
     });
 
     it ('should support [ext]', async () => {
@@ -38,6 +39,7 @@ describe ('Options: output.assetFileNames', () => {
             assetFileNames: 'custom/[name].[ext]'
         });
 
-        expect(/custom\/style\.css/.test(output[1].fileName)).to.be.true;
+        let file = output.find(o => o.fileName.indexOf('style') > -1);
+        expect(/custom\/style\.css/.test(file.fileName)).to.be.true;
     });
 });
