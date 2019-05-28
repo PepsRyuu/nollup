@@ -88,7 +88,7 @@ See [API](API.md) for information on how to use the JavaScript API.
 * Not all Rollup plugin hooks are implemented yet.
 * Sourcemaps aren't perfect yet, depends on plugin usage.
 * Does not attempt to parse "require" calls anywhere.
-* No support for live-bindings.
+* No support for live-bindings, but circular dependencies are supported.
 
 Contributions are welcome.
 
