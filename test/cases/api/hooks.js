@@ -480,6 +480,25 @@ describe ('API: Plugin Hooks', () => {
             expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.true;
             fs.reset();
         });
+
+        it ('should accept objects with id', async () => {
+            fs.stub('./src/main.js', () => 'import "haha";');
+            fs.stub('./src/lol.js', () => '');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (importee, importer) {
+                        if (importee === 'haha') {
+                            return { id: path.resolve(process.cwd(), './src/lol.js') }
+                        }
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        });
     });
 
     describe ('resolveDynamicImport', () => {
