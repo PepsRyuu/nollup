@@ -592,7 +592,26 @@ describe ('API: Plugin Hooks', () => {
             fs.reset();
         });
 
-        it ('should accept false to treat module as external');
+        // it ('should accept false to treat module as external', async () => {
+        //     // TODO: Broken because nollup isn't checking for false
+        //     fs.stub('./src/main.js', () => 'import("haha");');
+        //     fs.stub('./src/lol.js', () => 'export default 123;');
+
+        //     let bundle = await nollup({
+        //         input: './src/main.js',
+        //         plugins: [{
+        //             resolveDynamicImport (importee, importer) {
+        //                 if (importee === 'haha') {
+        //                     return false;
+        //                 }
+        //             }
+        //         }]
+        //     });
+
+        //     let { output } = await bundle.generate({ format: 'esm' });
+        //     expect(output[0].code.indexOf('module.exports.default = 123') === -1).to.be.true;
+        //     fs.reset();
+        // });
 
         it ('should defer to resolveId if no hook return value is found', async () => {
             fs.stub('./src/main.js', () => 'import("haha")');
