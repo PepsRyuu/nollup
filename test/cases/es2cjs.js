@@ -1,9 +1,11 @@
 let es_to_cjs = require('../../lib/impl/ImportExportResolver');
 let { expect } = require('../nollup');
+let path = require('path');
 
 let tests = [{
     input: 'import Hello from \'./world\';',
     output: {
+        transpiled: '',
         dependencies: ['./world'],
         imports: [{
             imported: 'default',
@@ -202,7 +204,7 @@ let tests = [{
         transpiled: `for(var k in _i0){k !== "default" && (__e__(k, _i0[k]))}`
     }
 }, {
-    input: 'import Hello from "hello"; import World from "world";',
+    input: 'import Hello from "hello";import World from "world";',
     output: {
         dependencies: ['hello', 'world'],
         imports: [{
@@ -219,13 +221,28 @@ let tests = [{
 
 describe ('es_to_cjs', () => {
     tests.forEach(test => {
-        it(test.input, () => {
-            let res = es_to_cjs(test.input);
+        it(test.input, async () => {
+             test.output = {
+                transpiled: '',
+                imports: [],
+                exports: [],
+                dependencies: [],
+                dynamicDependencies: [],
+                ...test.output
+            };
+
+
+            let res = await es_to_cjs(test.input, { plugins: [] }, process.cwd() + '/__entry');
             let to_check = {};
             for (let key in test.output) {
                 to_check[key] = res[key];
             }
 
+            test.output.dependencies = test.output.dependencies.map(dep => {
+                return path.resolve(process.cwd(), dep + (!path.extname(dep)? '.js' : ''));
+            });
+
+           
             try {
                 expect(to_check).to.deep.equal(test.output);
             } catch (e) {
@@ -379,8 +396,8 @@ let external_tests = [{
 
 describe('es_to_cs_externals', () => {
     external_tests.forEach(test => {
-        it(test.input, () => {
-            let res = es_to_cjs(test.input, test.config);
+        it(test.input, async () => {
+            let res = await es_to_cjs(test.input, test.config);
             let to_check = {};
             for (let key in test.output) {
                 to_check[key] = res[key];

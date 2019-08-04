@@ -436,26 +436,26 @@ describe ('API: Plugin Hooks', () => {
             fs.reset();
         });
 
-        // it ('should accept false to treat as external module', async () => {
-        //     // TODO: Broken because nollup isn't checking for false
-        //     fs.stub('./src/main.js', () => 'import "haha";');
-        //     fs.stub('./src/lol.js', () => 'export default 123;');
+        it ('should accept false to treat as external module', async () => {
+            fs.stub('./src/main.js', () => 'import "haha";');
+            fs.stub('./src/lol.js', () => 'export default 123;');
 
-        //     let bundle = await nollup({
-        //         input: './src/main.js',
-        //         plugins: [{
-        //             resolveId (importee, importer) {
-        //                 if (importee === 'haha') {
-        //                     return false;
-        //                 }
-        //             }
-        //         }]
-        //     });
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (importee, importer) {
+                        if (importee === 'haha') {
+                            return false;
+                        }
+                    }
+                }]
+            });
 
-        //     let { output } = await bundle.generate({ format: 'esm' });
-        //     expect(output[0].code.indexOf('module.exports.default = 123') === -1).to.be.true;
-        //     fs.reset();
-        // });
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf('import "haha"') > -1).to.be.true;
+            expect(output[0].code.indexOf('module.exports.default = 123') === -1).to.be.true;
+            fs.reset();
+        });
 
         it ('should accept promises', async () => {
             fs.stub('./src/main.js', () => 'import "haha";');
@@ -592,26 +592,27 @@ describe ('API: Plugin Hooks', () => {
             fs.reset();
         });
 
-        // it ('should accept false to treat module as external', async () => {
-        //     // TODO: Broken because nollup isn't checking for false
-        //     fs.stub('./src/main.js', () => 'import("haha");');
-        //     fs.stub('./src/lol.js', () => 'export default 123;');
+        it ('should accept false to treat module as external', async () => {
+            fs.stub('./src/main.js', () => 'import("haha");');
+            fs.stub('./src/lol.js', () => 'export default 123;');
 
-        //     let bundle = await nollup({
-        //         input: './src/main.js',
-        //         plugins: [{
-        //             resolveDynamicImport (importee, importer) {
-        //                 if (importee === 'haha') {
-        //                     return false;
-        //                 }
-        //             }
-        //         }]
-        //     });
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveDynamicImport (importee, importer) {
+                        if (importee === 'haha') {
+                            return false;
+                        }
+                    }
+                }]
+            });
 
-        //     let { output } = await bundle.generate({ format: 'esm' });
-        //     expect(output[0].code.indexOf('module.exports.default = 123') === -1).to.be.true;
-        //     fs.reset();
-        // });
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output.length).to.equal(1);
+            expect(output[0].code.indexOf('import("haha")') > -1).to.be.true;
+            expect(output[0].code.indexOf('module.exports.default = 123') === -1).to.be.true;
+            fs.reset();
+        });
 
         it ('should defer to resolveId if no hook return value is found', async () => {
             fs.stub('./src/main.js', () => 'import("haha")');

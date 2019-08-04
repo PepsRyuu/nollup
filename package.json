@@ -22,7 +22,6 @@
   },
   "devDependencies": {
     "acorn": "^7.0.0",
-    "acorn-walk": "^7.0.0",
     "chai": "^4.1.2",
     "mocha-istanbul-ui": "^0.3.1",
     "proxyquire": "^2.0.1",
