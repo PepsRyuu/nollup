@@ -1,10 +1,6 @@
 import React, { Component } from 'react';
 import './App.css';
 
-//#if _DEBUG
-import ReactHotLoader from 'react-hot-loader';
-//#endif
-
 class App extends Component {
     
     constructor () {
@@ -33,8 +29,8 @@ class App extends Component {
     }
 }
 
-//#if _DEBUG 
-App = ReactHotLoader.hot(module)(App);
-//#endif
+if (process.env.NODE_ENV === 'development') {
+    App = require('react-hot-loader').hot(module)(App);
+}
 
 export default App;

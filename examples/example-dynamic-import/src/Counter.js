@@ -1,10 +1,6 @@
 import React , { Component } from 'react';
 import './Counter.css';
 
-//#if _DEBUG
-import ReactHotLoader from 'react-hot-loader';
-//#endif
-
 class Counter extends Component {
     constructor () {
         super();
@@ -31,8 +27,8 @@ class Counter extends Component {
     }
 }
 
-//#if _DEBUG 
-Counter = ReactHotLoader.hot(module)(Counter);
-//#endif
+if (process.env.NODE_ENV === 'development') {
+    Counter = require('react-hot-loader').hot(module)(Counter);
+}
 
 export default Counter;

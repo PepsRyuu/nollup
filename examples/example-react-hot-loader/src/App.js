@@ -4,10 +4,6 @@ import Switch from './Switch';
 import './App.css';
 import React from 'react';
 
-//#if _DEBUG
-import ReactHotLoader from 'react-hot-loader';
-//#endif
-
 let App = () => (
     <div className="App">
         <h1>Hello World</h1>
@@ -17,8 +13,8 @@ let App = () => (
     </div>
 );
 
-//#if _DEBUG 
-App = ReactHotLoader.hot(module)(App);
-//#endif
+if (process.env.NODE_ENV === 'development') {
+    App = require('react-hot-loader').hot(module)(App);
+}
 
 export default App;

@@ -3,10 +3,10 @@ let babel = require('rollup-plugin-babel');
 let hotcss = require('rollup-plugin-hot-css');
 let commonjs = require('rollup-plugin-commonjs-alternate');
 let replace = require('rollup-plugin-replace');
-let jscc = require('rollup-plugin-jscc');
 let static_files = require('rollup-plugin-static-files');
+let terser = require('rollup-plugin-terser').terser;
 
-module.exports = {
+let config = {
     input: './src/main.js',
     output: {
         dir: 'dist',
@@ -15,16 +15,11 @@ module.exports = {
         assetFileNames: '[name].[hash][extname]'
     },
     plugins: [
-        jscc({
-            values: {
-                _DEBUG: (process.env.NODE_ENV !== 'production')
-            }
-        }),
         replace({
             'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
         }),
         hotcss({
-            hot: process.env.NODE_ENV !== 'production',
+            hot: process.env.NODE_ENV === 'development',
             filename: 'styles.css'
         }),
         babel(),
@@ -35,9 +30,23 @@ module.exports = {
                     'Component'
                 ]
             }
-        }),
-        process.env.NODE_ENV === 'production' && static_files({
-            include: ['./public']
         })
     ]
 }
+
+if (process.env.NODE_ENV === 'production') {
+    config.plugins = config.plugins.concat([
+        static_files({
+            include: ['./public']
+        }),
+        terser({
+            compress: {
+                global_defs: {
+                    module: false
+                }
+            }
+        })
+    ]);
+}
+
+module.exports = config;

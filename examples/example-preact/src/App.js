@@ -2,10 +2,7 @@ import Counter from './Counter';
 import { Internal } from './Internal';
 import Switch from './Switch';
 import './App.css';
-
-//#if _DEBUG
 import HotManager from './HotManager';
-//#endif
 
 const App = () => (
     <div class="App">
@@ -16,8 +13,8 @@ const App = () => (
     </div>
 );
 
-//#if _DEBUG
-HotManager.register(module.id);
-//#endif
+if (module) {
+    HotManager.register(module.id);
+}
 
 export default App;

@@ -8,9 +8,9 @@ let root = document.createElement('div');
 document.body.appendChild(root);
 let el = render(<App />, root);
 
-//#if _DEBUG
-module.hot.accept(() => {
-    let App = require(HotManager.getRegistered()).default;
-    el = render(<App />, root, el);
-});
-//#endif
+if (module) {
+    module.hot.accept(() => {
+        let App = require(HotManager.getRegistered()).default;
+        el = render(<App />, root, el);
+    });
+}
