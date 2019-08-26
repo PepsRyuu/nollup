@@ -4,7 +4,7 @@ import Switch from './Switch';
 import './App.css';
 import HotManager from './HotManager';
 
-const App = () => (
+let App = () => (
     <div class="App">
         <h1>Hello World</h1>
         <Internal />
@@ -14,7 +14,7 @@ const App = () => (
 );
 
 if (module) {
-    HotManager.register(module.id);
+    App = HotManager.register(App, module);
 }
 
 export default App;
