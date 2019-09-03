@@ -30,6 +30,15 @@ let fs = {
         return output;
     },
 
+    readFile: function (file, encoding, callback) {
+        try {
+            let output = this.readFileSync(file);
+            callback(null, output);
+        } catch (e) {
+            callback(e);
+        }
+    },
+
     readFileSync: function (file) {
         if (this._stubs[file]) {
             return this._stubs[file]();
