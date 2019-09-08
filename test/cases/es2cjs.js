@@ -414,3 +414,13 @@ describe('es_to_cs_externals', () => {
         });
     })
 });
+
+describe('misc transform issues', () => {
+    it ('should not fail on null nodes', async () => {
+        let res = await es_to_cjs(`
+            import Hello from './World';
+            let a = [1, 2, , 4];
+        `, { plugins: [] }, process.cwd() + '/__entry');
+        expect(res.transpiled.indexOf('[1, 2, , 4]') > -1).to.be.true;
+    });
+});
