@@ -99,7 +99,19 @@ See [Rollup Plugin Context](https://rollupjs.org/guide/en#context) for more info
 Plugins can use the following methods in their lifecycle methods.
 
 ```
-this.error(error)
+this.meta
+```
+
+```
+this.addWatchFile(filepath)
+```
+
+```
+this.emitFile(file)
+```
+
+```
+this.getFileName(id)
 ```
 
 ```
@@ -111,11 +123,15 @@ this.warn(warning)
 ```
 
 ```
+this.error(error)
+```
+
+```
 this.emitAsset(assetName, source)
 ```
 
 ```
-this.resolveId(importee, importer)
+this.getAssetFileName(assetId)
 ```
 
 ```
@@ -123,8 +139,9 @@ this.setAssetSource(assetId, source);
 ```
 
 ```
-this.getAssetFileName(assetId)
+this.resolveId(importee, importer)
 ```
+
 
 ### Custom Plugin Hooks
 
