@@ -1,0 +1,11 @@
+.Switch {
+    display: inline-block;
+    border: 1px solid black;
+    background-color: red;
+    color: white;
+    padding: 8px 20px;
+}
+
+.Switch[data-active="true"] {
+    background-color: green;
+}
