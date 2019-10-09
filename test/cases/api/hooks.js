@@ -763,8 +763,99 @@ describe ('API: Plugin Hooks', () => {
     });
 
     describe('options', () => {
-        it ('should accept input options');
-        it ('should not do anything if null is returned')
+        it ('should accept input options', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    options (opts) {
+                        expect(opts.input).to.equal('./src/main.js');
+                        opts.hello = 'world';
+                    }
+                }, {
+                    options (opts) {
+                        expect(opts.hello).to.equal('world');
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should allow access to meta property with version', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    options (opts) {
+                        expect(this.meta.rollupVersion).to.equal('2.0');
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should replace input options with returned object', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    options (opts) {
+                        expect(opts.input).to.equal('./src/main.js');
+                        return {
+                            ...opts,
+                            hello: 'world'
+                        }
+                    }
+                }, {
+                    options (opts) {
+                        expect(opts.hello).to.equal('world');
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should not do anything if null is returned', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    options (opts) {
+                        expect(opts.input).to.equal('./src/main.js');
+                        return null;
+                    }
+                }, {
+                    options (opts) {
+                        expect(opts.input).to.equal('./src/main.js');
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
     });
 
     describe ('renderChunk', () => {
