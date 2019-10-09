@@ -1,10 +1,10 @@
-let node_resolve = require('rollup-plugin-node-resolve');
-let babel = require('rollup-plugin-babel');
-let hotcss = require('rollup-plugin-hot-css');
-let commonjs = require('rollup-plugin-commonjs-alternate');
-let replace = require('rollup-plugin-replace');
-let static_files = require('rollup-plugin-static-files');
-let terser = require('rollup-plugin-terser').terser;
+import node_resolve from 'rollup-plugin-node-resolve';
+import babel from 'rollup-plugin-babel';
+import hotcss from 'rollup-plugin-hot-css';
+import commonjs from 'rollup-plugin-commonjs-alternate';
+import replace from 'rollup-plugin-replace';
+import static_files from 'rollup-plugin-static-files';
+import { terser } from 'rollup-plugin-terser';
 
 let config = {
     input: './src/main.js',
@@ -49,4 +49,4 @@ if (process.env.NODE_ENV === 'production') {
     ]);
 }
 
-module.exports = config;
+export default config;
