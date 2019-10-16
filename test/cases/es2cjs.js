@@ -258,8 +258,11 @@ describe ('es_to_cjs', () => {
 let external_tests = [{
     input: 'import jQuery from "jquery";',
     output: {
-        imports: [],
-        transpiled: 'var _ejQuery = window.jQuery;var jQuery = _ejQuery && _ejQuery.hasOwnProperty("default")? _ejQuery.default : _ejQuery;'
+        imports: []
+    },
+    transpiled: {
+        esm: 'var _ejQuery = __nollup__global__.jQuery;var jQuery = _ejQuery && _ejQuery.hasOwnProperty("default")? _ejQuery.default : _ejQuery;',
+        cjs: 'var _ejQuery = require("jquery");var jQuery = _ejQuery && _ejQuery.hasOwnProperty("default")? _ejQuery.default : _ejQuery;'
     },
     config: {
         external: ['jquery']
@@ -268,7 +271,10 @@ let external_tests = [{
     input: 'import $ from "jquery";',
     output: {
         imports: [],
-        transpiled: 'var _e$ = window.$;var $ = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;'
+    },
+    transpiled: {
+        esm: 'var _e$ = __nollup__global__.$;var $ = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;',
+        cjs: 'var _e$ = require("jquery");var $ = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;'
     },
     config: {
         external: ['jquery']
@@ -277,7 +283,10 @@ let external_tests = [{
     input: 'import jquery from "jquery";',
     output: {
         imports: [],
-        transpiled: 'var _e$ = window.$;var jquery = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;'
+    },
+    transpiled: {
+        esm: 'var _e$ = __nollup__global__.$;var jquery = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;',
+        cjs: 'var _e$ = require("jquery");var jquery = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;'
     },
     config: {
         external: ['jquery'],
@@ -291,7 +300,10 @@ let external_tests = [{
     input: 'import { max } from "Math";',
     output: {
         imports: [],
-        transpiled: 'var _eMath = window.Math;var max = _eMath.max;'
+    },
+    transpiled: {
+        esm: 'var _eMath = __nollup__global__.Math;var max = _eMath.max;',
+        cjs: 'var _eMath = require("Math");var max = _eMath.max;'
     },
     config: {
         external: ['Math']
@@ -300,7 +312,10 @@ let external_tests = [{
     input: 'import { max, min } from "Math";',
     output: {
         imports: [],
-        transpiled: 'var _eMath = window.Math;var max = _eMath.max;var min = _eMath.min;'
+    },
+    transpiled: {
+        esm: 'var _eMath = __nollup__global__.Math;var max = _eMath.max;var min = _eMath.min;',
+        cjs: 'var _eMath = require("Math");var max = _eMath.max;var min = _eMath.min;'
     },
     config: {
         external: ['Math']
@@ -309,7 +324,10 @@ let external_tests = [{
     input: 'import $, { ajax } from "jquery";',
     output: {
         imports: [],
-        transpiled: 'var _e$ = window.$;var $ = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;var ajax = _e$.ajax;'
+    },
+    transpiled: {
+        esm: 'var _e$ = __nollup__global__.$;var $ = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;var ajax = _e$.ajax;',
+        cjs: 'var _e$ = require("jquery");var $ = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;var ajax = _e$.ajax;'
     },
     config: {
         external: ['jquery']
@@ -318,7 +336,10 @@ let external_tests = [{
     input: 'import { ajax as net } from "jquery";',
     output: {
         imports: [],
-        transpiled: 'var _e$ = window.$;var net = _e$.ajax;'
+    },
+    transpiled: {
+        esm: 'var _e$ = __nollup__global__.$;var net = _e$.ajax;',
+        cjs: 'var _e$ = require("jquery");var net = _e$.ajax;'
     },
     config: {
         external: ['jquery'],
@@ -333,7 +354,10 @@ let external_tests = [{
     output: {
         imports: [],
         exports: ['ajax'],
-        transpiled: `var _ejquery = window.jquery;__e__('ajax', _ejquery.ajax);`
+    },
+    transpiled: {
+        esm: `var _ejquery = __nollup__global__.jquery;__e__('ajax', _ejquery.ajax);`,
+        cjs: `var _ejquery = require("jquery");__e__('ajax', _ejquery.ajax);`
     },
     config: {
         external: ['jquery']
@@ -343,7 +367,10 @@ let external_tests = [{
     output: {
         imports: [],
         exports: ['ajax'],
-        transpiled: `var _e$ = window.$;__e__('ajax', _e$.ajax);`
+    },
+    transpiled: {
+        esm: `var _e$ = __nollup__global__.$;__e__('ajax', _e$.ajax);`,
+        cjs: `var _e$ = require("jquery");__e__('ajax', _e$.ajax);`
     },
     config: {
         external: ['jquery'],
@@ -358,7 +385,10 @@ let external_tests = [{
     output: {
         imports: [],
         exports: ['net'],
-        transpiled: `var _e$ = window.$;__e__('net', _e$.ajax);`
+    },
+    transpiled: {
+        esm: `var _e$ = __nollup__global__.$;__e__('net', _e$.ajax);`,
+        cjs: `var _e$ = require("jquery");__e__('net', _e$.ajax);`
     },
     config: {
         external: ['jquery'],
@@ -373,7 +403,10 @@ let external_tests = [{
     output: {
         imports: [],
         exports: [],
-        transpiled: `var _e$ = window.$;for(var k in _e$){k !== "default" && (__e__(k, _e$[k]))}`
+    },
+    transpiled: {
+        esm: `var _e$ = __nollup__global__.$;for(var k in _e$){k !== "default" && (__e__(k, _e$[k]))}`,
+        cjs: `var _e$ = require("jquery");for(var k in _e$){k !== "default" && (__e__(k, _e$[k]))}`
     },
     config: {
         external: ['jquery'],
@@ -387,18 +420,80 @@ let external_tests = [{
     input: 'import { ajax } from "jquery";',
     output: {
         imports: [],
-        transpiled: `var _ejquery = window.jquery;var ajax = _ejquery.ajax;`
+    },
+    transpiled: {
+        esm: `var _ejquery = __nollup__global__.jquery;var ajax = _ejquery.ajax;`,
+        cjs: `var _ejquery = require("jquery");var ajax = _ejquery.ajax;`
     },
     config: {
         external: id => /jquery/.test(id)
     }
 }]
 
-describe('es_to_cs_externals', () => {
+describe('es_to_cs_externals (default - ESM)', () => {
     external_tests.forEach(test => {
         it(test.input, async () => {
-            let res = await es_to_cjs(test.input, test.config);
+            let res = await es_to_cjs(test.input, {
+                ...test.config
+            });
             let to_check = {};
+
+            test.output.transpiled = test.transpiled.esm;
+
+            for (let key in test.output) {
+                to_check[key] = res[key];
+            }
+
+            try {
+                expect(to_check).to.deep.equal(test.output);
+            } catch (e) {
+                throw new Error(`
+                    Expected: ${JSON.stringify(test.output)}
+                    Actual: ${JSON.stringify(to_check)}
+                `)
+            }
+        });
+    })
+});
+
+describe('es_to_cs_externals (ESM)', () => {
+    external_tests.forEach(test => {
+        it(test.input, async () => {
+            let res = await es_to_cjs(test.input, {
+                ...test.config, 
+                output: { ...test.config.output, format: 'esm' }
+            });
+            let to_check = {};
+
+            test.output.transpiled = test.transpiled.esm;
+
+            for (let key in test.output) {
+                to_check[key] = res[key];
+            }
+
+
+            try {
+                expect(to_check).to.deep.equal(test.output);
+            } catch (e) {
+                throw new Error(`
+                    Expected: ${JSON.stringify(test.output)}
+                    Actual: ${JSON.stringify(res)}
+                `)
+            }
+        });
+    })
+});
+
+describe('es_to_cs_externals (CJS)', () => {
+    external_tests.forEach(test => {
+        it(test.input, async () => {
+            let res = await es_to_cjs(test.input, {
+                ...test.config, 
+                output: { ...test.config.output, format: 'cjs' }
+            });
+            let to_check = {};
+            test.output.transpiled = test.transpiled.cjs;
+
             for (let key in test.output) {
                 to_check[key] = res[key];
             }

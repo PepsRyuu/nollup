@@ -1,6 +1,6 @@
-let node_resolve = require('rollup-plugin-node-resolve');
+import node_resolve from 'rollup-plugin-node-resolve';
 
-module.exports = {
+export default {
     input: './src/main.js',
     output: {
         dir: 'dist',

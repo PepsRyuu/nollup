@@ -31,7 +31,7 @@ acornInjectPlugins
 
 ```
 file, // This is what the entry point will be called when generating.
-format, // Format is always 'esm' or 'iife'. No support for other formats.
+format, // Format is always 'esm', 'cjs' or 'iife'. No support for other formats.
 globals, // Remap global inputs to their window variables.
 assetFileNames, // filename pattern for assets
 chunkFileNames, // filename pattern for chunks

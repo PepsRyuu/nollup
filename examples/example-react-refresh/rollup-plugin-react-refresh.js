@@ -1,10 +1,11 @@
-var fs = require('fs');
+import fs from 'fs';
+
 var runtime = fs.readFileSync(require.resolve('react-refresh/cjs/react-refresh-runtime.development.js'), 'utf8');
 
 runtime = runtime.replace('process.env.NODE_ENV', JSON.stringify(process.env.NODE_ENV));
 runtime = runtime.replace('module.exports = ', 'window.$RefreshRuntime$ = ');
 
-module.exports = function () {
+export default function () {
     return {
         nollupBundleInit () {
             return `
