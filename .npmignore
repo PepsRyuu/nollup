@@ -7,3 +7,4 @@ target/
 .travis.yml
 API.md
 *.tgz
+coverage/
