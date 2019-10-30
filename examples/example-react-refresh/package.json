@@ -5,12 +5,11 @@
         "build": "npm run clean && cross-env NODE_ENV=production rollup -c"
     },
     "dependencies": {
-        "react": "^16.9.0",
-        "react-dom": "^16.9.0"
+        "react": "^16.11.0",
+        "react-dom": "^16.11.0"
     },
     "devDependencies": {
         "@babel/core": "^7.5.5",
-        "@babel/plugin-syntax-dynamic-import": "^7.2.0",
         "@babel/preset-react": "^7.0.0",
         "cross-env": "^5.2.0",
         "react-refresh": "^0.4.2",
@@ -19,6 +18,7 @@
         "rollup-plugin-commonjs-alternate": "0.0.6",
         "rollup-plugin-hot-css": "0.0.6",
         "rollup-plugin-node-resolve": "^5.2.0",
+        "rollup-plugin-react-refresh": "0.0.1",
         "rollup-plugin-replace": "^2.2.0",
         "rollup-plugin-static-files": "0.0.1",
         "rollup-plugin-terser": "^5.1.1"

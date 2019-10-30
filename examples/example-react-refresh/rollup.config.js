@@ -5,7 +5,7 @@ import commonjs from 'rollup-plugin-commonjs-alternate';
 import replace from 'rollup-plugin-replace';
 import static_files from 'rollup-plugin-static-files';
 import { terser } from 'rollup-plugin-terser';
-import refresh from './rollup-plugin-react-refresh';
+import refresh from 'rollup-plugin-react-refresh';
 
 let config = {
     input: './src/main.js',
