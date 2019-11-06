@@ -144,6 +144,25 @@ describe ('API: Plugin Context', () => {
         });
     });
 
+    describe ('resolve', () => {
+        it ('should return a promise', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        const result = this.resolve('./foo', '/bar')
+                        expect(result).to.be.an.instanceof(Promise)
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        })
+    })
+
     describe ('warn', () => {
         it ('should output warning message');
     });
