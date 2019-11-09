@@ -117,7 +117,6 @@ describe ('Options: output.format', () => {
                 format: 'cjs'
             });
 
-            console.log(output[0].code);
             expect(output[0].code.indexOf('var _e$ = require("jquery")') > -1).to.be.true;
             fs.reset();
         });
