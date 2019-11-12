@@ -186,22 +186,36 @@ let tests = [{
     input: 'export { MyVar } from "./file"',
     output: {
         dependencies: ['./file'],
+        imports: [{
+            imported: 'MyVar',
+            importee: '_i0',
+            local: 'ex_MyVar'
+        }],
         exports: ['MyVar'],
-        transpiled: `__e__('MyVar', _i0.MyVar);`
+        transpiled: `__e__('MyVar', ex_MyVar);`
     }
 }, {
     input: 'export { default } from "./file";',
     output: {
         dependencies: ['./file'],
+        imports: [{
+            imported: 'default',
+            importee: '_i0',
+            local: 'ex_default'
+        }],
         exports: ['default'],
-        transpiled: `__e__('default', _i0.default);`
+        transpiled: `__e__('default', ex_default);`
     }
 }, {
     input: 'export * from "./file"',
     output: {
         dependencies: ['./file'],
+        imports: [{
+            imported: '*',
+            importee: '_i0'
+        }],
         exports: [],
-        transpiled: `for(var k in _i0){k !== "default" && (__e__(k, _i0[k]))}`
+        transpiled: `for(var __k__ in ex_i0){__k__ !== "default" && (__e__(__k__, ex_i0[__k__]))}`
     }
 }, {
     input: 'import Hello from "hello";import World from "world";',
@@ -356,8 +370,8 @@ let external_tests = [{
         exports: ['ajax'],
     },
     transpiled: {
-        esm: `var _ejquery = __nollup__global__.jquery;__e__('ajax', _ejquery.ajax);`,
-        cjs: `var _ejquery = require("jquery");__e__('ajax', _ejquery.ajax);`
+        esm: `var _ejquery = __nollup__global__.jquery;var ex_ajax = _ejquery.ajax;__e__('ajax', ex_ajax);`,
+        cjs: `var _ejquery = require("jquery");var ex_ajax = _ejquery.ajax;__e__('ajax', ex_ajax);`
     },
     config: {
         external: ['jquery']
@@ -369,8 +383,8 @@ let external_tests = [{
         exports: ['ajax'],
     },
     transpiled: {
-        esm: `var _e$ = __nollup__global__.$;__e__('ajax', _e$.ajax);`,
-        cjs: `var _e$ = require("jquery");__e__('ajax', _e$.ajax);`
+        esm: `var _e$ = __nollup__global__.$;var ex_ajax = _e$.ajax;__e__('ajax', ex_ajax);`,
+        cjs: `var _e$ = require("jquery");var ex_ajax = _e$.ajax;__e__('ajax', ex_ajax);`
     },
     config: {
         external: ['jquery'],
@@ -387,8 +401,8 @@ let external_tests = [{
         exports: ['net'],
     },
     transpiled: {
-        esm: `var _e$ = __nollup__global__.$;__e__('net', _e$.ajax);`,
-        cjs: `var _e$ = require("jquery");__e__('net', _e$.ajax);`
+        esm: `var _e$ = __nollup__global__.$;var ex_net = _e$.ajax;__e__('net', ex_net);`,
+        cjs: `var _e$ = require("jquery");var ex_net = _e$.ajax;__e__('net', ex_net);`
     },
     config: {
         external: ['jquery'],
@@ -401,12 +415,15 @@ let external_tests = [{
 }, {
     input: 'export * from "jquery";',
     output: {
-        imports: [],
+        imports: [{
+            imported: '*',
+            importee: '_e$'
+        }],
         exports: [],
     },
     transpiled: {
-        esm: `var _e$ = __nollup__global__.$;for(var k in _e$){k !== "default" && (__e__(k, _e$[k]))}`,
-        cjs: `var _e$ = require("jquery");for(var k in _e$){k !== "default" && (__e__(k, _e$[k]))}`
+        esm: `var _e$ = __nollup__global__.$;for(var __k__ in ex_e$){__k__ !== "default" && (__e__(__k__, ex_e$[__k__]))}`,
+        cjs: `var _e$ = require("jquery");for(var __k__ in ex_e$){__k__ !== "default" && (__e__(__k__, ex_e$[__k__]))}`
     },
     config: {
         external: ['jquery'],
