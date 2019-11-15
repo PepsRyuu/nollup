@@ -16,6 +16,14 @@ describe ('API: Plugin Hooks', () => {
         return output;
     }
 
+    describe('Miscellaneous Issues', () => {
+        it ('should ignore falsy plugins', async () => {
+            // Intentional comma at the beginning
+            let output = await generate([,false, null, undefined,,]);
+            expect(output[0].code).not.to.be.undefined;
+        });
+    });
+
     describe('banner', () => {
         it ('should accept string', async () => {
             let output = await generate([{
