@@ -89,6 +89,10 @@ When using the CLI, the following environment variables are present:
 The following lifecycle methods have been implemented:
 
 ```
+buildStart,
+buildEnd,
+options,
+outputOptions,
 intro,
 outro,
 banner,
@@ -97,7 +101,12 @@ generateBundle,
 resolveDynamicImport,
 resolveId,
 load,
-transform
+transform,
+renderChunk,
+renderError,
+renderStart,
+resolveFileUrl,
+resolveImportMeta
 ```
 
 ### Plugin Context
@@ -148,6 +157,23 @@ this.setAssetSource(assetId, source);
 ```
 this.resolveId(importee, importer)
 ```
+
+```
+this.getCombinedSourcemap()
+```
+
+```
+this.getModuleInfo(moduleId)
+```
+
+```
+this.moduleIds
+```
+
+```
+this.resolve(importee, importer, opts)
+```
+
 
 
 ### Custom Plugin Hooks
