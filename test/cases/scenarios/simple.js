@@ -231,6 +231,15 @@ describe('Nollup', function () {
         expect(entry.MyClass.prototype.getValue()).to.equal('MyClass');
         expect(entry.MyClassAlias.prototype.getValue()).to.equal('MyClass');
         expect(entry.default).to.equal('MyVarMyVarMyVar');
+        expect(entry.DepFrom).to.equal('dep-from');
+        expect(entry.AliasDepFromProxy).to.equal('alias-dep-from');
+        expect(entry.DefaultDepFrom).to.equal('default-dep-from');
+    });
+
+    it ('Scenario: Check export default from file', async function () {
+        let bundle = await createNollup('export-default-from');
+        let entry = await bundle.generate();
+        expect(entry.default).to.equal(123);
     });
 
     it ('Scenario: Check export all', async function () {

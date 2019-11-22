@@ -41,7 +41,7 @@ describe ('API: Nollup Hooks', () => {
                     nollupBundleInit () {
                         return `
                             __exports.modules = modules;
-                            modules[1] = function (r, d, e) {
+                            modules[1] = function (c, r, d, e) {
                                 d(function () {
                                 }, function () {
                                     e('default', 456);
@@ -121,7 +121,7 @@ describe ('API: Nollup Hooks', () => {
                     nollupModuleInit () {
                         return `
                             __exports.modules = modules;
-                            modules[1] = function (r, d, e) {
+                            modules[1] = function (c, r, d, e) {
                                 d(function () {
                                 }, function () {
                                     e('default', 456);

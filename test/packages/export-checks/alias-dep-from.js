@@ -1,0 +1,1 @@
+export var AliasDepFrom = 'alias-dep-from';
