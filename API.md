@@ -75,6 +75,13 @@ Or if it's an asset:
 }
 ```
 
+### Environment Variables
+
+When using the CLI, the following environment variables are present:
+
+* ```process.env.ROLLUP_WATCH```
+* ```process.env.NOLLUP```
+
 ### Plugin Hooks
 
 [Rollup plugins](https://rollupjs.org/guide/en#plugins-overview) should work. 
