@@ -1,5 +1,6 @@
 let { nollup, fs, expect, rollup } = require('../../nollup');
 let path = require('path');
+let MagicString = require('magic-string');
 
 describe ('API: Plugin Context', () => {
     describe('emitAsset', () => {
@@ -144,25 +145,6 @@ describe ('API: Plugin Context', () => {
         });
     });
 
-    describe ('resolve', () => {
-        it ('should return a promise', async () => {
-            fs.stub('./src/main.js', () => 'export default 123');
-
-            let bundle = await nollup({
-                input: './src/main.js',
-                plugins: [{
-                    transform () {
-                        const result = this.resolve('./foo', '/bar')
-                        expect(result).to.be.an.instanceof(Promise)
-                    }
-                }]
-            });
-
-            let { output } = await bundle.generate({ format: 'esm' });
-            fs.reset();
-        })
-    })
-
     describe ('warn', () => {
         it ('should output warning message');
     });
@@ -283,6 +265,10 @@ describe ('API: Plugin Context', () => {
             expect(asset.source[0]).to.equal(108);
             fs.reset();
         });
+
+        it ('should output type of chunk starting with the specified module id');
+        it ('should output chunk using name');
+        it ('should output chunk using fileName');
     });
 
     describe ('getFileName', () => {
@@ -464,5 +450,385 @@ describe ('API: Plugin Context', () => {
             fs.reset();
         });
     });
+
+    describe ('resolve', () => {
+        it ('should return a promise', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        const result = this.resolve('./foo', '/bar')
+                        expect(result).to.be.an.instanceof(Promise)
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        })
+
+        it ('should resolve imports to module ids', async function () {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        return new Promise(resolve => { 
+                            this.resolve('./lol', path.resolve(process.cwd(), './src/main.js')).then(resolved => {
+                                expect(resolved.id).to.equal(path.resolve(process.cwd(), './src/lol.js'));
+                                expect(resolved.external).to.be.false;
+                                resolve();
+                            });
+                        });
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        });
+
+        it ('should be marked as external if it is external asdasdasdasdasdas', async function () {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery'],
+                plugins: [{
+                    transform () {
+                        return new Promise(resolve => { 
+                            this.resolve('jquery', path.resolve(process.cwd(), './src/main.js')).then(resolved => {
+                                expect(resolved.id).to.equal('jquery');
+                                expect(resolved.external).to.be.true;
+                                resolve();
+                            });
+                        });
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        });
+
+        it ('should be marked as external if plugin resolveId returns false', async function () {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                            return false;
+                        }
+
+                        return id;
+                    },
+                    transform () {
+                        return new Promise(resolve => { 
+                            this.resolve('jquery', path.resolve(process.cwd(), './src/main.js')).then(resolved => {
+                                expect(resolved.id).to.equal('jquery');
+                                expect(resolved.external).to.be.true;
+                                resolve();
+                            });
+                        });
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        });
+
+        it ('should be marked as external if plugin resolveId returns false in object', async function () {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                            return {
+                                id,
+                                external: true
+                            }
+                        }
+
+                        return id;
+                    },
+                    transform () {
+                        return new Promise(resolve => { 
+                            this.resolve('jquery', path.resolve(process.cwd(), './src/main.js')).then(resolved => {
+                                expect(resolved.id).to.equal('jquery');
+                                expect(resolved.external).to.be.true;
+                                resolve();
+                            });
+                        });
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        });
+
+        it ('should allow skipSelf in options to ignore the resolveId hook of the same plugin which called this function', async function () {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                            throw new Error('Should not reach here');
+                        }
+                    },
+                    transform () {
+                        return new Promise(resolve => { 
+                            this.resolve('jquery', path.resolve(process.cwd(), './src/main.js'), { skipSelf: true }).then(resolved => {
+                                resolve();
+                            });
+                        });
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        });
+
+        it ('should return null if module cannot be resolved by anyone and isn\'t external');
+
+    });
+
+    describe ('getCombinedSourcemap', () => {
+        it ('should provide source map of all previous plugins so far', async function () {
+            fs.stub('./src/main.js', () => 'array.forEach(i => console.log(i));\nvar { a, b } = getItem();\nconsole.log(a,b);');
+
+            let passed = false;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        let s = new MagicString(code);
+                        s.overwrite(0, 36, `for (var i = 0; i < array.length; i++) {\nconsole.log(array[i]);\n}\n`);
+                        return {
+                            code: s.toString(),
+                            map: s.generateMap({
+                                hires: true,
+                                source: id
+                            })
+                        }
+                    }
+                }, {
+                    transform (code, id) {
+                        let s = new MagicString(code);
+                        s.overwrite(66, 91, `var tmp = getItem();\nvar a = tmp.a;\nvar b = tmp.b;`)
+                        return {
+                            code: s.toString(),
+                            map: s.generateMap({
+                                hires: true,
+                                source: id
+                            })
+                        }
+                    }
+                }, {
+                    transform (code) {
+                        let { SourceMapConsumer } = require('source-map');
+                        let sourcemap = this.getCombinedSourcemap();
+                        let consumer = new SourceMapConsumer(sourcemap);
+                        
+                        expect(consumer.generatedPositionFor({
+                            source: sourcemap.sources[0],
+                            line: 1,
+                            column: 0
+                        })).to.deep.equal({ 
+                            line: 1, 
+                            column: 0, 
+                            lastColumn: null 
+                        });
+
+                        expect(consumer.generatedPositionFor({
+                            source: sourcemap.sources[0],
+                            line: 2,
+                            column: 0
+                        })).to.deep.equal({ 
+                            line: 4, 
+                            column: 0, 
+                            lastColumn: null 
+                        });
+
+                        expect(consumer.generatedPositionFor({
+                            source: sourcemap.sources[0],
+                            line: 3,
+                            column: 0
+                        })).to.deep.equal({ 
+                            line: 7, 
+                            column: 0, 
+                            lastColumn: null 
+                        });
+
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should only be usable in transform hook', async function () {
+            fs.stub('./src/main.js', () => 'array.forEach(i => console.log(i));\nvar { a, b } = getItem();\nconsole.log(a,b);');
+
+            let passed = false;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    load (id) {
+                        try {
+                            this.getCombinedSourcemap();
+                        } catch (e) {
+                            expect(e.message.indexOf('transform hook') > -1).to.be.true;
+                            passed = true;
+                        }
+
+                        return null;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+    })
+
+    describe ('moduleIds', () => {
+        it ('should be an iteratable support "for of", listing all module ids in graph', async function () {
+            fs.stub('./src/main.js', () => 'import "./lol"; import "./rofl";');
+            fs.stub('./src/lol.js', () => 'export default 123');
+            fs.stub('./src/rofl.js', () => 'export default 456');
+
+            let ids;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        ids = this.moduleIds;
+                        return null;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(ids.next).not.to.be.undefined;
+            ids = Array.from(ids);
+            expect(ids[0]).to.equal(path.resolve(process.cwd(), './src/main.js'));
+            expect(ids[1]).to.equal(path.resolve(process.cwd(), './src/lol.js'));
+            expect(ids[2]).to.equal(path.resolve(process.cwd(), './src/rofl.js'));
+            fs.reset();
+        });
+    })
+
+    describe ('getModuleInfo', () => {
+        it ('should provide information about module using the provided module id', async function () {
+            fs.stub('./src/main.js', () => 'import "jquery"; import "underscore"; import "./lol"; import("backbone"); import("./rofl");');
+            fs.stub('./src/lol.js', () => 'export default 123');
+            fs.stub('./src/rofl.js', () => 'export default 456');
+            
+            let fn;
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery'],
+                plugins: [{
+                    resolveId (id) {
+                        if (id === 'underscore' || id === 'backbone') {
+                            return { 
+                                id, external: true
+                            }
+                        }
+                    },
+
+                    transform (code, id) {
+                        fn = id => this.getModuleInfo(id);
+                        return null;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+
+            // local module
+            let local_info = fn(path.resolve(process.cwd(), './src/main.js'));
+            expect(local_info).to.deep.equal({
+                id: path.resolve(process.cwd(), './src/main.js'),
+                isEntry: true,
+                isExternal: false,
+                importedIds: ['jquery', 'underscore', path.resolve(process.cwd(), './src/lol.js')],
+                // hasModuleSideEffects: true
+            });
+
+            let local_info_dep = fn(path.resolve(process.cwd(), './src/lol.js'));
+            expect(local_info_dep).to.deep.equal({
+                id: path.resolve(process.cwd(), './src/lol.js'),
+                isEntry: false,
+                isExternal: false,
+                importedIds: [],
+                // hasModuleSideEffects: true
+            });
+
+            let external_info = fn('jquery');
+            expect(external_info).to.deep.equal({
+                id: 'jquery',
+                isEntry: false,
+                isExternal: true,
+                importedIds: [],
+                // hasModuleSideEffects: true
+            });
+
+            let external_resolve_info = fn('underscore');
+            expect(external_resolve_info).to.deep.equal({
+                id: 'underscore',
+                isEntry: false,
+                isExternal: true,
+                importedIds: [],
+                // hasModuleSideEffects: true
+            });
+
+            let dynamic_external_resolve_info = fn('backbone');
+            expect(dynamic_external_resolve_info).to.deep.equal({
+                id: 'backbone',
+                isEntry: false,
+                isExternal: true,
+                importedIds: [],
+                // hasModuleSideEffects: true
+            });
+
+
+            let dynamic_import_info = fn(path.resolve(process.cwd(), './src/rofl.js'));
+            expect(dynamic_import_info).to.deep.equal({
+                id: path.resolve(process.cwd(), './src/rofl.js'),
+                isEntry: false,
+                isExternal: false,
+                importedIds: [],
+                // hasModuleSideEffects: true
+            });
+
+            fs.reset();
+        })
+    });
+
+    
+
+   
 
 });
