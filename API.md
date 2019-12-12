@@ -229,6 +229,7 @@ app.use(nollupDevServer(app, config, {
 * ***Boolean* hot -** If true, Hot Module Replacement will be enabled and injected into the bundle.
 * ***Boolean* verbose -** If true, will print status of HMR to developer console.
 * ***String* hmrHost -** Host to connect to for HMR. Default is ```window.location.host```.
+* ***String* contentBase -** Path to public content. Used for resolving ```file``` path correctly.
 
 ## Hot Module Replacement
 
