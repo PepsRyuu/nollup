@@ -44,6 +44,93 @@ describe ('API: Plugin Context', () => {
         });
     });
 
+    describe('emitChunk', () => {
+        it ('should accept chunkModuleId', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/chunk.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.emitChunk('./src/chunk.js');
+                    },
+                    generateBundle (output, bundle) {
+                        expect(Object.keys(bundle).length).to.equal(2);
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output.length).to.equal(2);
+        
+            let main = output.find(o => o.fileName === 'main.js');
+            let chunk = output.find(o => o.fileName.startsWith('chunk'));
+            expect(main.code.indexOf('123') > -1).to.be.true;
+            expect(main.isDynamicEntry).to.be.false;
+            expect(main.isEntry).to.be.true;
+            expect(main.type).to.equal('chunk');
+            expect(main.modules[path.resolve(process.cwd(), './src/main.js')]).not.to.be.undefined;
+            expect(main.imports).to.deep.equal([]);
+            expect(main.exports).to.deep.equal(['default']);
+
+            expect(chunk.code.indexOf('456') > -1).to.be.true;
+            expect(chunk.isDynamicEntry).to.be.false;
+            expect(chunk.isEntry).to.be.true;
+            expect(chunk.type).to.equal('chunk');
+            expect(chunk.modules[path.resolve(process.cwd(), './src/chunk.js')]).not.to.be.undefined;
+            expect(chunk.imports).to.deep.equal([]);
+            expect(chunk.exports).to.deep.equal(['default']);
+            expect(chunk.fileName.match(/^chunk-([^-]+).js/g).length).to.equal(1);
+
+            fs.reset();
+        });
+
+        it ('should accept optional name for chunk', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/chunk.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.emitChunk('./src/chunk.js', { name: 'mychunk' });
+                    },
+                    generateBundle (output, bundle) {
+                        expect(Object.keys(bundle).length).to.equal(2);
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output.length).to.equal(2);
+        
+            let chunk = output.find(o => o.fileName.startsWith('mychunk'));
+            expect(chunk.modules[path.resolve(process.cwd(), './src/chunk.js')]).not.to.be.undefined;
+            expect(chunk.fileName.match(/^mychunk-([^-]+).js/g).length).to.equal(1);
+
+            fs.reset();
+        });
+
+        it ('should return a chunkId', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/chunk.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    generateBundle (output, bundle) {
+                        let id = this.emitChunk('./src/chunk.js', { name: 'mychunk' });
+                        expect(typeof id).to.equal('string');
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        });
+    });
+
     describe ('getAssetFileName', () => {
         it ('should accept assetId as a string and return assetFileNames name', async () => {
             fs.stub('./src/main.js', () => 'export default 123');
@@ -59,6 +146,26 @@ describe ('API: Plugin Context', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm', assetFileNames: 'asset-[name][extname]' });
+            fs.reset();
+        });
+    });
+
+    describe ('getChunkFileName', () => {
+        it ('should accept chunkId as a string and return chunkFileNames name', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/chunk.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    generateBundle (output, bundle) {
+                        let id = this.emitChunk('./src/chunk.js', { name: 'mychunk' });
+                        expect(this.getChunkFileName(id)).to.equal('lol-mychunk-[hash].js');
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm', chunkFileNames: 'lol-[name]-[hash].js' });
             fs.reset();
         });
     });
@@ -266,9 +373,91 @@ describe ('API: Plugin Context', () => {
             fs.reset();
         });
 
-        it ('should output type of chunk starting with the specified module id');
-        it ('should output chunk using name');
-        it ('should output chunk using fileName');
+        it ('should output type of chunk starting with the specified module id', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/chunk.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.emitFile({
+                            type: 'chunk',
+                            id: './src/chunk.js'
+                        });
+                    },
+                    generateBundle (output, bundle) {
+                        expect(Object.keys(bundle).length).to.equal(2);
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output.length).to.equal(2);
+        
+            let chunk = output.find(o => o.fileName.startsWith('chunk'));
+            expect(chunk.fileName.match(/^chunk-([^-]+).js/g).length).to.equal(1);
+
+            fs.reset();
+        });
+
+        it ('should output chunk using name', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/chunk.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.emitFile({
+                            type: 'chunk',
+                            id: './src/chunk.js',
+                            name: 'mychunk'
+                        });
+                    },
+                    generateBundle (output, bundle) {
+                        expect(Object.keys(bundle).length).to.equal(2);
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output.length).to.equal(2);
+        
+            let chunk = output.find(o => o.fileName.startsWith('mychunk'));
+            expect(chunk.fileName.match(/^mychunk-([^-]+).js/g).length).to.equal(1);
+
+            fs.reset();
+        });
+
+        it ('should output chunk using fileName', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/chunk.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.emitFile({
+                            type: 'chunk',
+                            id: './src/chunk.js',
+                            fileName: 'lol.js'
+                        });
+                    },
+                    generateBundle (output, bundle) {
+                        expect(Object.keys(bundle).length).to.equal(2);
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output.length).to.equal(2);
+        
+            let chunk = output.find(o => o.fileName.startsWith('lol'));
+            expect(chunk.fileName.match(/^lol.js/g).length).to.equal(1);
+
+            fs.reset();
+        });
     });
 
     describe ('getFileName', () => {
@@ -329,6 +518,70 @@ describe ('API: Plugin Context', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm', assetFileNames: 'asset-[name][extname]' });
+            fs.reset();
+        });
+
+        it ('should return chunk file name (default)', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (output, bundle) {
+                        let id = this.emitFile({
+                            type: 'chunk',
+                            id: './src/lol.js'
+                        });
+                        expect(this.getFileName(id)).to.equal('chunk-[hash].js');
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        });
+
+        it ('should return chunk file name (name)', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (output, bundle) {
+                        let id = this.emitFile({
+                            type: 'chunk',
+                            name: 'extra',
+                            id: './src/lol.js'
+                        });
+                        expect(this.getFileName(id)).to.equal('extra-[hash].js');
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        });
+
+        it ('should return chunk file name (fileName)', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (output, bundle) {
+                        let id = this.emitFile({
+                            id: './src/lol.js',
+                            fileName: 'vendor.js'
+                        });
+                        expect(this.getFileName(id)).to.equal('vendor.js');
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
             fs.reset();
         });
     });
@@ -449,6 +702,8 @@ describe ('API: Plugin Context', () => {
             expect(eval(main.code.replace('export default ', ''))).to.equal('assets/logo-logo[hash].svg');
             fs.reset();
         });
+
+        it ('should convert ROLLUP_CHUNK_URL to string');
     });
 
     describe ('resolve', () => {

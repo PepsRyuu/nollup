@@ -127,7 +127,8 @@ describe ('API: generate', () => {
         });
 
         let { output } = await bundle.generate({
-            format: 'esm'
+            format: 'esm',
+            chunkFileNames: 'chunk-[name]-[hash].js'
         });
 
         expect(output.length).to.equal(4);
