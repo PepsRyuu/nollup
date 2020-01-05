@@ -1034,6 +1034,8 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
+            await bundle.generate();
+
             expect(passed).to.be.true;
             fs.reset();
         });
@@ -1061,6 +1063,8 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
+            await bundle.generate();
+
             expect(passed).to.be.true;
             fs.reset();
         });
@@ -1083,7 +1087,53 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
+            await bundle.generate();
+
             expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should re-run on rebuild', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+            let count = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async buildStart (opts) {
+                        count++;
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            await bundle.generate({ format: 'esm' });
+            expect(count).to.equal(2);
+            fs.reset();
+        });
+
+        it ('should trigger before renderStart', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+            let count = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    buildStart (opts) {
+                        count++;
+                    },
+
+                    renderStart () {
+                        expect(count).to.equal(1);
+                        count++;
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(count).to.equal(2);
             fs.reset();
         });
     });
@@ -1107,6 +1157,8 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
+            await bundle.generate();
+
             expect(passed).to.be.true;
             fs.reset();
         });
@@ -1129,11 +1181,124 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
+            await bundle.generate();
+
             expect(passed).to.be.true;
             fs.reset();
         });
 
-        it ('should receive err object if build fails');
+        it ('should trigger before renderStart', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let count = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    buildEnd () {
+                        count++;
+                    },
+
+                    renderStart () {
+                        expect(count).to.equal(1);
+                        count++;
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(count).to.equal(2);
+            fs.reset();
+        });
+
+        it ('should receive err object if build fails', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+
+            try {
+                let bundle = await nollup({
+                    input: './src/main.js',
+                    plugins: [{
+                        transform () {
+                            throw new Error('lol');
+                        },
+
+                        buildEnd (e) {
+                            expect(e.message.indexOf('lol') > -1).to.be.true;
+                            passed = true;
+                        }
+                    }]
+                });
+
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e.message.indexOf('lol') > -1).to.be.true;
+            }
+            
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should not trigger renderError if error occurs', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+            let failed = false;
+
+            try {
+                let bundle = await nollup({
+                    input: './src/main.js',
+                    plugins: [{
+                        transform () {
+                            throw new Error('lol');
+                        },
+
+                        buildEnd (e) {
+                            expect(e.message.indexOf('lol') > -1).to.be.true;
+                            passed = true;
+                        },
+
+                        renderError () {
+                            failed = true;
+                        }
+                    }]
+                });
+
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e.message.indexOf('lol') > -1).to.be.true;
+            }
+            
+            expect(passed).to.be.true;
+            expect(failed).to.be.false;
+            fs.reset();
+        });
+
+        it ('should trigger if error in buildStart', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+
+            try {
+                let bundle = await nollup({
+                    input: './src/main.js',
+                    plugins: [{
+                        buildStart () {
+                            throw new Error('lol');
+                        },
+
+                        buildEnd (e) {
+                            expect(e.message.indexOf('lol') > -1).to.be.true;
+                            passed = true;
+                        }
+                    }]
+                });
+
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e.message.indexOf('lol') > -1).to.be.true;
+            }
+            
+            expect(passed).to.be.true;
+            fs.reset();
+        });
     });
 
     describe ('renderStart', () => {
@@ -1316,6 +1481,31 @@ describe ('API: Plugin Hooks', () => {
                 let { output } = await bundle.generate({ format: 'esm', dir: 'dist' });
             } catch (e) {
                 expect(passed).to.be.true;
+                fs.reset();
+            }
+        })
+
+        it ('should not trigger if error thrown in build hook', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let failed = false;
+
+            try {
+                let bundle = await nollup({
+                    input: './src/main.js',
+                    plugins: [{
+                        transform () {
+                            throw new Error('lol');
+                        },
+                        renderError (err) {
+                            failed = true;
+                        }
+                    }]
+                });
+
+                let { output } = await bundle.generate({ format: 'esm', dir: 'dist' });
+            } catch (e) {
+                expect(e.message.indexOf('lol') > -1).to.be.true; 
+                expect(failed).to.be.false;
                 fs.reset();
             }
         })
