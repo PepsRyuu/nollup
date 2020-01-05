@@ -3,7 +3,7 @@ let { nollup, fs, expect, rollup } = require('../../nollup');
 describe ('Options: output.chunkFileNames', () => {
     let bundle;
 
-    beforeEach(async () => {
+    beforeEach(async function () {
         fs.stub('./src/main.js', () => 'import("./dynamic.js"); export default 123');
         fs.stub('./src/dynamic.js', () => 'export default 456');
         
@@ -23,7 +23,7 @@ describe ('Options: output.chunkFileNames', () => {
 
         expect(output.length).to.equal(2);
         expect(output.find(o => o.fileName === 'main.js').fileName).not.to.be.undefined;
-        expect(output.find(o => o.fileName.match(/^chunk\-(.*?).js$/) !== null)).not.to.be.undefined;
+        expect(output.find(o => o.fileName.match(/^dynamic\-(.*?).js$/) !== null)).not.to.be.undefined;
     });
 
     it ('should allow to be overrided', async () => {

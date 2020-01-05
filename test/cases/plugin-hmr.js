@@ -22,12 +22,12 @@ function createGlobals () {
         return _ws;
     };
 
-    return { window, console, stdout, ws: _ws, WebSocket };
+    return { window, console, stdout, ws: _ws, WebSocket, __nollup__global__: window };
 }
 
 async function createNollupEnv () {
     let globals = createGlobals();
-    let { window, console, WebSocket } = globals;
+    let { window, console, WebSocket, __nollup__global__ } = globals;
 
     let bundle = await nollup({
         input: './src/main.js',
@@ -37,7 +37,7 @@ async function createNollupEnv () {
     let { output } = await bundle.generate({ format: 'esm' });
     eval(output[0].code);
     fs.reset();
-    return { window, console, ws: globals.ws, stdout: globals.stdout, bundle };
+    return { window, console, ws: globals.ws, stdout: globals.stdout, bundle, __nollup__global__ };
 }
 
 function createEnv (input, options = {}) {
@@ -46,7 +46,7 @@ function createEnv (input, options = {}) {
 
     let modules = input.map(m => m.code);
     let globals = createGlobals();
-    let { window, console, WebSocket } = globals;
+    let { window, console, WebSocket, __nollup__global__ } = globals;
 
     let plugin_instance = plugin(options);
     eval(plugin_instance.nollupBundleInit());

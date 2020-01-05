@@ -151,6 +151,14 @@ this.getAssetFileName(assetId)
 ```
 
 ```
+this.emitChunk(id, options)
+```
+
+```
+this.getChunkFileName(chunkId)
+```
+
+```
 this.setAssetSource(assetId, source);
 ```
 
