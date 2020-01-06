@@ -1,28 +1,18 @@
-import React , { Component } from 'react';
+import React , { useState, useEffect } from 'react';
 import './Counter.css';
 
-export default class Counter extends Component {
-    constructor () {
-        super();
+export default function Counter () {
+    let [ count, setCount ] = useState(0);
 
-        this.state = {
-            count: 0 
-        };
-    }
-
-    componentDidMount() {
-        this.interval = setInterval(() => {
-            this.setState({
-                count: this.state.count + 1
-            })
+    useEffect(() => {
+        let interval = setInterval(() => {
+            setCount(c => c + 1);
         }, 200);
-    }
 
-    componentWillUnmount() {
-        clearInterval(this.interval)
-    }
+        return () => {
+            clearInterval(interval)
+        };
+    }, []);
 
-    render() {
-        return <div className="Counter">Counter: {this.state.count}</div>
-    }
+    return <div className="Counter">Counter: {count}</div>
 }
