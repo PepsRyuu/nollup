@@ -25,13 +25,7 @@ let config = {
         }),
         babel(),
         node_resolve(),
-        commonjs({
-            namedExports: {
-                'node_modules/react/index.js': [
-                    'Component'
-                ]
-            }
-        }),
+        commonjs(),
         process.env.NODE_ENV === 'development' && refresh()
     ]
 }

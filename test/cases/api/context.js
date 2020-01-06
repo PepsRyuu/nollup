@@ -1079,7 +1079,7 @@ describe ('API: Plugin Context', () => {
             });
 
             fs.reset();
-        })
+        });
     });
 
     
