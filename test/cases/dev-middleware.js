@@ -643,7 +643,9 @@ describe('Dev Middleware', () => {
 
         let mw = middleware({}, config, {});
         mwFetch(mw, '/bundle.js').then(res => {
-            expect(chokidar.options.ignored).to.deep.equal(['**/node_modules/**/*', '**/.git/**/*']);
+            expect(chokidar.options.ignored('/code/my_project/node_modules/test')).to.be.true;
+            expect(chokidar.options.ignored('/code/my_project/.git/test')).to.be.true;
+            expect(chokidar.options.ignored('/code/my_project/test')).to.be.false;
             done();
         });
     }); 
