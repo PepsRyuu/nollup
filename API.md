@@ -18,13 +18,15 @@ async function build () {
 build();
 ```
 
-### Supported Input Options 
+### Supported Config Options 
 
 ```
 input,
+output,
 plugins,
 external,
-acornInjectPlugins
+acornInjectPlugins,
+watch - include/exclude
 ```
 
 ### Supported Output Options

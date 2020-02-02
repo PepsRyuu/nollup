@@ -11,6 +11,7 @@
     "nollup": "./lib/cli.js"
   },
   "dependencies": {
+    "@rollup/pluginutils": "^3.0.8",
     "acorn": "^7.0.0",
     "chokidar": "^2.0.2",
     "convert-source-map": "^1.5.1",
