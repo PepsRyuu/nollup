@@ -650,6 +650,204 @@ describe('Dev Middleware', () => {
         });
     }); 
 
+    it ('should only watch modules specified by watch.include', function (done) {
+        this.timeout(5000);
+
+        fs.stub('./src/main.js', () => 'export default 123');
+
+        let config = {
+            input: './src/main.js',
+            output: {
+                file: 'bundle.js',
+                format: 'esm'
+            },
+            watch: {
+                include: 'src/**'
+            }
+        };
+
+        let mw = middleware({}, config, {});
+        mwFetch(mw, '/bundle.js').then(res => {
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './src/myfile'))).to.be.false;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './test/myfile'))).to.be.true;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './node_modules/myfile'))).to.be.true;
+            done();
+        });
+    });
+
+    it ('should only watch modules specified by watch.include (multi-config)', function (done) {
+        this.timeout(5000);
+
+        fs.stub('./src-a/main-a.js', () => 'export default 123');
+        fs.stub('./src-b/main-b.js', () => 'export default 123');
+
+        let config = [{
+            input: './src-a/main-a.js',
+            output: {
+                file: 'bundle-a.js',
+                format: 'esm'
+            },
+            watch: {
+                include: 'src-a/**'
+            }
+        }, {
+            input: './src-b/main-b.js',
+            output: {
+                file: 'bundle-b.js',
+                format: 'esm'
+            },
+            watch: {
+                include: 'src-b/**'
+            }
+        }];
+
+        let mw = middleware({}, config, {});
+        mwFetch(mw, '/bundle-a.js').then(res => {
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './src-a/myfile'))).to.be.false;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './src-b/myfile'))).to.be.false;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './test/myfile'))).to.be.true;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './node_modules/myfile'))).to.be.true;
+            done();
+        });
+    });
+
+    it ('should only watch modules specified by watch.include as array', function (done) {
+        this.timeout(5000);
+
+        fs.stub('./src/main.js', () => 'export default 123');
+
+        let config = {
+            input: './src/main.js',
+            output: {
+                file: 'bundle.js',
+                format: 'esm'
+            },
+            watch: {
+                include: ['src/**', 'test/**']
+            }
+        };
+
+        let mw = middleware({}, config, {});
+        mwFetch(mw, '/bundle.js').then(res => {
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './src/myfile'))).to.be.false;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './test/myfile'))).to.be.false;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './node_modules/myfile'))).to.be.true;
+            done();
+        });
+    });
+
+    it ('should not watch modules specified by watch.exclude', function (done) {
+        this.timeout(5000);
+
+        fs.stub('./src/main.js', () => 'export default 123');
+
+        let config = {
+            input: './src/main.js',
+            output: {
+                file: 'bundle.js',
+                format: 'esm'
+            },
+            watch: {
+                exclude: 'node_modules/**'
+            }
+        };
+
+        let mw = middleware({}, config, {});
+        mwFetch(mw, '/bundle.js').then(res => {
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './src/myfile'))).to.be.false;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './test/myfile'))).to.be.false;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './node_modules/myfile'))).to.be.true;
+            done();
+        });
+    }); 
+
+    it ('should not watch modules specified by watch.exclude as array', function (done) {
+        this.timeout(5000);
+
+        fs.stub('./src/main.js', () => 'export default 123');
+
+        let config = {
+            input: './src/main.js',
+            output: {
+                file: 'bundle.js',
+                format: 'esm'
+            },
+            watch: {
+                exclude: ['node_modules/**', 'test/**']
+            }
+        };
+
+        let mw = middleware({}, config, {});
+        mwFetch(mw, '/bundle.js').then(res => {
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './src/myfile'))).to.be.false;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './test/myfile'))).to.be.true;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './node_modules/myfile'))).to.be.true;
+            done();
+        });
+    }); 
+
+    it ('should not watch modules specified by watch.exclude (multi-config)', function (done) {
+        this.timeout(5000);
+
+        fs.stub('./src-a/main-a.js', () => 'export default 123');
+        fs.stub('./src-b/main-b.js', () => 'export default 123');
+
+        let config = [{
+            input: './src-a/main-a.js',
+            output: {
+                file: 'bundle-a.js',
+                format: 'esm'
+            },
+            watch: {
+                exclude: 'src-a/**'
+            }
+        }, {
+            input: './src-b/main-b.js',
+            output: {
+                file: 'bundle-b.js',
+                format: 'esm'
+            },
+            watch: {
+                exclude: 'src-b/**'
+            }
+        }];
+
+        let mw = middleware({}, config, {});
+        mwFetch(mw, '/bundle-a.js').then(res => {
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './src-a/myfile'))).to.be.true;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './src-b/myfile'))).to.be.true;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './test/myfile'))).to.be.false;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './node_modules/myfile'))).to.be.false;
+            done();
+        });
+    });
+
+    it ('should be able to combine watch.include and watch.exclude', function (done) {
+        this.timeout(5000);
+
+        fs.stub('./src/main.js', () => 'export default 123');
+
+        let config = {
+            input: './src/main.js',
+            output: {
+                file: 'bundle.js',
+                format: 'esm'
+            },
+            watch: {
+                include: 'src/**',
+                exclude: 'src/test/**'
+            }
+        };
+
+        let mw = middleware({}, config, {});
+        mwFetch(mw, '/bundle.js').then(res => {
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './src/myfile'))).to.be.false;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './src/test/myfile'))).to.be.true;
+            expect(chokidar.options.ignored(path.resolve(process.cwd(), './node_modules/myfile'))).to.be.true;
+            done();
+        });
+    });  
+
     it ('should only trigger once in response to several file watch events', function (done) {
         this.timeout(5000);
 
