@@ -1,8 +1,14 @@
 let plugin = require('../../lib/plugin-hmr');
 let { expect, fs, nollup } = require('../nollup');
 
-function createGlobals () {
-    let window = { location: { host: 'example.com' } }, stdout = [];
+function createGlobals (env_options = {}) {
+    let window = { 
+        location: { 
+            host: 'example.com',
+            protocol: env_options.protocol || 'http:'
+        } 
+    }, stdout = [];
+
     let console = {
         log: function (...args) {
             stdout.push(args.join(' '));
@@ -40,12 +46,12 @@ async function createNollupEnv () {
     return { window, console, ws: globals.ws, stdout: globals.stdout, bundle, __nollup__global__ };
 }
 
-function createEnv (input, options = {}) {
+function createEnv (input, options = {}, env_options = {}) {
     input = JSON.parse(JSON.stringify(input));
     options.bundleId = options.bundleId || '';
 
     let modules = input.map(m => m.code);
-    let globals = createGlobals();
+    let globals = createGlobals(env_options);
     let { window, console, WebSocket, __nollup__global__ } = globals;
 
     let plugin_instance = plugin(options);
@@ -1143,4 +1149,17 @@ describe('plugin-hmr', () => {
             expect(env.stdout[2]).to.equal('string string');
         });
     });
+
+    describe('Misc', () => {
+        it ('should use wss:// instead of ws:// when on https://', async () => {
+            let env = createEnv([{
+                dependencies: [],
+                code: `function () {}`
+            }], {}, {
+                protocol: 'https:'
+            });
+
+            expect(env.ws.url).to.equal('wss://example.com/__hmr');
+        });
+    })
 });
