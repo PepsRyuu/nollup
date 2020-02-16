@@ -23,6 +23,86 @@ describe ('API: Plugin Hooks', () => {
             let output = await generate([,false, null, undefined,,]);
             expect(output[0].code).not.to.be.undefined;
         });
+
+        it ('should allow syntheticNamedExports for function exports', async () => {
+            fs.stub('./src/main.js', () => 'import Default, { hello } from "./lol";  export { Default as default, hello };');
+            fs.stub('./src/lol.js', () => `
+                function hello () { 
+                    return "world";
+                }
+
+                hello.hello = hello;
+
+                export default hello;
+            `);
+
+            let phase = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    load (id) {
+                        if (id.indexOf('lol') > -1) {
+                            return { 
+                                code: fs.readFileSync(id, 'utf8'),
+                                syntheticNamedExports: phase === 1
+                            }
+                        }
+                        
+                    }
+                }]
+            });
+
+            let output = (await bundle.generate({ format: 'iife' })).output;
+            let result = eval(output[0].code);
+            expect(result.default.hello()).to.equal('world');
+            expect(result.hello).to.be.undefined;
+
+            phase = 1;
+            bundle.invalidate('./src/lol.js');
+            output = (await bundle.generate({ format: 'iife' })).output;
+            result = eval(output[0].code);
+            expect(result.default.hello()).to.equal('world');
+            expect(result.hello()).to.equal('world');
+
+            fs.reset();
+        });
+
+        it ('should not crash for syntheticNamedExports for number exports', async () => {
+            fs.stub('./src/main.js', () => 'import Default from "./lol";  export { Default as default };');
+            fs.stub('./src/lol.js', () => `
+                export default 123;
+            `);
+
+            let phase = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    load (id) {
+                        if (id.indexOf('lol') > -1) {
+                            return { 
+                                code: fs.readFileSync(id, 'utf8'),
+                                syntheticNamedExports: phase === 1
+                            }
+                        }
+                        
+                    }
+                }]
+            });
+
+            let output = (await bundle.generate({ format: 'iife' })).output;
+            let result = eval(output[0].code);
+            expect(result.default).to.equal(123);
+
+            phase = 1;
+            bundle.invalidate('./src/lol.js');
+            output = (await bundle.generate({ format: 'iife' })).output;
+            result = eval(output[0].code);
+            expect(result.default).to.equal(123);
+
+            fs.reset();
+        });
     });
 
     describe('banner', () => {
