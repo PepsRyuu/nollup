@@ -73,6 +73,46 @@ See "Nollup Options" for list of available options.
 * ***Function* before** - Receives Express app as argument. Allows for middleware before internally used middleware.
 * ***Function* after** - Receives Express app as argument. Allows for middleware after internally used middleware.
 
+## Adding Hot Support to App
+
+Out of the box, Nollup won't do anything to enable any hot functionality for your app.
+This has to be manually added by the developer using ```module.hot.accept``` callback.
+When a file is saved, Nollup will check the dependency tree for that file, and if any of its parents have defined a ```module.hot.accept``` callback, it will execute that callback. Developers can run whatever code they want in the callback to update their application.
+
+Usually there's two different approaches that are taken for the callback: 
+
+### Hot Reload
+
+When a file is saved, the browser will reload the page. Frameworks don't need to support this, and it can be added to any project easily.
+
+```
+if (module) {
+    module.hot.accept(() => {
+        window.location.reload();
+    });
+}
+```
+
+### Hot Module Replacement
+
+When a file is saved, only the changed module is replaced, the page is not refreshed. This is very powerful as it allows you to update your app while preserving as much state as possible. This has to be supported by the framework or plugin you are using. Plugins such as ```rollup-plugin-hot-css``` allow you to update your CSS without refreshing the page. Please refer to the framework's documentation on how to add HMR support to your app.
+
+You can also use a combination of HMR with Hot Reload. For example you can use the CSS plugin, but use a fallback accept callback that will refresh the page instead as described above.
+
+### Build Configuration for HMR
+
+In your build configuration, make sure to tell your bundler to remove all references to ```module```, otherwise your application will break when compiled with Rollup. This can be done using a plugin such as ```rollup-plugin-terser```.
+
+```
+terser({
+    compress: {
+        global_defs: {
+            module: false
+        }
+    }
+});
+```
+
 ## API
 
 See [API](API.md) for information on how to use the JavaScript API.
@@ -80,6 +120,7 @@ See [API](API.md) for information on how to use the JavaScript API.
 ## Rollup Plugins with Nollup Enhancements
 
 * [rollup-plugin-hot-css](https://github.com/PepsRyuu/rollup-plugin-hot-css) - Load CSS files with HMR support.
+* [rollup-plugin-react-refresh](https://github.com/PepsRyuu/rollup-plugin-react-refresh) - Nollup plugin for HMR in React apps.
 * [rollup-plugin-commonjs-alternate](https://github.com/PepsRyuu/rollup-plugin-commonjs-alternate) - CommonJS loader that supports React Hot Loader.
 
 ## Caveats
