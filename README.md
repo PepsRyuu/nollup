@@ -38,20 +38,31 @@ Nollup provides a dev server which can be used as a CLI command.
 
 See "Nollup Options" for list of available flags.
 
-## .nolluprc
+## Configuration 
 
-Configuration file that can be used to pass configuration instead of as flags through the CLI. 
 
-```
+You can use a configuration file as alternative to CLI flags or to compliement them.
+
+Configuration files are read using [cosmiconfig](https://github.com/davidtheclark/cosmiconfig).
+
+This means configuration will be looked for in the following places in the order listed:
+
+1. A `nollup` property in a `package.json` file.
+2. A `.nolluprc` file with `JSON` or `YAML` syntax.
+3. A `.nolluprc.json` file.
+4. A `.nolluprc.yaml`, `.nolluprc.yml`, or `.nolluprc.js` file.
+5. A `nollup.config.js` JS file exporting the object.
+
+`.nolluprc`
+```json
 {
     "hot": true,
     "contentBase": "./public"
 }
 ```
 
-A JavaScript file called ```.nolluprc.js``` can be used instead.
-
-```
+`.nolluprc.js`
+```javascript
 module.exports = {
     hot: true,
     contentBase: './public'

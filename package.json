@@ -15,6 +15,7 @@
     "acorn": "^7.0.0",
     "chokidar": "^2.0.2",
     "convert-source-map": "^1.5.1",
+    "cosmiconfig": "^6.0.0",
     "express": "^4.16.3",
     "express-history-api-fallback": "^2.2.1",
     "express-http-proxy": "^1.5.1",
