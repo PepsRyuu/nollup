@@ -41,7 +41,7 @@ See "Nollup Options" for list of available flags.
 ## Configuration 
 
 
-You can use a configuration file as alternative to CLI flags or to compliement them.
+You can use a configuration file as alternative to CLI flags or to complement them.
 
 Configuration files are read using [cosmiconfig](https://github.com/davidtheclark/cosmiconfig).
 
