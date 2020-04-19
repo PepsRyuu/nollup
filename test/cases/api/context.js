@@ -747,7 +747,7 @@ describe ('API: Plugin Context', () => {
             fs.reset();
         });
 
-        it ('should be marked as external if it is external asdasdasdasdasdas', async function () {
+        it ('should be marked as external if it is external', async function () {
             fs.stub('./src/main.js', () => 'export default 123');
             fs.stub('./src/lol.js', () => 'export default 456');
 

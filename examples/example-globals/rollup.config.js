@@ -2,7 +2,7 @@ export default {
     input: './src/main.js',
     output: {
         dir: 'dist',
-        format: 'esm',
+        format: 'iife',
         globals: {
             'jquery': '$',
             'maths': 'Math'
