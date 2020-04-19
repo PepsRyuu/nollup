@@ -879,6 +879,19 @@ describe ('API: Plugin Hooks', () => {
             let { output } = await bundle.generate({ format: 'esm' });
             fs.reset();
         });
+
+        it ('should ignore unresolved ESNode specifier and treat as external', async () => {
+            fs.stub('./src/main.js', () => 'import(specialvariable)');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: []
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf('import(specialvariable)') > -1).to.be.true;
+            fs.reset();
+        });
     });
 
     describe ('transform', () => {
