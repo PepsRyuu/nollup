@@ -3,6 +3,7 @@ import babel from 'rollup-plugin-babel';
 import hotcss from 'rollup-plugin-hot-css';
 import static_files from 'rollup-plugin-static-files';
 import { terser } from 'rollup-plugin-terser';
+import prefresh from '@prefresh/nollup';
 
 let config = {
     input: './src/main.js',
@@ -18,7 +19,8 @@ let config = {
             filename: 'styles.css'
         }),
         babel(),
-        node_resolve()
+        node_resolve(),
+        process.env.NODE_ENV === 'development' && prefresh()
     ]
 }
 
