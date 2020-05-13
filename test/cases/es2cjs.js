@@ -6,87 +6,100 @@ let tests = [{
     input: 'import Hello from \'./world\';',
     output: {
         transpiled: '',
-        dependencies: ['./world'],
         imports: [{
-            imported: 'default',
+            source: './world',
             importee: '_i0',
-            local: 'Hello'
+            specifiers: [{
+                local: 'Hello',
+                imported: 'default'
+            }]
         }]
     }
 }, {
     input: 'import \'./styles.css\';',
     output: {
-        dependencies: ['./styles.css'],
         imports: [{
-            importee: '_i0'
+            source: './styles.css',
+            importee: '_i0',
+            specifiers: []
         }]
     }
 }, {
     input: 'import {member} from "./file";',
     output: {
-        dependencies: ['./file'],
         imports: [{
-            imported: 'member',
+            source: './file',
             importee: '_i0',
-            local: 'member'
+            specifiers: [{
+                local: 'member',
+                imported: 'member'
+            }]
         }]
     }
 }, {
     input: 'import { member } from "./file";',
     output: {
-        dependencies: ['./file'],
         imports: [{
-            imported: 'member',
+            source: './file',
             importee: '_i0',
-            local: 'member'
+            specifiers: [{
+                local: 'member',
+                imported: 'member'
+            }]
         }]
     }
 }, {
     input: 'import {mem1, mem2} from "./file";',
     output: {
-        dependencies: ['./file'],
         imports: [{
-            imported: 'mem1',
+            source: './file',
             importee: '_i0',
-            local: 'mem1'
-        }, {
-            imported: 'mem2',
-            importee: '_i0',
-            local: 'mem2'
+            specifiers: [{
+                local: 'mem1',
+                imported: 'mem1'
+            }, {
+                local: 'mem2',
+                imported: 'mem2'
+            }]
         }]
     }
 }, {
     input: 'import {member as lol} from "./file";',
     output: {
-        dependencies: ['./file'],
         imports: [{
-            imported: 'member',
+            source: './file',
             importee: '_i0',
-            local: 'lol'
+            specifiers: [{
+                local: 'lol',
+                imported: 'member'
+            }]
         }]
     }
 }, {
     input: 'import * as lol from "./file";',
     output: {
-        dependencies: ['./file'],
         imports: [{
-            imported: '*',
+            source: './file',
             importee: '_i0',
-            local: 'lol'
+            specifiers: [{
+                local: 'lol',
+                imported: '*'
+            }]
         }]
     }
 }, {
     input: 'import Hello, * as World from "./file";',
     output: {
-        dependencies: ['./file'],
         imports: [{
-            imported: 'default',
+            source: './file',
             importee: '_i0',
-            local: 'Hello'
-        }, {
-            imported: '*',
-            importee: '_i0',
-            local: 'World'
+            specifiers: [{
+                local: 'Hello',
+                imported: 'default'
+            }, {
+                local: 'World',
+                imported: '*'
+            }]
         }]
     }
 }, {
@@ -185,11 +198,13 @@ let tests = [{
 }, {
     input: 'export { MyVar } from "./file"',
     output: {
-        dependencies: ['./file'],
         imports: [{
-            imported: 'MyVar',
+            source: './file',
             importee: '_i0',
-            local: 'ex_MyVar'
+            specifiers: [{
+                local: 'ex_MyVar',
+                imported: 'MyVar'
+            }]
         }],
         exports: ['MyVar'],
         transpiled: `__e__('MyVar', ex_MyVar);`
@@ -197,11 +212,13 @@ let tests = [{
 }, {
     input: 'export { default } from "./file";',
     output: {
-        dependencies: ['./file'],
         imports: [{
-            imported: 'default',
+            source: './file',
             importee: '_i0',
-            local: 'ex_default'
+            specifiers: [{
+                local: 'ex_default',
+                imported: 'default'
+            }]
         }],
         exports: ['default'],
         transpiled: `__e__('default', ex_default);`
@@ -209,10 +226,13 @@ let tests = [{
 }, {
     input: 'export * from "./file"',
     output: {
-        dependencies: ['./file'],
         imports: [{
-            imported: '*',
-            importee: '_i0'
+            source: './file',
+            importee: '_i0',
+            specifiers: [{
+                local: 'ex_i0',
+                imported: '*'
+            }]
         }],
         exports: [],
         transpiled: `for(var __k__ in ex_i0){__k__ !== "default" && (__e__(__k__, ex_i0[__k__]))}`
@@ -220,15 +240,20 @@ let tests = [{
 }, {
     input: 'import Hello from "hello";import World from "world";',
     output: {
-        dependencies: ['hello', 'world'],
         imports: [{
-            imported: 'default',
+            source: 'hello',
             importee: '_i0',
-            local: 'Hello'
+            specifiers: [{
+                local: 'Hello',
+                imported: 'default'
+            }]
         }, {
-            imported: 'default',
+            source: 'world',
             importee: '_i1',
-            local: 'World'
+            specifiers: [{
+                local: 'World',
+                imported: 'default'
+            }]
         }]
     }
 }];
@@ -240,11 +265,10 @@ describe ('es_to_cjs', () => {
                 transpiled: '',
                 imports: [],
                 exports: [],
-                dependencies: [],
-                dynamicDependencies: [],
+                dynamicImports: [],
+                externalDynamicImports: [],
                 ...test.output
             };
-
 
             let res = await es_to_cjs(test.input, { plugins: [] }, process.cwd() + '/__entry');
             let to_check = {};
@@ -252,8 +276,11 @@ describe ('es_to_cjs', () => {
                 to_check[key] = res[key];
             }
 
-            test.output.dependencies = test.output.dependencies.map(dep => {
-                return path.resolve(process.cwd(), dep + (!path.extname(dep)? '.js' : ''));
+            to_check.transpiled = to_check.transpiled.trim().replace(/\s+/g, ' ');
+
+            test.output.imports = test.output.imports.map(dep => {
+                dep.source = path.resolve(process.cwd(), dep.source + (!path.extname(dep.source)? '.js' : ''));
+                return dep;
             });
 
            
@@ -272,12 +299,16 @@ describe ('es_to_cjs', () => {
 let external_tests = [{
     input: 'import jQuery from "jquery";',
     output: {
-        imports: []
-    },
-    transpiled: {
-        esm: 'var jQuery = __nollup__external__jquery__default__;',
-        cjs: 'var _ejQuery = require("jquery");var jQuery = _ejQuery && _ejQuery.hasOwnProperty("default")? _ejQuery.default : _ejQuery;',
-        iife: 'var _ejQuery = __nollup__global__.jQuery;var jQuery = _ejQuery && _ejQuery.hasOwnProperty("default")? _ejQuery.default : _ejQuery;',
+        transpiled: '',
+        imports: [],
+        externalImports: [{
+            source: 'jquery',
+            importee: '__nollup__external__jquery__',
+            specifiers: [{
+                local: 'jQuery',
+                imported: 'default'
+            }]
+        }]
     },
     config: {
         external: ['jquery']
@@ -285,12 +316,16 @@ let external_tests = [{
 }, {
     input: 'import $ from "jquery";',
     output: {
+        transpiled: '',
         imports: [],
-    },
-    transpiled: {
-        esm: 'var $ = __nollup__external__jquery__default__;',
-        cjs: 'var _e$ = require("jquery");var $ = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;',
-        iife: 'var _e$ = __nollup__global__.$;var $ = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;',
+        externalImports: [{
+            source: 'jquery',
+            importee: '__nollup__external__jquery__',
+            specifiers: [{
+                local: '$',
+                imported: 'default'
+            }]
+        }]
     },
     config: {
         external: ['jquery']
@@ -298,12 +333,16 @@ let external_tests = [{
 }, {
     input: 'import jquery from "jquery";',
     output: {
+        transpiled: '',
         imports: [],
-    },
-    transpiled: {
-        esm: 'var jquery = __nollup__external__jquery__default__;',
-        cjs: 'var _e$ = require("jquery");var jquery = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;',
-        iife: 'var _e$ = __nollup__global__.$;var jquery = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;',
+        externalImports: [{
+            source: 'jquery',
+            importee: '__nollup__external__jquery__',
+            specifiers: [{
+                local: 'jquery',
+                imported: 'default'
+            }]
+        }]
     },
     config: {
         external: ['jquery'],
@@ -316,12 +355,16 @@ let external_tests = [{
 }, {
     input: 'import { max } from "Math";',
     output: {
+        transpiled: '',
         imports: [],
-    },
-    transpiled: {
-        esm: 'var max = __nollup__external__Math__max__;',
-        iife: 'var _eMath = __nollup__global__.Math;var max = _eMath.max;',
-        cjs: 'var _eMath = require("Math");var max = _eMath.max;'
+        externalImports: [{
+            source: 'Math',
+            importee: '__nollup__external__Math__',
+            specifiers: [{
+                local: 'max',
+                imported: 'max'
+            }]
+        }]
     },
     config: {
         external: ['Math']
@@ -329,12 +372,19 @@ let external_tests = [{
 },{
     input: 'import { max, min } from "Math";',
     output: {
+        transpiled: '',
         imports: [],
-    },
-    transpiled: {
-        esm: 'var max = __nollup__external__Math__max__;var min = __nollup__external__Math__min__;',
-        iife: 'var _eMath = __nollup__global__.Math;var max = _eMath.max;var min = _eMath.min;',
-        cjs: 'var _eMath = require("Math");var max = _eMath.max;var min = _eMath.min;'
+        externalImports: [{
+            source: 'Math',
+            importee: '__nollup__external__Math__',
+            specifiers: [{
+                local: 'max',
+                imported: 'max'
+            }, {
+                local: 'min',
+                imported: 'min'
+            }]
+        }]
     },
     config: {
         external: ['Math']
@@ -342,12 +392,19 @@ let external_tests = [{
 }, {
     input: 'import $, { ajax } from "jquery";',
     output: {
+        transpiled: '',
         imports: [],
-    },
-    transpiled: {
-        esm: 'var $ = __nollup__external__jquery__default__;var ajax = __nollup__external__jquery__ajax__;',
-        iife: 'var _e$ = __nollup__global__.$;var $ = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;var ajax = _e$.ajax;',
-        cjs: 'var _e$ = require("jquery");var $ = _e$ && _e$.hasOwnProperty("default")? _e$.default : _e$;var ajax = _e$.ajax;'
+        externalImports: [{
+            source: 'jquery',
+            importee: '__nollup__external__jquery__',
+            specifiers: [{
+                local: '$',
+                imported: 'default'
+            }, {
+                local: 'ajax',
+                imported: 'ajax'
+            }]
+        }]
     },
     config: {
         external: ['jquery']
@@ -355,12 +412,16 @@ let external_tests = [{
 }, {
     input: 'import { ajax as net } from "jquery";',
     output: {
+        transpiled: '',
         imports: [],
-    },
-    transpiled: {
-        esm: 'var net = __nollup__external__jquery__ajax__;',
-        iife: 'var _e$ = __nollup__global__.$;var net = _e$.ajax;',
-        cjs: 'var _e$ = require("jquery");var net = _e$.ajax;'
+        externalImports: [{
+            source: 'jquery',
+            importee: '__nollup__external__jquery__',
+            specifiers: [{
+                local: 'net',
+                imported: 'ajax'
+            }]
+        }]
     },
     config: {
         external: ['jquery'],
@@ -373,13 +434,17 @@ let external_tests = [{
 }, {
     input: 'export { ajax } from "jquery";',
     output: {
+        transpiled: `__e__('ajax', ex_ajax);`,
         imports: [],
         exports: ['ajax'],
-    },
-    transpiled: {
-        esm: `var ex_ajax = __nollup__external__jquery__ajax__;__e__('ajax', ex_ajax);`,
-        iife: `var _ejquery = __nollup__global__.jquery;var ex_ajax = _ejquery.ajax;__e__('ajax', ex_ajax);`,
-        cjs: `var _ejquery = require("jquery");var ex_ajax = _ejquery.ajax;__e__('ajax', ex_ajax);`
+        externalImports: [{
+            source: 'jquery',
+            importee: '__nollup__external__jquery__',
+            specifiers: [{
+                local: 'ex_ajax',
+                imported: 'ajax'
+            }]
+        }]
     },
     config: {
         external: ['jquery']
@@ -387,13 +452,17 @@ let external_tests = [{
 }, {
     input: 'export { ajax } from "jquery";',
     output: {
+        transpiled: `__e__('ajax', ex_ajax);`,
         imports: [],
         exports: ['ajax'],
-    },
-    transpiled: {
-        esm: `var ex_ajax = __nollup__external__jquery__ajax__;__e__('ajax', ex_ajax);`,
-        iife: `var _e$ = __nollup__global__.$;var ex_ajax = _e$.ajax;__e__('ajax', ex_ajax);`,
-        cjs: `var _e$ = require("jquery");var ex_ajax = _e$.ajax;__e__('ajax', ex_ajax);`
+        externalImports: [{
+            source: 'jquery',
+            importee: '__nollup__external__jquery__',
+            specifiers: [{
+                local: 'ex_ajax',
+                imported: 'ajax'
+            }]
+        }]
     },
     config: {
         external: ['jquery'],
@@ -406,13 +475,17 @@ let external_tests = [{
 }, {
     input: 'export { ajax as net} from "jquery";',
     output: {
+        transpiled: `__e__('net', ex_net);`,
         imports: [],
         exports: ['net'],
-    },
-    transpiled: {
-        esm: `var ex_net = __nollup__external__jquery__ajax__;__e__('net', ex_net);`,
-        iife: `var _e$ = __nollup__global__.$;var ex_net = _e$.ajax;__e__('net', ex_net);`,
-        cjs: `var _e$ = require("jquery");var ex_net = _e$.ajax;__e__('net', ex_net);`
+        externalImports: [{
+            source: 'jquery',
+            importee: '__nollup__external__jquery__',
+            specifiers: [{
+                local: 'ex_net',
+                imported: 'ajax'
+            }]
+        }]
     },
     config: {
         external: ['jquery'],
@@ -425,16 +498,17 @@ let external_tests = [{
 }, {
     input: 'export * from "jquery";',
     output: {
-        imports: [{
-            imported: '*',
-            importee: '_ejquery'
-        }],
+        transpiled: `for(var __k__ in ex__nollup__external__jquery__){__k__ !== "default" && (__e__(__k__, ex__nollup__external__jquery__[__k__]))}`,
+        imports: [],
         exports: [],
-    },
-    transpiled: {
-        esm: `var _ejquery = __nollup__external__jquery__;for(var __k__ in ex_ejquery){__k__ !== "default" && (__e__(__k__, ex_ejquery[__k__]))}`,
-        iife: `var _ejquery = __nollup__global__.jquery;for(var __k__ in ex_ejquery){__k__ !== "default" && (__e__(__k__, ex_ejquery[__k__]))}`,
-        cjs: `var _ejquery = require("jquery");for(var __k__ in ex_ejquery){__k__ !== "default" && (__e__(__k__, ex_ejquery[__k__]))}`
+        externalImports: [{
+            source: 'jquery',
+            importee: '__nollup__external__jquery__',
+            specifiers: [{
+                local: 'ex__nollup__external__jquery__',
+                imported: '*'
+            }]
+        }]
     },
     config: {
         external: ['jquery']
@@ -442,16 +516,17 @@ let external_tests = [{
 }, {
     input: 'export * from "jquery";',
     output: {
-        imports: [{
-            imported: '*',
-            importee: '_e$'
-        }],
+        transpiled: `for(var __k__ in ex__nollup__external__jquery__){__k__ !== "default" && (__e__(__k__, ex__nollup__external__jquery__[__k__]))}`,
+        imports: [],
         exports: [],
-    },
-    transpiled: {
-        esm: `var _e$ = __nollup__external__jquery__;for(var __k__ in ex_e$){__k__ !== "default" && (__e__(__k__, ex_e$[__k__]))}`,
-        iife: `var _e$ = __nollup__global__.$;for(var __k__ in ex_e$){__k__ !== "default" && (__e__(__k__, ex_e$[__k__]))}`,
-        cjs: `var _e$ = require("jquery");for(var __k__ in ex_e$){__k__ !== "default" && (__e__(__k__, ex_e$[__k__]))}`
+        externalImports: [{
+            source: 'jquery',
+            importee: '__nollup__external__jquery__',
+            specifiers: [{
+                local: 'ex__nollup__external__jquery__',
+                imported: '*'
+            }]
+        }]
     },
     config: {
         external: ['jquery'],
@@ -464,12 +539,16 @@ let external_tests = [{
 }, {
     input: 'import { ajax } from "jquery";',
     output: {
+        transpiled: ``,
         imports: [],
-    },
-    transpiled: {
-        esm: `var ajax = __nollup__external__jquery__ajax__;`,
-        iife: `var _ejquery = __nollup__global__.jquery;var ajax = _ejquery.ajax;`,
-        cjs: `var _ejquery = require("jquery");var ajax = _ejquery.ajax;`
+        externalImports: [{
+            source: 'jquery',
+            importee: '__nollup__external__jquery__',
+            specifiers: [{
+                local: 'ajax',
+                imported: 'ajax'
+            }]
+        }]
     },
     config: {
         external: id => /jquery/.test(id)
@@ -477,85 +556,39 @@ let external_tests = [{
 }, {
     input: 'import { ajax } from "some/other/dep";',
     output: {
+        transpiled: ``,
         imports: [],
-    },
-    transpiled: {
-        esm: `var ajax = __nollup__external__some_other_dep__ajax__;`,
-        iife: `var _esome_other_dep = __nollup__global__.some_other_dep;var ajax = _esome_other_dep.ajax;`,
-        cjs: `var _esome_other_dep = require("some/other/dep");var ajax = _esome_other_dep.ajax;`
+        externalImports: [{
+            source: 'some/other/dep',
+            importee: '__nollup__external__some_other_dep__',
+            specifiers: [{
+                local: 'ajax',
+                imported: 'ajax'
+            }]
+        }]
     },
     config: {
         external: id => /some\/other\/dep/.test(id)
     }
 }]
 
+
+
 describe('es_to_cs_externals (ESM)', () => {
     external_tests.forEach(test => {
         it(test.input, async () => {
             let res = await es_to_cjs(test.input, {
                 ...test.config, 
+                plugins: [],
                 output: { ...test.config.output, format: 'esm' }
-            });
-            let to_check = {};
-
-            test.output.transpiled = test.transpiled.esm;
+            }, process.cwd() + '/__entry');
+            let to_check = {}; 
 
             for (let key in test.output) {
                 to_check[key] = res[key];
             }
 
-
-            try {
-                expect(to_check).to.deep.equal(test.output);
-            } catch (e) {
-                throw new Error(`
-                    Expected: ${JSON.stringify(test.output)}
-                    Actual: ${JSON.stringify(res)}
-                `)
-            }
-        });
-    })
-});
-
-describe('es_to_cs_externals (CJS)', () => {
-    external_tests.forEach(test => {
-        it(test.input, async () => {
-            let res = await es_to_cjs(test.input, {
-                ...test.config, 
-                output: { ...test.config.output, format: 'cjs' }
-            });
-            let to_check = {};
-            test.output.transpiled = test.transpiled.cjs;
-
-            for (let key in test.output) {
-                to_check[key] = res[key];
-            }
-
-            try {
-                expect(to_check).to.deep.equal(test.output);
-            } catch (e) {
-                throw new Error(`
-                    Expected: ${JSON.stringify(test.output)}
-                    Actual: ${JSON.stringify(res)}
-                `)
-            }
-        });
-    })
-});
-
-describe('es_to_cs_externals (IIFE)', () => {
-    external_tests.forEach(test => {
-        it(test.input, async () => {
-            let res = await es_to_cjs(test.input, {
-                ...test.config, 
-                output: { ...test.config.output, format: 'iife' }
-            });
-            let to_check = {};
-            test.output.transpiled = test.transpiled.iife;
-
-            for (let key in test.output) {
-                to_check[key] = res[key];
-            }
+            to_check.transpiled = to_check.transpiled.trim().replace(/\s+/g, ' ');
 
             try {
                 expect(to_check).to.deep.equal(test.output);
@@ -576,5 +609,85 @@ describe('misc transform issues', () => {
             let a = [1, 2, , 4];
         `, { plugins: [] }, process.cwd() + '/__entry');
         expect(res.transpiled.indexOf('[1, 2, , 4]') > -1).to.be.true;
+    });
+
+    it ('should properly blank two imports without semi-colons', async () => {
+        let res = await es_to_cjs([
+            'import Hello from "hello"',
+            'import World from "world"',
+            'console.log(Hello, World)'
+        ].join('\n'), { plugins: [] }, process.cwd() + '/_entry');
+        expect(res.transpiled).to.equal([
+            '                         ',
+            '                         ',
+            'console.log(Hello, World)'
+        ].join('\n'));
+    });
+
+    it ('should properly blank two imports on the same line', async () => {
+        let res = await es_to_cjs([
+            'import Hello from "hello";import World from "world"',
+            'console.log(Hello, World)'
+        ].join('\n'), { plugins: [] }, process.cwd() + '/_entry');
+        expect(res.transpiled).to.equal([
+            '                                                   ',
+            'console.log(Hello, World)'
+        ].join('\n'));
+    });
+
+
+    it ('should properly blank imports that span multiple lines', async () => {
+        let res = await es_to_cjs([
+            'import {',
+            '   Hello',
+            '} from "hello";',
+            'import {',
+            '   World',
+            '} from "world";',
+            'console.log(Hello, World)'
+        ].join('\n'), { plugins: [] }, process.cwd() + '/_entry');
+        expect(res.transpiled).to.equal([
+            '        ',
+            '        ',
+            '               ',
+            '        ',
+            '        ',
+            '               ',
+            'console.log(Hello, World)'
+        ].join('\n'));
+    });
+
+    it ('should properly blank export {} blocks', async () => {
+        let res = await es_to_cjs([
+            'var Hello, World, Foo, Bar;',
+            'export { Hello, World }',
+            'export { Foo, Bar };',
+            'console.log(Hello, World)'
+        ].join('\n'), { plugins: [] }, process.cwd() + '/_entry');
+        expect(res.transpiled).to.equal([
+            'var Hello, World, Foo, Bar;',
+            '                       __e__(\'Hello\', Hello);__e__(\'World\', World);',
+            '                    __e__(\'Foo\', Foo);__e__(\'Bar\', Bar);',
+            'console.log(Hello, World)'
+        ].join('\n'));
+    });
+
+    it ('should properly blank export {} blocks over multiple lines with padding', async () => {
+        let res = await es_to_cjs([
+            'var Hello, World, Foo, Bar;',
+            'export {                   ',
+            '    Hello,                 ',
+            '    World                  ',
+            '}                          ',
+            'console.log(Hello, World)'
+        ].join('\n'), { plugins: [] }, process.cwd() + '/_entry');
+        expect(res.transpiled).to.equal([
+            'var Hello, World, Foo, Bar;',
+            '                           ',
+            '                           ',
+            '                           ',
+            ' __e__(\'Hello\', Hello);__e__(\'World\', World);                          ',
+            'console.log(Hello, World)'
+        ].join('\n'));
     });
 });
