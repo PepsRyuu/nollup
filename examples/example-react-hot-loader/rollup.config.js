@@ -20,7 +20,7 @@ let config = {
         }),
         hotcss({
             hot: process.env.NODE_ENV === 'development',
-            filename: 'styles.css'
+            file: 'styles.css'
         }),
         babel(),
         node_resolve(),

@@ -1,7 +1,7 @@
 import jquery from 'jquery';
 import _ from 'underscore';
 import { max } from 'maths';
-import document, { querySelector } from 'browser-document';
+import document, { querySelector } from 'document';
 import { pathname } from 'location';
 
 jquery('body').text('Hello World');

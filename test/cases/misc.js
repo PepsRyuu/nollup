@@ -108,4 +108,13 @@ describe ('Misc', () => {
         expect(output[0].code.indexOf('world') > -1).to.be.true;
         expect(Object.keys(myplugin).length).to.equal(1);
     });
+
+
+    it ('should not break imports that are on the same line');
+
+    it ('should not misalign sourcemaps when using multi-line imports');
+
+    it ('should not break exports that are on the same line');
+
+    it ('should not misalign sourcemaps when using multi-line export from');
 });

@@ -5,8 +5,9 @@ export default {
         format: 'iife',
         globals: {
             'jquery': '$',
-            'maths': 'Math'
+            'maths': 'Math',
+            'underscore': '_'
         }
     },
-    external: ['jquery', 'maths', 'underscore', 'browser-document', 'location']
+    external: ['jquery', 'maths', 'underscore', 'document', 'location']
 }
