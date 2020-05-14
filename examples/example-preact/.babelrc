@@ -1,3 +1,8 @@
 {
-    "presets": ["babel-preset-preact"]
+    "presets": ["babel-preset-preact"],
+    "env": {
+        "development": {
+            "plugins": ["react-refresh/babel"]
+        }
+    }
 }
