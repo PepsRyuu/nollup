@@ -1,42 +1,35 @@
 # Nollup
 
 [![Build Status](https://travis-ci.com/PepsRyuu/nollup.svg?branch=master)](https://travis-ci.com/PepsRyuu/nollup)
-[![NPM Version](https://img.shields.io/npm/v/nollup.svg)](https://img.shields.io/npm/v/nollup.svg)
-[![License](https://badgen.net/github/license/pepsryuu/nollup)](https://badgen.net/github/license/pepsryuu/nollup)
+[![NPM Version](https://img.shields.io/npm/v/nollup.svg)](https://www.npmjs.com/package/nollup)
+[![License](https://badgen.net/github/license/pepsryuu/nollup)](./LICENSE)
+[![Downloads](https://img.shields.io/npm/dm/nollup)](https://www.npmjs.com/package/nollup)
+[![Contributors](https://img.shields.io/github/contributors/PepsRyuu/nollup)](https://github.com/PepsRyuu/nollup/graphs/contributors)
+[![Twitter](https://img.shields.io/twitter/follow/PepsRyuu?style=social)](https://twitter.com/PepsRyuu)
 
-[Rollup](https://rollupjs.org/guide/en) compatible bundler, designed to be used in development, while Rollup is used to generate a production build.
+***No(t) Rollup → Nollup***
 
-## Motivation
+[Rollup](https://rollupjs.org/guide/en) compatible bundler, ***designed to be used in development***. Using the same Rollup plugins and configuration, it provides a dev server that performs quick builds and rebuilds, and other dev features such as **Hot Module Replacement**. Use Rollup to generate production bundles.
 
-* Rollup is excellent, but during development it can be a bit slow as it's performing unnecessary build steps (tree-shaking).
-* When making changes to files, Rollup has to recompile the entire bundle due to the tree-shaking optimisations. This can lead to slow rebuild times.
-* Wanted something similar to Webpack development flow, but with the simplicity of the Rollup configuration and plugin ecosystem.
-* To give developers a foundation for implementing Hot Module Replacement when using Rollup.
-* While Rollup does have watching functionality, it writes to disk and isn't intended to be used in-memory.
+## Why Nollup?
 
-## What does this do?
+Rollup is an incredible tool, producing very efficient and minimal bundles. Many developers use it already to build libraries, but I wanted to use it to **build apps**. However, **Rollup focuses mostly on the production** side of things, with almost no developer experience other than basic file watching. Using Rollup in development can be incredibly slow with rebuilds taking seconds because of all of the optimisations Rollup does for you (ie. tree-shaking, scope-hoisting).
 
-* Nollup doesn't attempt to do any optimisations, it simple concatenates all of the modules together with simple function wrappers.
-* ES6 import and export statements are detected and replaced with an internal module loader.
-* Each module is wrapped in an eval call with source maps. 
-* Compatible with Rollup plugins, so you can use one single Rollup configuration for both development and production. Make sure the plugin uses ```emitAsset``` instead of writing to disk.
-* Detects changed files, and performs a rebuild and has support for Hot Module Replacement.
+Nollup aims to fill in that gap. Using the same Rollup plugins and configuration, **you can use Nollup to run a development server that generates a development bundle**. It does no optimisations, making it really quick at rebuilding, also allowing for Hot Module Replacement using existing ```module.hot``` conventions for **compatibility with existing libraries**.
 
-## Examples
+Read further about why I prefer using Rollup to build apps [here](https://medium.com/@PepsRyuu/why-i-use-rollup-and-not-webpack-e3ab163f4fd3).
 
-See ```examples``` directory on how to use.
+## Getting Started
 
-## CLI
-
-Nollup provides a dev server which can be used as a CLI command.
+Nollup can be used with the CLI in ```package.json``` scripts:
 
 ```
-    "scripts": {
-        "start": "nollup -c"
-    }
+"scripts": {
+    "start": "nollup -c"
+}
 ```
 
-See "Nollup Options" for list of available flags.
+Examples can be found in the [examples](./examples) directory.
 
 ## .nolluprc
 
@@ -99,9 +92,9 @@ When a file is saved, only the changed module is replaced, the page is not refre
 
 You can also use a combination of HMR with Hot Reload. For example you can use the CSS plugin, but use a fallback accept callback that will refresh the page instead as described above.
 
-### Build Configuration for HMR
+### Additional Build Configuration for HMR
 
-In your build configuration, make sure to tell your bundler to remove all references to ```module```, otherwise your application will break when compiled with Rollup. This can be done using a plugin such as ```rollup-plugin-terser```.
+In your build configuration, if your code includes ```module```, it may be necessary to explicitly inform Rollup to remove all references to ```module```, otherwise your application may break when compiled with Rollup. This can be done using a plugin such as ```rollup-plugin-terser```.
 
 ```
 terser({
@@ -122,14 +115,12 @@ See [API](API.md) for information on how to use the JavaScript API.
 * [rollup-plugin-hot-css](https://github.com/PepsRyuu/rollup-plugin-hot-css) - Load CSS files with HMR support.
 * [rollup-plugin-react-refresh](https://github.com/PepsRyuu/rollup-plugin-react-refresh) - Nollup plugin for HMR in React apps.
 * [rollup-plugin-commonjs-alternate](https://github.com/PepsRyuu/rollup-plugin-commonjs-alternate) - CommonJS loader that supports React Hot Loader.
+* [@prefresh/nollup](https://github.com/JoviDeCroock/prefresh) - HMR for Preact apps.
 
 ## Caveats
 
-* Not all Rollup configuration options are supported yet.
-* Not all Rollup plugin hooks are implemented yet.
-* Sourcemaps aren't perfect yet, depends on plugin usage.
-* Does not attempt to parse "require" calls anywhere.
+* Not all Rollup configuration options are supported yet, but most relevant ones are.
+* Not all Rollup plugin hooks are implemented yet, but most relevant ones are.
+* Sourcemaps aren't perfect yet, depends on plugin usage, please write an issue.
+* Does not attempt to parse "require" calls anywhere, that's for CommonJS plugins.
 * No support for live-bindings, but circular dependencies are supported.
-
-Contributions are welcome.
-

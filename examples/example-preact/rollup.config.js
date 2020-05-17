@@ -29,13 +29,7 @@ if (process.env.NODE_ENV === 'production') {
         static_files({
             include: ['./public']
         }),
-        terser({
-            compress: {
-                global_defs: {
-                    module: false
-                }
-            }
-        })
+        terser()
     ]);
 }
 
