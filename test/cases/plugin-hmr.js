@@ -271,6 +271,50 @@ describe('plugin-hmr', () => {
             expect(env.stdout[0]).to.equal('mod1 dispose');
             expect(env.stdout[1]).to.equal('mod0 accept');
         });
+
+        it ('should pass disposed argument into accept containing disposed module for that branch', () => {
+            let envTemplate = [{
+                dependencies: [1, 2],
+                code: `
+                    function () { 
+                        module.hot.accept((e) => { console.log('mod0 ' + JSON.stringify(e.disposed)) }); 
+                        module.hot.dispose(() => { console.log('mod0 dispose') });
+                    }
+                `
+            }, {
+                dependencies: [3],
+                code: `function () { 
+                    module.hot.accept((e) => { console.log('mod1 ' + JSON.stringify(e.disposed)) }); 
+                    module.hot.dispose(() => { console.log('mod1 dispose') })
+                }`
+           }, {
+                dependencies: [3],
+                code: `function () { 
+                    module.hot.dispose(() => { console.log('mod2 dispose') })
+                }`
+            }, {
+                dependencies: [],
+                code: `function () { 
+                    module.hot.dispose(() => { console.log('mod3 dispose') })
+                }`
+            }]
+
+            let env = createEnv(envTemplate);
+            env.ws.send({
+                changes: [{
+                    id: 3,
+                    code: 'function () {}'
+                }]
+            });
+            
+            expect(env.stdout.length).to.equal(6);
+            expect(env.stdout[0]).to.equal('mod3 dispose');
+            expect(env.stdout[1]).to.equal('mod1 dispose');
+            expect(env.stdout[2]).to.equal('mod2 dispose');
+            expect(env.stdout[3]).to.equal('mod0 dispose');
+            expect(env.stdout[4]).to.equal('mod1 [3,1]');
+            expect(env.stdout[5]).to.equal('mod0 [3,2,0]');
+        })
     });
 
     describe('module.hot.dispose()', () => {
