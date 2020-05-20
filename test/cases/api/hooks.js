@@ -603,7 +603,7 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
-            expect(output[0].code.indexOf('import "haha"') > -1).to.be.true;
+            expect(output[0].code.indexOf('import \'haha\';') > -1).to.be.true;
             expect(output[0].code.indexOf('module.exports.default = 123') === -1).to.be.true;
             fs.reset();
         });

@@ -40,7 +40,8 @@ describe ('Options: output.format', () => {
                 format: 'esm'
             });
 
-            expect(output[0].code.indexOf(`import { ajax as __nollup__external__jquery__ajax__, query as __nollup__external__jquery__query__ } from 'jquery';`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`import { ajax as __nollup__external__jquery__ajax__ } from 'jquery';`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`import { query as __nollup__external__jquery__query__ } from 'jquery';`) > -1).to.be.true;
             expect(output[0].code.indexOf(`import __nollup__external__lodash__default__ from 'lodash';`) > -1).to.be.true;
             expect(output[0].code.indexOf(`var ajax = __nollup__external__jquery__ajax__;`) > -1).to.be.true;
             expect(output[0].code.indexOf(`var query = __nollup__external__jquery__query__;`) > -1).to.be.true;
@@ -195,6 +196,22 @@ describe ('Options: output.format', () => {
             expect(main.code.indexOf('export default ') > -1).to.be.true;
             fs.reset();
         });
+
+        it ('should import external bare imports', async () => {
+            fs.stub('./src/main.js', () => 'import "jquery";');
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery']
+            });
+
+            let { output } = await bundle.generate({
+                format: 'esm'
+            });
+
+            expect(output[0].code.indexOf(`import 'jquery';`) > -1).to.be.true;
+            fs.reset();
+        });
     });
 
     describe('cjs', () => {
@@ -211,9 +228,69 @@ describe ('Options: output.format', () => {
             });
 
             expect(output[0].code.match(/import (.*?) from 'jquery'/)).to.be.null;
-            expect(output[0].code.indexOf('var _e$ = require("jquery")') > -1).to.be.true;
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__default__ = require('jquery').hasOwnProperty('default')? require('jquery').default : require('jquery');`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var $ = __nollup__external__jquery__default__;`) > -1).to.be.true;
             fs.reset();
         });
+
+        it ('should use externals from import for multiple files and duplicate imports', async () => {
+            fs.stub('./src/other.js', () => `import { query } from "jquery"; import _ from 'lodash';`)
+            fs.stub('./src/main.js', () => 'import "./other"; import { ajax } from "jquery";');
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery', 'lodash']
+            });
+
+            let { output } = await bundle.generate({
+                format: 'cjs'
+            });
+
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__ajax__ = require('jquery').ajax;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__query__ = require('jquery').query;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var __nollup__external__lodash__default__ = require('lodash').hasOwnProperty('default')? require('lodash').default : require('lodash');`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var ajax = __nollup__external__jquery__ajax__;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var query = __nollup__external__jquery__query__;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var _ = __nollup__external__lodash__default__;`) > -1).to.be.true;
+            fs.reset();
+        });
+
+        it ('should use renamed specifiers externals from import', async () => {
+            fs.stub('./src/main.js', () => 'import { ajax as myajax } from "jquery";');
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery']
+            });
+
+            let { output } = await bundle.generate({
+                format: 'cjs'
+            });
+
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__ajax__ = require('jquery').ajax;`) > -1).to.be.true;
+            expect(output[0].code.indexOf('var myajax = __nollup__external__jquery__ajax__;') > -1).to.be.true;
+            fs.reset();
+        });
+
+        it ('should use default and namespace from import', async () => {
+            fs.stub('./src/main.js', () => 'import $, * as rest from "jquery";');
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery']
+            });
+
+            let { output } = await bundle.generate({
+                format: 'cjs'
+            });
+
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__default__ = require('jquery').hasOwnProperty('default')? require('jquery').default : require('jquery');`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__ = require('jquery');`) > -1).to.be.true;
+            expect(output[0].code.indexOf('var $ = __nollup__external__jquery__default__;') > -1).to.be.true;
+            expect(output[0].code.indexOf('var rest = __nollup__external__jquery__;') > -1).to.be.true;
+            fs.reset();
+        });
+
 
         it ('should set default to module.exports if only export', async () => {
             fs.stub('./src/main.js', () => 'export default 123;');
@@ -317,6 +394,23 @@ describe ('Options: output.format', () => {
             expect(exports).to.equal(123);
             fs.reset();
         });
+
+        it ('should require external bare imports', async () => {
+            fs.stub('./src/main.js', () => 'import "jquery";');
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery']
+            });
+
+            let { output } = await bundle.generate({
+                format: 'cjs'
+            });
+
+            expect(output[0].code.indexOf(`require('jquery');`) > -1).to.be.true;
+            expect(output[0].code.indexOf(` = require('jquery');`) === -1).to.be.true;
+            fs.reset();
+        });
     });
 
     describe('iife', () => {
@@ -333,9 +427,91 @@ describe ('Options: output.format', () => {
             });
 
             expect(output[0].code.match(/import (.*?) from 'jquery'/)).to.be.null;
-            expect(output[0].code.indexOf('var _e$ = __nollup__global__.$') > -1).to.be.true;
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__default__ = self.jquery && self.jquery.hasOwnProperty('default')? self.jquery.default : self.jquery;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var $ = __nollup__external__jquery__default__;`) > -1).to.be.true;
             fs.reset();
         });
+
+        it ('should use externals from window using global name', async () => {
+            fs.stub('./src/main.js', () => 'import $ from "jquery";');
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery']
+            });
+
+            let { output } = await bundle.generate({
+                format: 'iife',
+                globals: {
+                    'jquery': '$'
+                }
+            });
+
+            expect(output[0].code.match(/import (.*?) from 'jquery'/)).to.be.null;
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__default__ = self.$ && self.$.hasOwnProperty('default')? self.$.default : self.$;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var $ = __nollup__external__jquery__default__;`) > -1).to.be.true;
+
+            fs.reset();
+        });
+
+        it ('should use externals from import for multiple files and duplicate imports', async () => {
+            fs.stub('./src/other.js', () => `import { query } from "jquery"; import _ from 'lodash';`)
+            fs.stub('./src/main.js', () => 'import "./other"; import { ajax } from "jquery";');
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery', 'lodash']
+            });
+
+            let { output } = await bundle.generate({
+                format: 'iife'
+            });
+
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__ajax__ = self.jquery.ajax;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__query__ = self.jquery.query;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var __nollup__external__lodash__default__ = self.lodash && self.lodash.hasOwnProperty('default')? self.lodash.default : self.lodash;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var ajax = __nollup__external__jquery__ajax__;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var query = __nollup__external__jquery__query__;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var _ = __nollup__external__lodash__default__;`) > -1).to.be.true;
+            fs.reset();
+        });
+
+        it ('should use renamed specifiers externals from import', async () => {
+            fs.stub('./src/main.js', () => 'import { ajax as myajax } from "jquery";');
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery']
+            });
+
+            let { output } = await bundle.generate({
+                format: 'iife'
+            });
+
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__ajax__ = self.jquery.ajax;`) > -1).to.be.true;
+            expect(output[0].code.indexOf('var myajax = __nollup__external__jquery__ajax__;') > -1).to.be.true;
+            fs.reset();
+        });
+
+        it ('should use default and namespace from import', async () => {
+            fs.stub('./src/main.js', () => 'import $, * as rest from "jquery";');
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery']
+            });
+
+            let { output } = await bundle.generate({
+                format: 'iife'
+            });
+
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__default__ = self.jquery && self.jquery.hasOwnProperty('default')? self.jquery.default : self.jquery;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__ = self.jquery;`) > -1).to.be.true;
+            expect(output[0].code.indexOf('var $ = __nollup__external__jquery__default__;') > -1).to.be.true;
+            expect(output[0].code.indexOf('var rest = __nollup__external__jquery__;') > -1).to.be.true;
+            fs.reset();
+        });
+
 
         it ('should not have any export statements', async () => {
             fs.stub('./src/main.js', () => 'export default 123;');
@@ -371,5 +547,24 @@ describe ('Options: output.format', () => {
             expect(main.code.indexOf(' Promise.resolve(require(') === -1).to.be.true;
             fs.reset();
         });
+
+        it ('should do nothing with external bare imports', async () => {
+            fs.stub('./src/main.js', () => 'import "jquery";');
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery']
+            });
+
+            let { output } = await bundle.generate({
+                format: 'iife'
+            });
+
+            expect(output[0].code.indexOf(`require('jquery');`) === -1).to.be.true;
+            expect(output[0].code.indexOf(` = require('jquery');`) === -1).to.be.true;
+            expect(output[0].code.indexOf(`import 'jquery';`) === -1).to.be.true;
+            fs.reset();
+        });
+
     });
 });
