@@ -100,18 +100,18 @@ function createResponse (callback) {
     }
 }
 
-function createNext () {
-    return () => {};
+function createNext (next) {
+    return next || (() => {});
 }
 
-function mwFetch (mw, url) {
-    return new Promise(resolve => {
+function mwFetch (mw, url, next) {
+    return new Promise((resolve, reject) => {
         mw(
             createRequest(url),
             createResponse(res => {
                 resolve(res);
             }),
-            createNext()
+            createNext(reject)
         )
     })
 }
@@ -1037,4 +1037,89 @@ describe('Dev Middleware', () => {
             });
         });
     });
+
+    describe('Virtual Write', () => {
+        it ('should append dir to file outputs when using virtualWrite and substract the start of the url with vw value', function (done) {
+            this.timeout(5000);
+
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            let config = {
+                input: './src/main.js',
+                output: {
+                    dir: 'dist/release/app',
+                    entryFileNames: 'esm/main.[hash].js',
+                    format: 'esm'
+                }
+            };
+
+            let mw = middleware({}, config, {
+                virtualWrite: 'dist/release'
+            });
+
+            mwFetch(mw, '/app/esm/main.[hash].js').then(res => {
+                expect(res.body.indexOf('123') > -1).to.be.true;
+                done();
+            });
+        });
+
+        it ('should not have any problems with relative paths in the dir or entryFileNames configs', function (done) {
+            this.timeout(5000);
+
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            let config = {
+                input: './src/main.js',
+                output: {
+                    dir: './dist/release/app/',
+                    entryFileNames: '/esm/main.[hash].js',
+                    format: 'esm'
+                }
+            };
+
+            let mw = middleware({}, config, {
+                virtualWrite: 'dist/release'
+            });
+
+            mwFetch(mw, '/app/esm/main.[hash].js').then(res => {
+                expect(res.body.indexOf('123') > -1).to.be.true;
+                done();
+            });
+        })
+
+        it ('should not make files which don\'t start with the virtualWrite value not work', function (done) {
+            this.timeout(5000);
+
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            let config = {
+                input: './src/main.js',
+                output: {
+                    dir: 'dist',
+                    entryFileNames: 'app2/build/main.[hash].js',
+                    format: 'esm'
+                }
+            };
+
+            let mw = middleware({}, config, {
+                virtualWrite: 'dist/app1/build'
+            });
+
+            mwFetch(mw, '/dist/app2/build/main.[hash].js').then(res => {
+                throw new Error('Should not be here');
+            }).catch(() => {
+                mwFetch(mw, 'app2/build/main.[hash].js').then(res => {
+                    throw new Error('should not be here either');
+                }).catch(() => {
+                    mwFetch(mw, 'app2/main.[hash].js').then(res => {
+                        throw new Error('nor here')
+                    }).catch(() => {
+                        done();
+                    });
+                });
+            });
+        });
+    });
+
+    
 });

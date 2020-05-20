@@ -240,6 +240,7 @@ app.use(nollupDevServer(app, config, {
 * ***Boolean* verbose -** If true, will print status of HMR to developer console.
 * ***String* hmrHost -** Host to connect to for HMR. Default is ```window.location.host```.
 * ***String* contentBase -** Path to public content. Used for resolving ```file``` path correctly.
+* ***String* virtualWrite -** Will prepend ```output.dir``` to URLs of all generated files, but remove the provided path from the start of the URL.
 
 ## Hot Module Replacement
 

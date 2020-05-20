@@ -65,6 +65,7 @@ See "Nollup Options" for list of available options.
 * ***String* hmrHost | --hmr-host [host]** - Host to connect to for HMR. Default is ```window.location.host```.
 * ***Function* before** - Receives Express app as argument. Allows for middleware before internally used middleware.
 * ***Function* after** - Receives Express app as argument. Allows for middleware after internally used middleware.
+* ***String* virtualWrite | --virtual-write [path]** - Will prepend ```output.dir``` to URLs of all generated files, but remove the provided path from the start of the URL.
 
 ## Adding Hot Support to App
 
