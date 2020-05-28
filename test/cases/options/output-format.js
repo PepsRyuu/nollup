@@ -9,7 +9,7 @@ function requireString (code) {
 
 
 describe ('Options: output.format', () => {
-    describe('esm', () => {
+    describe('es', () => {
         it ('should use externals from import', async () => {
             fs.stub('./src/main.js', () => 'import $ from "jquery";');
         
@@ -19,7 +19,7 @@ describe ('Options: output.format', () => {
             });
 
             let { output } = await bundle.generate({
-                format: 'esm'
+                format: 'es'
             });
 
             expect(output[0].code.indexOf(`import __nollup__external__jquery__default__ from 'jquery';`) > -1).to.be.true;
@@ -37,7 +37,7 @@ describe ('Options: output.format', () => {
             });
 
             let { output } = await bundle.generate({
-                format: 'esm'
+                format: 'es'
             });
 
             expect(output[0].code.indexOf(`import { ajax as __nollup__external__jquery__ajax__ } from 'jquery';`) > -1).to.be.true;
@@ -58,7 +58,7 @@ describe ('Options: output.format', () => {
             });
 
             let { output } = await bundle.generate({
-                format: 'esm'
+                format: 'es'
             });
 
             expect(output[0].code.indexOf(`import __nollup__external__some_nested_dep__default__ from 'some/nested/dep';`) > -1).to.be.true;
@@ -76,7 +76,7 @@ describe ('Options: output.format', () => {
             });
 
             let { output } = await bundle.generate({
-                format: 'esm'
+                format: 'es'
             });
 
             expect(output[0].code.indexOf(`import { ajax as __nollup__external__jquery__ajax__ } from 'jquery';`) > -1).to.be.true;
@@ -93,7 +93,7 @@ describe ('Options: output.format', () => {
             });
 
             let { output } = await bundle.generate({
-                format: 'esm'
+                format: 'es'
             });
 
             expect(output[0].code.indexOf(`import { ajax as __nollup__external__jquery__ajax__ } from 'jquery';`) > -1).to.be.true;
@@ -110,7 +110,7 @@ describe ('Options: output.format', () => {
             });
 
             let { output } = await bundle.generate({
-                format: 'esm'
+                format: 'es'
             });
 
             expect(output[0].code.indexOf(`import __nollup__external__jquery__default__ from 'jquery';`) > -1).to.be.true;
@@ -128,7 +128,7 @@ describe ('Options: output.format', () => {
             });
 
             let { output } = await bundle.generate({
-                format: 'esm'
+                format: 'es'
             });
 
             expect(output[0].code.indexOf('export default ') > -1).to.be.true;
@@ -147,7 +147,7 @@ describe ('Options: output.format', () => {
             });
 
             let { output } = await bundle.generate({
-                format: 'esm'
+                format: 'es'
             });
 
             expect(output[0].code.indexOf('export default ') > -1).to.be.true;
@@ -171,7 +171,7 @@ describe ('Options: output.format', () => {
             });
 
             let { output } = await bundle.generate({
-                format: 'esm'
+                format: 'es'
             });
 
             let main = output.find(o => o.fileName.indexOf('main') > -1);
@@ -188,7 +188,7 @@ describe ('Options: output.format', () => {
             });
 
             let { output } = await bundle.generate({
-                format: 'esm'
+                format: 'es'
             });
 
             let main = output.find(o => o.fileName.indexOf('main') > -1);
@@ -206,10 +206,62 @@ describe ('Options: output.format', () => {
             });
 
             let { output } = await bundle.generate({
+                format: 'es'
+            });
+
+            expect(output[0].code.indexOf(`import 'jquery';`) > -1).to.be.true;
+            fs.reset();
+        });
+
+        it ('should normalize the format alias esm to es', async () => {
+            fs.stub('./src/main.js', () => 'import "jquery";');
+            let passed = false;
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery'],
+                plugins: [
+                    {
+                        generateBundle (outputOpts) {
+                            expect(outputOpts.format).to.equal('es');
+                            passed = true;
+                        }
+                    }
+                ]
+            });
+
+            let { output } = await bundle.generate({
                 format: 'esm'
             });
 
             expect(output[0].code.indexOf(`import 'jquery';`) > -1).to.be.true;
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should normalize the format alias module to es', async () => {
+            fs.stub('./src/main.js', () => 'import "jquery";');
+            let passed = false;
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery'],
+                plugins: [
+                    {
+                        generateBundle (outputOpts) {
+                            expect(outputOpts.format).to.equal('es');
+                            passed = true;
+                        }
+                    }
+                ]
+            });
+
+            let { output } = await bundle.generate({
+                format: 'module'
+            });
+
+            expect(output[0].code.indexOf(`import 'jquery';`) > -1).to.be.true;
+            expect(passed).to.be.true;
             fs.reset();
         });
     });
@@ -409,6 +461,32 @@ describe ('Options: output.format', () => {
 
             expect(output[0].code.indexOf(`require('jquery');`) > -1).to.be.true;
             expect(output[0].code.indexOf(` = require('jquery');`) === -1).to.be.true;
+            fs.reset();
+        });
+
+        it ('should normalize the format alias commonjs to cjs', async () => {
+            fs.stub('./src/main.js', () => 'import "jquery";');
+            let passed = false;
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                external: ['jquery'],
+                plugins: [
+                    {
+                        generateBundle (outputOpts) {
+                            expect(outputOpts.format).to.equal('cjs');
+                            passed = true;
+                        }
+                    }
+                ]
+            });
+
+            let { output } = await bundle.generate({
+                format: 'commonjs'
+            });
+
+            expect(output[0].code.indexOf(`require('jquery');`) > -1).to.be.true;
+            expect(passed).to.be.true;
             fs.reset();
         });
     });

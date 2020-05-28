@@ -31,19 +31,51 @@ function createGlobals (env_options = {}) {
     return { window, console, stdout, ws: _ws, WebSocket, __nollup__global__: window };
 }
 
+function sleep (delay) {
+    return new Promise(resolve => setTimeout(resolve, delay));
+}
+
 async function createNollupEnv () {
     let globals = createGlobals();
     let { window, console, WebSocket, __nollup__global__ } = globals;
+    let generated;
+
+    let applyPolyfill = function (code) {
+        return code.replace(/import\(/g, '_import(');
+    }
+
+    let _import = function (dep) {
+        let found = generated.output.find(o => o.fileName === dep.substring(2));
+        if (found) {
+            eval(applyPolyfill(found.code))
+
+            return {
+                then: (cb) => cb()
+            };
+        }
+    };
 
     let bundle = await nollup({
         input: './src/main.js',
         plugins: [plugin()]
     });
 
-    let { output } = await bundle.generate({ format: 'esm' });
-    eval(output[0].code);
-    fs.reset();
-    return { window, console, ws: globals.ws, stdout: globals.stdout, bundle, __nollup__global__ };
+    generated = await bundle.generate({ format: 'esm' });
+    eval(applyPolyfill(generated.output[0].code));
+    return { 
+        window, 
+        console, 
+        ws: globals.ws, 
+        stdout: globals.stdout, 
+        bundle: {
+            invalidate: (f) => bundle.invalidate(f),
+            generate: async () => {
+                generated = await bundle.generate({ format: 'esm' });
+                return generated;
+            } 
+        }, 
+        __nollup__global__ 
+    };
 }
 
 function createEnv (input, options = {}, env_options = {}) {
@@ -102,7 +134,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 1,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
             
@@ -126,7 +158,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 1,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
             
@@ -136,7 +168,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 2,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             })
 
@@ -163,7 +195,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 1,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
             
@@ -174,7 +206,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 2,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             })
 
@@ -215,7 +247,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 3,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
             
@@ -238,7 +270,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 0,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
             
@@ -263,7 +295,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 1,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
 
@@ -303,7 +335,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 3,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
             
@@ -342,7 +374,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 1,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
             
@@ -354,7 +386,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 2,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             })
 
@@ -388,7 +420,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 2,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
             
@@ -429,7 +461,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 3,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
             
@@ -470,7 +502,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 3,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
             
@@ -507,7 +539,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 3,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
             
@@ -558,9 +590,9 @@ describe('plugin-hmr', () => {
                 changes: [{
                     id: 1,
                     code: `
-                        function () {
-                            console.log('mod1 ' + typeof module.hot.data)
-                        }
+                        (function () {
+                            return () => console.log('mod1 ' + typeof module.hot.data)
+                        })()
                     `
                 }]
             });
@@ -589,7 +621,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 0,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
 
@@ -614,9 +646,9 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 0,
-                    code: `function () {
-                        console.log('entry ' + JSON.stringify(module.hot.data));
-                    }`
+                    code: `(function () {
+                        return () => console.log('entry ' + JSON.stringify(module.hot.data));
+                    })()`
                 }]
             });
 
@@ -628,8 +660,7 @@ describe('plugin-hmr', () => {
         it ('should pass empty object regardless of modifications to hold data into dispose method', () => {
             let envTemplate = [{
                 dependencies: [],
-                code: `
-                    function () { 
+                code: `function () { 
                         module.hot.accept(() => {});
                         module.hot.dispose(data => { 
                             console.log('dispose ' + JSON.stringify(data));
@@ -643,7 +674,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 0,
-                    code: envTemplate[0].code
+                    code: `(function () { return ${envTemplate[0].code} })()`
                 }]
             });
 
@@ -652,7 +683,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 0,
-                    code: envTemplate[0].code
+                    code: `(function () { return ${envTemplate[0].code} })()`
                 }]
             });
 
@@ -687,7 +718,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 1,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
 
@@ -743,7 +774,7 @@ describe('plugin-hmr', () => {
             env.ws.send({
                 changes: [{
                     id: 1,
-                    code: 'function () {}'
+                    code: '(function () {})()'
                 }]
             });
 
@@ -940,7 +971,9 @@ describe('plugin-hmr', () => {
                 export default 'hello';
             `);
 
-            let env = await createNollupEnv();
+            let env = await createNollupEnv();    
+            fs.reset();
+
             env.window.print();
 
             fs.stub('./src/message.js', () => `
@@ -989,6 +1022,8 @@ describe('plugin-hmr', () => {
             `);
 
             let env = await createNollupEnv();
+            fs.reset();
+
             env.window.print();
 
             fs.stub('./src/message.js', () => `
@@ -1038,6 +1073,8 @@ describe('plugin-hmr', () => {
             `);
 
             let env = await createNollupEnv();
+            fs.reset();
+
             env.window.print();
 
             fs.stub('./src/message.js', () => `
@@ -1080,6 +1117,8 @@ describe('plugin-hmr', () => {
             `);
 
             let env = await createNollupEnv();
+            fs.reset();
+
             env.window.print();
 
             {
@@ -1141,6 +1180,8 @@ describe('plugin-hmr', () => {
             `);
 
             let env = await createNollupEnv();
+            fs.reset();
+
             env.window.print();
 
             {
@@ -1205,5 +1246,187 @@ describe('plugin-hmr', () => {
 
             expect(env.ws.url).to.equal('wss://example.com/__hmr');
         });
+
+        it ('should allow new dynamic imports to work via HMR after first bundle', async () => {
+            fs.stub('./src/main.js', () => `import './entry'; module.hot.accept(() => require(module.id));`);
+            fs.stub('./src/entry.js', () => `import('./dep1');`);
+            fs.stub('./src/dep1.js', () => `window.print = () => console.log('dep1');`);
+            fs.stub('./src/dep2.js', () => `window.print = () => console.log('dep2');`);
+            
+            let env = await createNollupEnv();
+            await sleep(500);
+            env.window.print();
+
+            fs.stub('./src/entry.js', () => `import('./dep2');`);
+            env.bundle.invalidate('./src/entry.js');
+
+            let { changes } = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes });
+            await sleep(500);
+            env.window.print();
+
+            expect(env.stdout.length).to.equal(2);
+            expect(env.stdout[0]).to.equal('dep1');
+            expect(env.stdout[1]).to.equal('dep2');
+            fs.reset();
+
+        });
+
+        it ('should cache bust for dynamic imports if one of their modules have been invalidated', async () => {
+            let dep1value = 0;
+            let dep2value = 0;
+            let result;
+
+            let entryTemplate = dep => `import('./${dep}').then(res => console.log('entry:' + res.default));`
+
+            fs.stub('./src/main.js', () => `import './entry'; module.hot.accept(() => require(module.id));`);
+            fs.stub('./src/entry.js', () => entryTemplate('dep1'));
+            fs.stub('./src/dep1.js', () => `export default 'dep1:${dep1value}';`);
+            fs.stub('./src/dep2.js', () => `export default 'dep2:${dep2value}';`);
+            
+            let env = await createNollupEnv();
+            await sleep(500);
+
+            fs.stub('./src/entry.js', () => entryTemplate('dep2'));
+            env.bundle.invalidate('./src/entry.js');
+            result = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes: result.changes });
+            await sleep(500);
+
+
+            fs.stub('./src/dep2.js', () => `export default 'dep2:${++dep2value}';`);
+            env.bundle.invalidate('./src/dep2.js');
+            result = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes: result.changes });
+            await sleep(500);
+
+            expect(env.stdout.length).to.equal(3);
+            expect(env.stdout[0]).to.equal('entry:dep1:0');
+            expect(env.stdout[1]).to.equal('entry:dep2:0');
+            expect(env.stdout[2]).to.equal('entry:dep2:1');
+            fs.reset();
+        });
+
+        it ('should cache bust for dynamic imports if one of their modules have been invalidated (variant 2)', async function () {
+            this.timeout(5000);
+            let dep1value = 0;
+            let dep2value = 0;
+            let result;
+
+            let mainTemplate = dep => `import('./${dep}').then(res => console.log('entry:' + res.default)); module.hot.accept(() => require(module.id));`
+
+            fs.stub('./src/main.js', () => mainTemplate('dep1'));
+            fs.stub('./src/dep1.js', () => `export default 'dep1:${dep1value}';`);
+            fs.stub('./src/dep2.js', () => `export default 'dep2:${dep2value}';`);
+            
+            let env = await createNollupEnv();
+            await sleep(500);
+
+            fs.stub('./src/main.js', () => mainTemplate('dep2'));
+            env.bundle.invalidate('./src/main.js');
+            result = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes: result.changes });
+            await sleep(500);
+
+
+            fs.stub('./src/dep2.js', () => `export default 'dep2:${++dep2value}';`);
+            env.bundle.invalidate('./src/dep2.js');
+            result = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes: result.changes });
+            await sleep(500);
+
+            fs.stub('./src/dep1.js', () => `export default 'dep1:${++dep1value}';`);
+            fs.stub('./src/main.js', () => mainTemplate('dep1'));
+            env.bundle.invalidate('./src/dep1.js');
+            env.bundle.invalidate('./src/main.js');
+            result = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes: result.changes });
+            await sleep(500);
+
+            expect(env.stdout.length).to.equal(4);
+            expect(env.stdout[0]).to.equal('entry:dep1:0');
+            expect(env.stdout[1]).to.equal('entry:dep2:0');
+            expect(env.stdout[2]).to.equal('entry:dep2:1');
+            expect(env.stdout[3]).to.equal('entry:dep1:1');
+            fs.reset();
+        });
+
+        it ('should cache bust for dynamic imports if one of their modules have been invalidated (variant 3)', async function () {
+            this.timeout(5000);
+            let dep1value = 0;
+            let dep2value = 0;
+            let result;
+
+            let mainTemplate = dep => `import('./${dep}').then(res => console.log('entry:' + res.default)); module.hot.accept(() => require(module.id));`
+
+            fs.stub('./src/main.js', () => mainTemplate('dep1'));
+            fs.stub('./src/dep1.js', () => `import dep1impl from './dep1impl'; export default 'dep1:' + dep1impl;`);
+            fs.stub('./src/dep2.js', () => `import dep2impl from './dep2impl'; export default 'dep2:' + dep2impl;`);
+            fs.stub('./src/dep1impl.js', () => `export default 0;`);
+            fs.stub('./src/dep2impl.js', () => `export default 0;`);
+            
+            let env = await createNollupEnv();
+            await sleep(500);
+
+            fs.stub('./src/main.js', () => mainTemplate('dep2'));
+            env.bundle.invalidate('./src/main.js');
+            result = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes: result.changes });
+            await sleep(500);
+
+
+            fs.stub('./src/dep2impl.js', () => `export default 1;`);
+            env.bundle.invalidate('./src/dep2impl.js');
+            result = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes: result.changes });
+            await sleep(500);
+
+            fs.stub('./src/dep1impl.js', () => `export default 1;`);
+            fs.stub('./src/main.js', () => mainTemplate('dep1'));
+            env.bundle.invalidate('./src/dep1impl.js');
+            env.bundle.invalidate('./src/main.js');
+            result = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes: result.changes });
+            await sleep(500);
+
+            expect(env.stdout.length).to.equal(4);
+            expect(env.stdout[0]).to.equal('entry:dep1:0');
+            expect(env.stdout[1]).to.equal('entry:dep2:0');
+            expect(env.stdout[2]).to.equal('entry:dep2:1');
+            expect(env.stdout[3]).to.equal('entry:dep1:1');
+            fs.reset();
+        });
+
+        it ('should still trigger own dispose handler if removed from bundle', async () => {
+            let result;
+
+            fs.stub('./src/main.js', () => `
+                import "./style.css";
+            `);
+
+            fs.stub('./src/style.css', () => `
+                module.hot.accept(() => console.log('mod1 accept'));
+                module.hot.dispose(() => console.log('mod1 dispose'));
+            `);
+      
+            let env = await createNollupEnv();
+
+            fs.stub('./src/main.js', () => `
+            `);
+
+            env.bundle.invalidate('./src/main.js');
+            result = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes: result.changes });
+
+            expect(env.stdout.length).to.equal(1);
+            expect(env.stdout[0]).to.equal('mod1 dispose');
+            fs.reset();
+        });
+
+        it ('should allow new import meta to work via HMR after first bundle');
+
+        it ('should allow new external imports to work via HMR after first bundle');
+
+        it ('should allow new external imports in dynamic imports to work via HMR after first bundle');
     })
 });

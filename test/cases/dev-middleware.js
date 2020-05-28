@@ -100,18 +100,18 @@ function createResponse (callback) {
     }
 }
 
-function createNext () {
-    return () => {};
+function createNext (next) {
+    return next || (() => {});
 }
 
-function mwFetch (mw, url) {
-    return new Promise(resolve => {
+function mwFetch (mw, url, next) {
+    return new Promise((resolve, reject) => {
         mw(
             createRequest(url),
             createResponse(res => {
                 resolve(res);
             }),
-            createNext()
+            createNext(() => reject('file not found'))
         )
     })
 }
@@ -1036,5 +1036,100 @@ describe('Dev Middleware', () => {
                 });
             });
         });
+    });    
+
+    it ('should allow publicPath to be prefixed to all assets and chunks', async function () {
+        this.timeout(5000);
+
+        fs.stub('./src/other.js', () => 'export default 456')
+        fs.stub('./src/main.js', () => 'import("./other");export default 123');
+
+        let config = {
+            input: './src/main.js',
+            output: {
+                dir: 'dist',
+                assetFileNames: '[name][extname]',
+                entryFileNames: '[name].js',
+                chunkFileNames: 'chunk-[name].js',
+                format: 'esm'
+            },
+            plugins: [{
+                transform (code) {
+                    this.emitAsset('style.css', '.hello{}');
+                }
+            }]
+        };
+
+        let mw = middleware({}, config, {
+            publicPath: 'client'
+        });
+
+        let bundleRes = await mwFetch(mw, '/client/main.js');
+        expect(bundleRes.status).to.equal(200);
+        expect(bundleRes.body.indexOf('123') > -1).to.be.true;
+
+        let assetRes = await mwFetch(mw, '/client/style.css');
+        expect(assetRes.status).to.equal(200);
+        expect(assetRes.body.indexOf('.hello{}') > -1).to.be.true;
+
+        let dynRes = await mwFetch(mw, '/client/chunk-other.js');
+        expect(dynRes.status).to.equal(200);
+        expect(dynRes.body.indexOf('456') > -1).to.be.true;
+
+        let passed = false;
+        try {
+            let badRes = await mwFetch(mw, '/main.css');
+        } catch (e) {
+            expect(e.indexOf('file not found') > -1).to.be.true;
+            passed = true;
+        }
+        
+        expect(passed).to.be.true;
+    });
+
+    it ('should allow publicPath to have slash at start of url', async function () {
+        this.timeout(5000);
+
+        fs.stub('./src/main.js', () => 'export default 123');
+
+        let config = {
+            input: './src/main.js',
+            output: {
+                dir: 'dist',
+                entryFileNames: '[name].js',
+                format: 'esm'
+            }
+        };
+
+        let mw = middleware({}, config, {
+            publicPath: '/client'
+        });
+
+        let bundleRes = await mwFetch(mw, '/client/main.js');
+        expect(bundleRes.status).to.equal(200);
+        expect(bundleRes.body.indexOf('123') > -1).to.be.true;
+    });
+
+    it ('should allow publicPath to have slash at end of url', async function () {
+        this.timeout(5000);
+
+        fs.stub('./src/main.js', () => 'export default 123');
+
+        let config = {
+            input: './src/main.js',
+            output: {
+                dir: 'dist',
+                entryFileNames: '[name].js',
+                format: 'esm'
+            }
+        };
+
+        let mw = middleware({}, config, {
+            publicPath: 'client/'
+        });
+
+        let bundleRes = await mwFetch(mw, '/client/main.js');
+        expect(bundleRes.status).to.equal(200);
+        expect(bundleRes.body.indexOf('123') > -1).to.be.true;
     });
 });

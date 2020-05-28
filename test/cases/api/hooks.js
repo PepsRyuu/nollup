@@ -1034,6 +1034,8 @@ describe ('API: Plugin Hooks', () => {
             fs.reset();
         });
 
+        it ('should not fail if passing null sourcemap');
+
         it ('should accept an object with code and map returned');
         it ('should accept a string with code, map, and ast returned');
     });
@@ -1100,6 +1102,57 @@ describe ('API: Plugin Hooks', () => {
                     options (opts) {
                         expect(opts.hello).to.equal('world');
                         passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should modify options for rest of hooks', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    options (opts) {
+                        expect(opts.input).to.equal('./src/main.js');
+                        return {
+                            ...opts,
+                            hello: 'world'
+                        }
+                    }
+                }, {
+                    buildStart (opts) {
+                        expect(opts.hello).to.equal('world');
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should not fail if plugins are removed entirely', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = true;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    options (opts) {
+                        return {
+                            input: './src/main.js'
+                        };
+                    }
+                }, {
+                    buildStart (opts) {
+                        passed = false;
                     }
                 }]
             });
@@ -1212,6 +1265,32 @@ describe ('API: Plugin Hooks', () => {
             let { output } = await bundle.generate({ 
                 format: 'esm'
             });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should modify outputOptions for rest of hooks', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    outputOptions (opts) {
+                        return {
+                            ...opts,
+                            hello: 'world'
+                        };
+                    }
+                }, {
+                    generateBundle (opts) {
+                        expect(opts.hello).to.equal('world');
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
             expect(passed).to.be.true;
             fs.reset();
         });
@@ -1628,6 +1707,7 @@ describe ('API: Plugin Hooks', () => {
                 });
 
                 let { output } = await bundle.generate({ format: 'esm', dir: 'dist' });
+                throw new Error('should not hit here');
             } catch (e) {
                 expect(passed).to.be.true;
                 fs.reset();
@@ -1653,6 +1733,7 @@ describe ('API: Plugin Hooks', () => {
                 });
 
                 let { output } = await bundle.generate({ format: 'esm', dir: 'dist' });
+                throw new Error('should not hit here');
             } catch (e) {
                 expect(passed).to.be.true;
                 fs.reset();
@@ -1681,6 +1762,7 @@ describe ('API: Plugin Hooks', () => {
                 });
 
                 let { output } = await bundle.generate({ format: 'esm', dir: 'dist' });
+                throw new Error('should not hit here');
             } catch (e) {
                 expect(passed).to.be.true;
                 fs.reset();
@@ -1705,6 +1787,7 @@ describe ('API: Plugin Hooks', () => {
                 });
 
                 let { output } = await bundle.generate({ format: 'esm', dir: 'dist' });
+                throw new Error('should not hit here');
             } catch (e) {
                 expect(e.message.indexOf('lol') > -1).to.be.true; 
                 expect(failed).to.be.false;
@@ -2113,8 +2196,168 @@ describe ('API: Plugin Hooks', () => {
             fs.reset();
         });
 
-        it ('should receive fileName, chunkId, format, moduleId, assetReferenceId, chunkReferenceId, relativePath for ROLLUP_CHUNK_URL');
-        it ('should change chunkId if inside an emitted chunk');
+        it ('should receive fileName, chunkId, format, moduleId, assetReferenceId, chunkReferenceId, relativePath for ROLLUP_CHUNK_URL', async () => {
+            fs.stub('./src/other.js', () => 'export default 456');
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+            let ref;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        if (id.indexOf('main') > -1) {
+                            ref = this.emitFile({
+                                type: 'chunk',
+                                name: 'mychunk',
+                                id: './src/other.js'
+                            });
+
+                            return {
+                                code: `
+                                    console.log(import.meta.ROLLUP_CHUNK_URL_${ref});
+                                    export default 123;
+                                `
+                            }
+                        }
+                    },
+                    resolveFileUrl (details) {
+                        expect(details.assetReferenceId).to.be.null;
+                        expect(details.chunkId).to.equal('main.js');
+                        expect(details.chunkReferenceId).equal(ref);
+                        expect(details.fileName).to.equal('lol-mychunk.js');
+                        expect(details.format.startsWith('es')).to.be.true;
+                        expect(details.moduleId).to.equal(path.resolve(process.cwd(), './src/main.js'));
+                        expect(details.referenceId).to.equal(ref);
+                        expect(details.relativePath).to.equal('lol-mychunk.js');
+                        passed = true;
+                    }                    
+                }]
+            });
+
+            let { output } = await bundle.generate({ 
+                format: 'esm',
+                chunkFileNames: 'lol-[name].js'
+            });
+            let main = output.find(o => o.fileName === 'main.js');
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should receive fileName, chunkId, format, moduleId, assetReferenceId, chunkReferenceId, relativePath for ROLLUP_FILE_URL for chunks', async () => {
+            fs.stub('./src/other.js', () => 'export default 456');
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+            let ref;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        if (id.indexOf('main') > -1) {
+                            ref = this.emitFile({
+                                type: 'chunk',
+                                name: 'mychunk',
+                                id: './src/other.js'
+                            });
+
+                            return {
+                                code: `
+                                    console.log(import.meta.ROLLUP_FILE_URL_${ref});
+                                    export default 123;
+                                `
+                            }
+                        }
+                    },
+                    resolveFileUrl (details) {
+                        expect(details.assetReferenceId).to.be.null;
+                        expect(details.chunkId).to.equal('main.js');
+                        expect(details.chunkReferenceId).to.be.null;
+                        expect(details.fileName).to.equal('lol-mychunk.js');
+                        expect(details.format.startsWith('es')).to.be.true;
+                        expect(details.moduleId).to.equal(path.resolve(process.cwd(), './src/main.js'));
+                        expect(details.referenceId).to.equal(ref);
+                        expect(details.relativePath).to.equal('lol-mychunk.js');
+                        passed = true;
+                    }                    
+                }]
+            });
+
+            let { output } = await bundle.generate({ 
+                format: 'esm',
+                chunkFileNames: 'lol-[name].js'
+            });
+            let main = output.find(o => o.fileName === 'main.js');
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should change chunkId if inside an emitted chunk', async () => {
+            fs.stub('./src/sub.js', () => 'export default 789');
+            fs.stub('./src/other.js', () => 'export default 456');
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+            let ref;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        if (id.indexOf('main') > -1) {
+                            ref = this.emitFile({
+                                type: 'chunk',
+                                name: 'otherchunk',
+                                id: './src/other.js'
+                            });
+
+                            return {
+                                code: `
+                                    console.log(import.meta.ROLLUP_FILE_URL_${ref});
+                                    export default 123;
+                                `
+                            }
+                        }
+
+                        if (id.indexOf('other') > -1) {
+                            ref = this.emitFile({
+                                type: 'chunk',
+                                name: 'subchunk',
+                                id: './src/sub.js'
+                            });
+
+                            return {
+                                code: `
+                                    console.log(import.meta.ROLLUP_FILE_URL_${ref});
+                                    export default 456;
+                                `
+                            }
+                        }
+                    },
+                    resolveFileUrl (details) {
+                        if (details.fileName === 'lol-subchunk.js') {
+                            expect(details.assetReferenceId).to.be.null;
+                            expect(details.chunkId).to.equal('lol-otherchunk.js');
+                            expect(details.chunkReferenceId).to.be.null;
+                            expect(details.fileName).to.equal('lol-subchunk.js');
+                            expect(details.format.startsWith('es')).to.be.true;
+                            expect(details.moduleId).to.equal(path.resolve(process.cwd(), './src/other.js'));
+                            expect(details.referenceId).to.equal(ref);
+                            expect(details.relativePath).to.equal('lol-subchunk.js');
+                            passed = true;
+                        }
+                        
+                    }                    
+                }]
+            });
+
+            let { output } = await bundle.generate({ 
+                format: 'esm',
+                chunkFileNames: 'lol-[name].js'
+            });
+            let main = output.find(o => o.fileName === 'main.js');
+            expect(passed).to.be.true;
+            fs.reset();
+        });
     });
 
     describe('resolveImportMeta', () => {
@@ -2159,7 +2402,8 @@ describe ('API: Plugin Hooks', () => {
                 format: 'esm'
             });
 
-            expect(output[0].code.indexOf('console.log(123)') > -1).to.be.true;
+            expect(output[0].code.indexOf('console.log(__nollup__import__meta__.url)') > -1).to.be.true;
+            expect(output[0].code.indexOf('\'url\': 123') > -1).to.be.true;
             fs.reset();
         });
 
@@ -2203,6 +2447,7 @@ describe ('API: Plugin Hooks', () => {
                     resolveImportMeta (prop, details) {
                         expect(prop).to.be.null;
                         passed = true;
+                        return '123';
                     }                    
                 }]
             });
@@ -2211,6 +2456,8 @@ describe ('API: Plugin Hooks', () => {
                 format: 'esm'
             });
 
+            expect(output[0].code.indexOf('console.log(__nollup__import__meta__.null)') > -1).to.be.true;
+            expect(output[0].code.indexOf('\'null\': 123') > -1).to.be.true;
             expect(passed).to.be.true;
             fs.reset();
         });
@@ -2252,6 +2499,41 @@ describe ('API: Plugin Hooks', () => {
             });
 
             expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should deconflict chunkId if there\'s a conflict in naming', async () => {
+            fs.stub('./src/b/main.js', () => 'console.log(import.meta.prop2);');
+            fs.stub('./src/a/main.js', () => 'import("../b/main"); console.log(import.meta.prop1)');
+            let passed1, passed2;
+
+            let bundle = await nollup({
+                input: './src/a/main.js',
+                plugins: [{
+                    resolveImportMeta (prop, details) {
+                        if (prop === 'prop1') {
+                            expect(details.moduleId).to.equal(path.resolve(process.cwd(), './src/a/main.js'));
+                            expect(details.chunkId).to.equal('lol-main.js');
+                            passed1 = true;
+                        }
+
+                        if (prop === 'prop2') {
+                            expect(details.moduleId).to.equal(path.resolve(process.cwd(), './src/b/main.js'));
+                            expect(details.chunkId).to.equal('lol-main2.js');
+                            passed2 = true;
+                        }
+                    }                    
+                }]
+            });
+
+            let { output } = await bundle.generate({ 
+                format: 'esm',
+                entryFileNames: 'lol-[name].js',
+                chunkFileNames: 'lol-[name].js'
+            });
+
+            expect(passed1).to.be.true;
+            expect(passed2).to.be.true;
             fs.reset();
         });
     });

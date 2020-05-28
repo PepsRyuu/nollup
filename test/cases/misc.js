@@ -108,5 +108,4 @@ describe ('Misc', () => {
         expect(output[0].code.indexOf('world') > -1).to.be.true;
         expect(Object.keys(myplugin).length).to.equal(1);
     });
-
 });

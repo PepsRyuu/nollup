@@ -65,6 +65,7 @@ See "Nollup Options" for list of available options.
 * ***String* hmrHost | --hmr-host [host]** - Host to connect to for HMR. Default is ```window.location.host```.
 * ***Function* before** - Receives Express app as argument. Allows for middleware before internally used middleware.
 * ***Function* after** - Receives Express app as argument. Allows for middleware after internally used middleware.
+* ***String* publicPath | --public-path [folder]** - All generated files will be served from this URL. Default is ```/```.
 
 ## Adding Hot Support to App
 
