@@ -285,7 +285,7 @@ describe ('API: Nollup Hooks', () => {
                     nollupBundleInit () {
                         return `
                             _global.apply = function (change) {
-                                modules[change.id] = eval('(' + change.code + ')');
+                                modules[change.id] = eval(change.code);
                                 instances[change.id].invalidate = true;
 
                                 Object.keys(instances).filter(instId => {

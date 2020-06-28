@@ -54,6 +54,10 @@
 
 * Demonstrates big libraries with circular dependencies (```moment```) working in Nollup.
 
+## example-public-path
+
+* Demonstrates how to use ```publicPath``` for enabling single page applications to work in a subdirectory.
+
 ## example-single-file-bundle
 
 * Although not recommended, Nollup works with the old Rollup style projects that emit to the ```public``` directory.

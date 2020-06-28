@@ -9,118 +9,51 @@
 
 ***No(t) Rollup → Nollup***
 
-[Rollup](https://rollupjs.org/guide/en) compatible bundler, ***designed to be used in development***. Using the same Rollup plugins and configuration, it provides a dev server that performs quick builds and rebuilds, and other dev features such as **Hot Module Replacement**. Use Rollup to generate production bundles.
+[Rollup](https://rollupjs.org/guide/en) compatible bundler, ***designed to be used in development***. Using the same Rollup plugins and configuration, it provides a dev server that performs **quick builds and rebuilds**, and other dev features such as **Hot Module Replacement**.
 
 ## Why Nollup?
 
 Rollup is an incredible tool, producing very efficient and minimal bundles. Many developers use it already to build libraries, but I wanted to use it to **build apps**. However, **Rollup focuses mostly on the production** side of things, with almost no developer experience other than basic file watching. Using Rollup in development can be incredibly slow with rebuilds taking seconds because of all of the optimisations Rollup does for you (ie. tree-shaking, scope-hoisting).
 
-Nollup aims to fill in that gap. Using the same Rollup plugins and configuration, **you can use Nollup to run a development server that generates a development bundle**. It does no optimisations, making it really quick at rebuilding, also allowing for Hot Module Replacement using existing ```module.hot``` conventions for **compatibility with existing libraries**.
+Nollup aims to fill in that gap. Using the same Rollup plugins and configuration, **you can use Nollup to run a development server that generates a development bundle**. It does no optimisations, making it really **quick at rebuilding**, also allowing for Hot Module Replacement using existing ```module.hot``` conventions for **compatibility with existing libraries**.
 
 Read further about why I prefer using Rollup to build apps [here](https://medium.com/@PepsRyuu/why-i-use-rollup-and-not-webpack-e3ab163f4fd3).
 
-## Getting Started
+## How to Use
 
-Nollup can be used with the CLI in ```package.json``` scripts:
+Nollup provides four ways to use it:
 
-```
-"scripts": {
-    "start": "nollup -c"
-}
-```
+* [Nollup CLI](./docs/cli.md) 
+* [Dev Server API](./docs/dev-server.md)
+* [Dev Middleware API](./docs/dev-middleware.md)
+* [Compiler API](./docs/compiler.md)
 
-Examples can be found in the [examples](./examples) directory.
+For the majority of projects, it is recommended to use the CLI approach.
 
-## .nolluprc
+## Examples
 
-Configuration file that can be used to pass configuration instead of as flags through the CLI. 
+The examples show different features of Nollup, including examples for React and Preact based projects with HMR. They also demonstrate how to use Nollup in development and Rollup to build production builds.
+Highly recommended to check them out [here](./examples).
 
-```
-{
-    "hot": true,
-    "contentBase": "./public"
-}
-```
+## Hot Module Replacement
 
-A JavaScript file called ```.nolluprc.js``` can be used instead.
+See documentation about Hot Module Replacement [here](./docs/hmr.md).
 
-```
-module.exports = {
-    hot: true,
-    contentBase: './public'
-};
-```
+## Supported Rollup Config Options
 
-See "Nollup Options" for list of available options.
+See documentation about supported Rollup config options [here](./docs/rollup-config.md).
 
-## Nollup Options
+## Nollup Plugins
 
-* ***String* config | -c | --config [file]** - Pass a configuration file. By default it will look for ```rollup.config.js``` but can be specified otherwise.
-* ***String* contentBase | --content-base [folder]** - Folder to serve static content from. By default it will be looking in ```'./```.
-* ***Boolean* historyApiFallback | --history-api-fallback** - If set, it will fallback to ```index.html``` if accessing a route that doesn't exist.
-* ***Boolean* hot | --hot** - Enable Hot Module Replacement.
-* ***Number* port | --port [value]** - Port number to run server on. Default is ```8080```.
-* ***Boolean* verbose | --verbose** - If set, there's verbose logging.
-* ***Object* proxy** - Object keys are paths to match. Value is domain to redirect to. ```"/api": "http://localhost:8080"``` will have a request such as ```/api/todos``` redirect to ```http://localhost:8080/api/todos``` 
-* ***String* hmrHost | --hmr-host [host]** - Host to connect to for HMR. Default is ```window.location.host```.
-* ***Function* before** - Receives Express app as argument. Allows for middleware before internally used middleware.
-* ***Function* after** - Receives Express app as argument. Allows for middleware after internally used middleware.
+Some Rollup plugins provide additional support for Nollup projects. 
+You can find the list [here](./docs/plugins.md).
 
-## Adding Hot Support to App
+## Nollup Plugin Hooks
 
-Out of the box, Nollup won't do anything to enable any hot functionality for your app.
-This has to be manually added by the developer using ```module.hot.accept``` callback.
-When a file is saved, Nollup will check the dependency tree for that file, and if any of its parents have defined a ```module.hot.accept``` callback, it will execute that callback. Developers can run whatever code they want in the callback to update their application.
-
-Usually there's two different approaches that are taken for the callback: 
-
-### Hot Reload
-
-When a file is saved, the browser will reload the page. Frameworks don't need to support this, and it can be added to any project easily.
-
-```
-if (module) {
-    module.hot.accept(() => {
-        window.location.reload();
-    });
-}
-```
-
-### Hot Module Replacement
-
-When a file is saved, only the changed module is replaced, the page is not refreshed. This is very powerful as it allows you to update your app while preserving as much state as possible. This has to be supported by the framework or plugin you are using. Plugins such as ```rollup-plugin-hot-css``` allow you to update your CSS without refreshing the page. Please refer to the framework's documentation on how to add HMR support to your app.
-
-You can also use a combination of HMR with Hot Reload. For example you can use the CSS plugin, but use a fallback accept callback that will refresh the page instead as described above.
-
-### Additional Build Configuration for HMR
-
-In your build configuration, if your code includes ```module```, it may be necessary to explicitly inform Rollup to remove all references to ```module```, otherwise your application may break when compiled with Rollup. This can be done using a plugin such as ```rollup-plugin-terser```.
-
-```
-terser({
-    compress: {
-        global_defs: {
-            module: false
-        }
-    }
-});
-```
-
-## API
-
-See [API](API.md) for information on how to use the JavaScript API.
-
-## Rollup Plugins with Nollup Enhancements
-
-* [rollup-plugin-hot-css](https://github.com/PepsRyuu/rollup-plugin-hot-css) - Load CSS files with HMR support.
-* [rollup-plugin-react-refresh](https://github.com/PepsRyuu/rollup-plugin-react-refresh) - Nollup plugin for HMR in React apps.
-* [rollup-plugin-commonjs-alternate](https://github.com/PepsRyuu/rollup-plugin-commonjs-alternate) - CommonJS loader that supports React Hot Loader.
-* [@prefresh/nollup](https://github.com/JoviDeCroock/prefresh) - HMR for Preact apps.
+Nollup provides additional plugin hooks for plugin authors to implement features such as HMR. See more information [here](./docs/nollup-hooks.md).
 
 ## Caveats
 
-* Not all Rollup configuration options are supported yet, but most relevant ones are.
-* Not all Rollup plugin hooks are implemented yet, but most relevant ones are.
-* Sourcemaps aren't perfect yet, depends on plugin usage, please write an issue.
-* Does not attempt to parse "require" calls anywhere, that's for CommonJS plugins.
-* No support for live-bindings, but circular dependencies are supported.
+* Only Rollup configurations that make sense in development are implemented.
+* Might be some inconsistencies with Rollup, but should be fine for majority of projects.
+* No support for live-bindings, but circular dependencies are supported. 
