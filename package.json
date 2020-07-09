@@ -3,6 +3,11 @@
   "description": "Rollup-compatible bundler for development.",
   "version": "0.12.0",
   "main": "lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PepsRyuu/nollup.git"
+  },
+  "homepage": "https://github.com/PepsRyuu/nollup",
   "scripts": {
     "test": "mocha-istanbul-ui \"test/cases/**/*.js\" --instrument --console --once",
     "test:ui": "mocha-istanbul-ui \"test/cases/**/*.js\" --instrument --watch"
