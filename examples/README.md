@@ -6,6 +6,8 @@
 * ```npm start``` will run the Nollup dev server.
 * ```npm run build``` will use Rollup to generate a production bundle.
 
+Make sure you have ran ```npm install``` in the root of the Nollup repository. Every example uses Nollup relatively with ```node ../../lib/cli.js```. In a normal project, this would be ```nollup```.
+
 ## example-preact
 
 * Uses Preact as the base framework.
