@@ -30,6 +30,14 @@ Nollup provides four ways to use it:
 
 For the majority of projects, it is recommended to use the CLI approach.
 
+## Quick Start
+
+[create-nollup-app](https://github.com/PepsRyuu/create-nollup-app) is a CLI that will generate a Nollup project for you.
+
+```
+npx create-nollup-app --name <project-name> --template <template>
+```
+
 ## Examples
 
 The examples show different features of Nollup, including examples for React and Preact based projects with HMR. They also demonstrate how to use Nollup in development and Rollup to build production builds.
