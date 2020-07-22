@@ -9,6 +9,31 @@ function requireString (code) {
 
 
 describe ('Options: output.format', () => {
+    describe('Misc', () => {
+        it ('should throw an error for a non-supported format', async () => {
+            fs.stub('./src/main.js', () => 'console.log(123)');
+        
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: []
+            });
+
+            let passed;
+
+            try {
+                await bundle.generate({
+                    format: 'umd'
+                });
+            } catch (e) {
+                expect(e.message.indexOf('Invalid format "umd". Only es, cjs, iife supported.') > -1).to.be.true;
+                passed = true;
+            }
+
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+    })
+
     describe('es', () => {
         it ('should use externals from import', async () => {
             fs.stub('./src/main.js', () => 'import $ from "jquery";');
