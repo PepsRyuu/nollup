@@ -728,6 +728,26 @@ describe ('API: Plugin Hooks', () => {
             fs.reset();
         });
 
+        it ('should pass specifier as a string if it is a string in template literal', async () => {
+            fs.stub('./src/main.js', () => 'import(`./lol`)');
+            fs.stub('./src/lol.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveDynamicImport (specifier, importer) {
+                        expect(specifier).to.equal('./lol');
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
         it ('should pass the importer as a string', async () => {
             fs.stub('./src/main.js', () => 'import("./lol")');
             fs.stub('./src/lol.js', () => 'export default 123');
@@ -739,6 +759,48 @@ describe ('API: Plugin Hooks', () => {
                     resolveDynamicImport (specifier, importer) {
                         expect(importer).to.equal(path.resolve(process.cwd(), './src/main.js'));
                         passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should pass specifier as an ESNode if it is more complex template literal', async () => {
+            fs.stub('./src/main.js', () => 'import(tag`./lol.js`)');
+            fs.stub('./src/lol.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveDynamicImport (specifier, importer) {
+                        expect(specifier.type).to.equal('TaggedTemplateExpression');
+                        passed = true;
+                        return path.resolve(process.cwd(), './src/lol.js');
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should pass specifier as an ESNode if it is more complex template literal II', async () => {
+            fs.stub('./src/main.js', () => 'import(`./lol${extension}`)');
+            fs.stub('./src/lol.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveDynamicImport (specifier, importer) {
+                        expect(specifier.type).to.equal('TemplateLiteral');
+                        passed = true;
+                        return path.resolve(process.cwd(), './src/lol.js');
                     }
                 }]
             });
