@@ -10,6 +10,7 @@ This list provides a description of all of the options for the [CLI](./cli.md), 
 | ```Number``` | ```port``` | Port number to run server on. Default is ```8080```. |
 | ```Boolean\|String``` | ```historyApiFallback``` | If set to true, it will fallback to ```index.html``` if accessing a file that doesn't exist. You can pass a string to fallback to a different file. Default is ```false```. |
 | ```String``` | ```publicPath``` | All generated files will be served from this URL. Default is ```/``` |
+| ```String``` | ```environment``` | Pass environment variables that are set to ```process.ENV```. |
 | ```Object``` | ```proxy``` | Object keys are paths to match. Value is the domain to proxy to. ```"api": "http://localhost:8080"``` will have a request such as ```/api/todos``` proxy to ```http://localhost:8080/api/todos```. |
 | ```Boolean``` | ```verbose``` | Enable verbose logging. Default is ```false```. |
 | ```String``` | ```hmrHost``` | Host to connect to for HMR. Default is ```window.location.host```. Useful for Electron environments. |
