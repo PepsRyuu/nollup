@@ -272,4 +272,22 @@ describe('Nollup', function () {
         let entry = await bundle.generate();
         expect(entry.default).to.equal('A2 - A3 - A1');
     });
+
+    it ('Scenario: Circular Dependencies for Export FROM', async function () {
+        let bundle = await createNollup('circular-export-from');
+        let entry = await bundle.generate();
+        expect(entry.default).to.equal('A');
+    });
+
+    it ('Scenario: Circular Dependencies for Export all FROM', async function () {
+        let bundle = await createNollup('circular-export-all-from');
+        let entry = await bundle.generate();
+        expect(entry.default).to.equal('A');
+    });
+
+    it ('Scenario: Circular Dependencies for Export from infinite loop', async function () {
+        let bundle = await createNollup('circular-export-from-infinite-loop');
+        let entry = await bundle.generate();
+        expect(entry.default).to.equal('A');
+    });
 });

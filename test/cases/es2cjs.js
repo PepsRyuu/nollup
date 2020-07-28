@@ -203,11 +203,12 @@ let tests = [{
             importee: '_i0',
             specifiers: [{
                 local: 'ex_MyVar',
-                imported: 'MyVar'
+                imported: 'MyVar',
+                exportFrom: true
             }]
         }],
         exports: ['MyVar'],
-        code: `__e__('MyVar', ex_MyVar);`
+        code: ``
     }
 }, {
     input: 'export { default } from "./file";',
@@ -217,11 +218,12 @@ let tests = [{
             importee: '_i0',
             specifiers: [{
                 local: 'ex_default',
-                imported: 'default'
+                imported: 'default',
+                exportFrom: true
             }]
         }],
         exports: ['default'],
-        code: `__e__('default', ex_default);`
+        code: ``
     }
 }, {
     input: 'export * from "./file"',
@@ -231,11 +233,12 @@ let tests = [{
             importee: '_i0',
             specifiers: [{
                 local: 'ex_i0',
-                imported: '*'
+                imported: '*',
+                exportFrom: true
             }]
         }],
         exports: [],
-        code: `for(var __k__ in ex_i0){__k__ !== "default" && (__e__(__k__, ex_i0[__k__]))}`
+        code: ``
     }
 }, {
     input: 'import Hello from "hello";import World from "world";',
@@ -451,7 +454,7 @@ let external_tests = [{
 }, {
     input: 'export { ajax } from "jquery";',
     output: {
-        code: `__e__('ajax', ex_ajax);`,
+        code: ``,
         imports: [],
         exports: ['ajax'],
         externalImports: [{
@@ -459,7 +462,8 @@ let external_tests = [{
             importee: '__nollup__external__jquery__',
             specifiers: [{
                 local: 'ex_ajax',
-                imported: 'ajax'
+                imported: 'ajax',
+                exportFrom: true
             }]
         }]
     },
@@ -469,7 +473,7 @@ let external_tests = [{
 }, {
     input: 'export { ajax } from "jquery";',
     output: {
-        code: `__e__('ajax', ex_ajax);`,
+        code: ``,
         imports: [],
         exports: ['ajax'],
         externalImports: [{
@@ -477,7 +481,8 @@ let external_tests = [{
             importee: '__nollup__external__jquery__',
             specifiers: [{
                 local: 'ex_ajax',
-                imported: 'ajax'
+                imported: 'ajax',
+                exportFrom: true
             }]
         }]
     },
@@ -492,7 +497,7 @@ let external_tests = [{
 }, {
     input: 'export { ajax as net} from "jquery";',
     output: {
-        code: `__e__('net', ex_net);`,
+        code: ``,
         imports: [],
         exports: ['net'],
         externalImports: [{
@@ -500,7 +505,8 @@ let external_tests = [{
             importee: '__nollup__external__jquery__',
             specifiers: [{
                 local: 'ex_net',
-                imported: 'ajax'
+                imported: 'ajax',
+                exportFrom: true
             }]
         }]
     },
@@ -515,7 +521,7 @@ let external_tests = [{
 }, {
     input: 'export * from "jquery";',
     output: {
-        code: `for(var __k__ in ex__nollup__external__jquery__){__k__ !== "default" && (__e__(__k__, ex__nollup__external__jquery__[__k__]))}`,
+        code: ``,
         imports: [],
         exports: [],
         externalImports: [{
@@ -523,7 +529,8 @@ let external_tests = [{
             importee: '__nollup__external__jquery__',
             specifiers: [{
                 local: 'ex__nollup__external__jquery__',
-                imported: '*'
+                imported: '*',
+                exportFrom: true
             }]
         }]
     },
@@ -533,7 +540,7 @@ let external_tests = [{
 }, {
     input: 'export * from "jquery";',
     output: {
-        code: `for(var __k__ in ex__nollup__external__jquery__){__k__ !== "default" && (__e__(__k__, ex__nollup__external__jquery__[__k__]))}`,
+        code: ``,
         imports: [],
         exports: [],
         externalImports: [{
@@ -541,7 +548,8 @@ let external_tests = [{
             importee: '__nollup__external__jquery__',
             specifiers: [{
                 local: 'ex__nollup__external__jquery__',
-                imported: '*'
+                imported: '*',
+                exportFrom: true
             }]
         }]
     },
