@@ -2607,6 +2607,39 @@ describe ('API: Plugin Hooks', () => {
     });
 
     describe ('watchChange', () => {
-        it ('should receive id of changed module');
+        it ('should not trigger initially', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let watchChangeCnt = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    watchChange (id) {
+                        watchChangeCnt++;
+                    }
+                }]
+            });
+            output = await bundle.generate();
+
+            expect(watchChangeCnt).to.be.equal(0)
+        });
+        it ('should trigger on invalidate', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let watchChangeCnt = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    watchChange (id) {
+                        watchChangeCnt++;
+                    }
+                }]
+            });
+            output = await bundle.generate()
+            bundle.invalidate("./src/main.js")
+
+            output = await bundle.generate();
+            expect(watchChangeCnt).to.be.equal(1)
+        });
     });
 });
