@@ -2619,10 +2619,12 @@ describe ('API: Plugin Hooks', () => {
                     }
                 }]
             });
-            output = await bundle.generate();
-
-            expect(watchChangeCnt).to.be.equal(0)
+            
+            await bundle.generate();
+            expect(watchChangeCnt).to.be.equal(0);
+            fs.reset();
         });
+
         it ('should trigger on invalidate', async () => {
             fs.stub('./src/main.js', () => 'export default 123');
             let watchChangeCnt = 0;
@@ -2631,15 +2633,48 @@ describe ('API: Plugin Hooks', () => {
                 input: './src/main.js',
                 plugins: [{
                     watchChange (id) {
+                        let target = path.resolve(process.cwd(), './src/main.js');
+                        expect(id).to.equal(target);
                         watchChangeCnt++;
                     }
                 }]
             });
-            output = await bundle.generate()
-            bundle.invalidate("./src/main.js")
 
-            output = await bundle.generate();
-            expect(watchChangeCnt).to.be.equal(1)
+            await bundle.generate();
+            bundle.invalidate('./src/main.js');
+
+            await bundle.generate();
+            expect(watchChangeCnt).to.be.equal(1);
+            fs.reset();
+        });
+
+        it ('should trigger on added watch files invalidated', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/other.js', () => 'export default 456');
+
+            let watchChangeCnt = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.addWatchFile('./other.js');
+                    },
+
+                    watchChange (id) {
+                        let target = path.resolve(process.cwd(), './src/other.js');
+                        expect(id).to.equal(target);
+                        watchChangeCnt++;
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            bundle.invalidate('src/other.js');
+
+            await bundle.generate({ format: 'esm' });
+            expect(watchChangeCnt).to.be.equal(1);
+            fs.reset();
         });
     });
 });
