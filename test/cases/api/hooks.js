@@ -547,7 +547,7 @@ describe ('API: Plugin Hooks', () => {
 
         it ('should accept string as a return value to a file', async () => {
             fs.stub('./src/main.js', () => 'import "haha";');
-            fs.stub('./src/lol.js', () => '');
+            fs.stub('./src/lol.js', () => 'export default 123');
 
             let bundle = await nollup({
                 input: './src/main.js',
@@ -561,22 +561,26 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.true;
             fs.reset();
         });
 
         it ('should accept null to defer to next hook', async () => {
             fs.stub('./src/main.js', () => 'import "haha";');
-            fs.stub('./src/lol.js', () => '');
+            fs.stub('./src/lol.js', () => 'export default 123');
+            let passed1 = false, passed2 = false;
 
             let bundle = await nollup({
                 input: './src/main.js',
                 plugins: [{
                     resolveId () {
+                        passed1 = true;
                         return null;
                     }
                 }, {
                     resolveId (importee, importer) {
                         if (importee === 'haha') {
+                            passed2 = true;
                             return path.resolve(process.cwd(), './src/lol.js');
                         }
                     }
@@ -584,6 +588,9 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.true;
+            expect(passed1).to.be.true;
+            expect(passed2).to.be.true;
             fs.reset();
         });
 
@@ -604,7 +611,7 @@ describe ('API: Plugin Hooks', () => {
 
             let { output } = await bundle.generate({ format: 'esm' });
             expect(output[0].code.indexOf('import \'haha\';') > -1).to.be.true;
-            expect(output[0].code.indexOf('module.exports.default = 123') === -1).to.be.true;
+            expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) === -1).to.be.true;
             fs.reset();
         });
 
@@ -634,7 +641,7 @@ describe ('API: Plugin Hooks', () => {
 
         it ('should accept objects with id', async () => {
             fs.stub('./src/main.js', () => 'import "haha";');
-            fs.stub('./src/lol.js', () => '');
+            fs.stub('./src/lol.js', () => 'export default 123');
 
             let bundle = await nollup({
                 input: './src/main.js',
@@ -648,12 +655,13 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.true;
             fs.reset();
         });
 
         it ('should accept object as a return value with external and id', async () => {
             fs.stub('./src/main.js', () => 'import "haha";');
-            fs.stub('./src/lol.js', () => '');
+            fs.stub('./src/lol.js', () => 'export default 123');
 
             let bundle = await nollup({
                 input: './src/main.js',
@@ -667,6 +675,7 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.false;
             fs.reset();
         });
 
@@ -705,6 +714,80 @@ describe ('API: Plugin Hooks', () => {
 
             fs.reset();
         });
+
+        it ('should trigger for input file', async () => {
+            fs.stub('./src/main.js', () => 'console.log(123)');
+
+            let bundle = await nollup({
+                input: 'start',
+                plugins: [{
+                    resolveId (importee, importer) {
+                        if (importee === 'start') {
+                            expect(importee).to.equal('start');
+                            expect(importer).to.be.undefined;
+                            return path.resolve(process.cwd(), './src/main.js');
+                        }
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf('console.log(123)') > -1).to.be.true;
+            fs.reset();
+        });
+
+        it ('should trigger for input file array', async () => {
+            fs.stub('./src/main1.js', () => 'console.log(123)');
+            fs.stub('./src/main2.js', () => 'console.log(456)');
+
+            let bundle = await nollup({
+                input: ['start1', 'start2'],
+                plugins: [{
+                    resolveId (importee, importer) {
+                        if (importee === 'start1') {
+                            return path.resolve(process.cwd(), './src/main1.js');
+                        } 
+
+                        if (importee === 'start2') {
+                            return path.resolve(process.cwd(), './src/main2.js');
+                        }
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf('console.log(123)') > -1).to.be.true;
+            expect(output[1].code.indexOf('console.log(456)') > -1).to.be.true;
+            fs.reset();
+        });
+
+        it ('should trigger for input object', async () => {
+            fs.stub('./src/main1.js', () => 'console.log(123)');
+            fs.stub('./src/main2.js', () => 'console.log(456)');
+
+            let bundle = await nollup({
+                input: {
+                    'lol1': 'start1',
+                    'lol2': 'start2'
+                },
+                plugins: [{
+                    resolveId (importee, importer) {
+                        if (importee === 'start1') {
+                            return path.resolve(process.cwd(), './src/main1.js');
+                        } 
+
+                        if (importee === 'start2') {
+                            return path.resolve(process.cwd(), './src/main2.js');
+                        }
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf('console.log(123)') > -1).to.be.true;
+            expect(output[1].code.indexOf('console.log(456)') > -1).to.be.true;
+            fs.reset();
+        })
     });
 
     describe ('resolveDynamicImport', () => {
