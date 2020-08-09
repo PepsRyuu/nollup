@@ -761,3 +761,132 @@ describe('misc transform issues', () => {
         ].join('\n'));
     });
 });
+
+describe ('Export Live Bindings', () => {
+    it ('should only export when export is assigned for declarations', async () => {
+        let res = await es_to_cjs({ plugins: [] }, [
+            'export let hello;',
+            'hello = 123;'
+        ].join('\n'), process.cwd() + '/_entry');
+        expect(res.code).to.equal([
+            'let hello;; ;',
+            'hello = 123;;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+        ].join('\n'));
+    });
+
+    it ('should work for multiple exports', async () => {
+        let res = await es_to_cjs({ plugins: [] }, [
+            'export let hello;',
+            'hello = 123;',
+            'export let world;',
+            'world = 456;'
+        ].join('\n'), process.cwd() + '/_entry');
+        expect(res.code).to.equal([
+            'let hello;; ;',
+            'hello = 123;;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
+            'let world;; ;',
+            'world = 456;;__e__(\'world\', typeof world !== \'undefined\' && world);'
+        ].join('\n'));
+    });
+
+    it ('should support inline assignments', async () => {
+        let res = await es_to_cjs({ plugins: [] }, [
+            'export let hello;',
+            '(function () {})(hello || (hello = 123))'
+        ].join('\n'), process.cwd() + '/_entry');
+        expect(res.code).to.equal([
+            'let hello;; ;',
+            '(function () {})(hello || (hello = 123));__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+        ].join('\n'));
+    });
+
+    it ('should support inline assignments 2', async () => {
+        let res = await es_to_cjs({ plugins: [] }, [
+            'export let hello;',
+            '(function () {})(hello || (hello = 123));'
+        ].join('\n'), process.cwd() + '/_entry');
+        expect(res.code).to.equal([
+            'let hello;; ;',
+            '(function () {})(hello || (hello = 123));;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+        ].join('\n'));
+    });
+
+    it ('should not fail when found inside shadowing function expression', async () => {
+        let res = await es_to_cjs({ plugins: [] }, [
+            'export let hello;',
+            '(function (hello) { hello = 123 })();',
+            'hello = 123'
+        ].join('\n'), process.cwd() + '/_entry');
+        expect(res.code).to.equal([
+            'let hello;; ;',
+            '(function (hello) { hello = 123 })();;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
+            'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+        ].join('\n'));
+    });
+
+    it ('should not fail when found inside shadowing function expression for multiple exports', async () => {
+        let res = await es_to_cjs({ plugins: [] }, [
+            'export let hello;',
+            'export let world;',
+            '(function (hello) { hello = 123 })();',
+            '(function (world) { world = 123 })();',
+            'hello = 123',
+            'world = 456'
+        ].join('\n'), process.cwd() + '/_entry');
+        expect(res.code).to.equal([
+            'let hello;; ;',
+            'let world;; ;',
+            '(function (hello) { hello = 123 })();;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
+            '(function (world) { world = 123 })();;__e__(\'world\', typeof world !== \'undefined\' && world);',
+            'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
+            'world = 456;__e__(\'world\', typeof world !== \'undefined\' && world);'
+        ].join('\n'));
+    });
+
+    it ('should not fail when exported after shadowed function statement', async () => {
+        let res = await es_to_cjs({ plugins: [] }, [
+            'function print (hello) { hello = 123 }',
+            'export let hello;',
+            'hello = 123'
+        ].join('\n'), process.cwd() + '/_entry');
+        expect(res.code).to.equal([
+            'function print (hello) { hello = 123 };__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
+            'let hello;; ;',
+            'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+        ].join('\n'));
+    });
+
+    it ('should not fail when exported after shadowed arrow expression', async () => {
+        let res = await es_to_cjs({ plugins: [] }, [
+            '(hello => { hello = 123 })();',
+            'export let hello;',
+            'hello = 123'
+        ].join('\n'), process.cwd() + '/_entry');
+        expect(res.code).to.equal([
+            '(hello => { hello = 123 })();;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
+            'let hello;; ;',
+            'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+        ].join('\n'));
+    });
+
+    it ('should not fail when shadowed in nested functions', async () => {
+        let res = await es_to_cjs({ plugins: [] }, [
+            'function parent (hello) {',
+            '   function nested (hello) {',
+            '       hello = 123;',
+            '   }',
+            '}',
+            'export let hello;',
+            'hello = 123'
+        ].join('\n'), process.cwd() + '/_entry');
+        expect(res.code).to.equal([
+            'function parent (hello) {',
+            '   function nested (hello) {',
+            '       hello = 123;',
+            '   }',
+            '};__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
+            'let hello;; ;',
+            'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+        ].join('\n'));
+    });
+});

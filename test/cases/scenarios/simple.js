@@ -290,4 +290,10 @@ describe('Nollup', function () {
         let entry = await bundle.generate();
         expect(entry.default).to.equal('A');
     });
+
+    it ('Scenario: Export Declaration Late Binding', async function () {
+        let bundle = await createNollup('export-declaration-late-binding');
+        let entry = await bundle.generate();
+        expect(entry.default).to.equal('hello world');
+    });
 });
