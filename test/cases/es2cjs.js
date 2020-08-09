@@ -106,16 +106,28 @@ let tests = [{
     input: 'export default Hello;',
     output: {
         exports: ['default'],
+        code: `__e__('default', Hello);;`
+    }
+}, {
+    input: 'export default Hello',
+    output: {
+        exports: ['default'],
         code: `__e__('default', Hello);`
     }
 }, {
     input: 'export default 123;',
     output: {
         exports: ['default'],
-        code: `__e__('default', 123);`
+        code: `__e__('default', 123);;`
     }
 }, {
     input: 'export default () => {};',
+    output: {
+        exports: ['default'],
+        code: `__e__('default', () => {});;`
+    }
+}, {
+    input: 'export default () => {}',
     output: {
         exports: ['default'],
         code: `__e__('default', () => {});`
@@ -124,12 +136,45 @@ let tests = [{
     input: 'export default (() => {});',
     output: {
         exports: ['default'],
+        code: `__e__('default', (() => {}));;`
+    }
+}, {
+    input: 'export default(() => {});',
+    output: {
+        exports: ['default'],
+        code: `__e__('default', (() => {}));;`
+    }
+}, {
+    input: 'export default(() => {})',
+    output: {
+        exports: ['default'],
         code: `__e__('default', (() => {}));`
     }
-}, /* {
-    input: 'export default(() => {});',
-    output: 'module.exports.default = (() => {});'
-},*/ {
+}, {
+    input: 'let hello = 123;export default function () {}export { hello }',
+    output: {
+        exports: ['default', 'hello'],
+        code: `let hello = 123;__e__('default', function () {}); __e__('hello', hello);`
+    }
+}, {
+    input: 'export default(() => {});export let hello = 123;',
+    output: {
+        exports: ['default', 'hello'],
+        code: `__e__('default', (() => {}));;let hello = 123;; __e__('hello', hello);`
+    }
+}, {
+    input: 'export default function(){}export let hello = 123;',
+    output: {
+        exports: ['default', 'hello'],
+        code: `__e__('default', function(){});let hello = 123;; __e__('hello', hello);`
+    }
+}, {
+    input: 'export let hello = 123;export let world = 456;',
+    output: {
+        exports: ['hello', 'world'],
+        code: `let hello = 123;; __e__('hello', hello);let world = 456;; __e__('world', world);`
+    }
+},  {
     input: 'export default class Hello {};',
     output: {
         exports: ['default'],
