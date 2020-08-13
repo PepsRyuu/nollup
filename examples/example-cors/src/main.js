@@ -1,0 +1,1 @@
+document.body.textContent = 'CORS issue solved!';

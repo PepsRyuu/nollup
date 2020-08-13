@@ -1,0 +1,6 @@
+{
+    "port": 9001,
+    "headers": {
+        "access-control-allow-origin": "*"
+    }
+}
