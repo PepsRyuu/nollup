@@ -16,3 +16,6 @@ This list provides a description of all of the options for the [CLI](./cli.md), 
 | ```String``` | ```hmrHost``` | Host to connect to for HMR. Default is ```window.location.host```. Useful for Electron environments. |
 | ```Function``` | ```before``` | Receives Express app as argument. You can inject custom middleware before Nollup dev middleware. |
 | ```Function``` | ```after``` | Receives Express app as argument. You can inject custom middleware after Nollup dev middleware. |
+| ```Boolean``` | ```https``` | Enable https. Default is ```false```. Requires ```key``` and ```cert``` to be set |
+| ```String``` | ```key``` | Path to the private key file to use with https. |
+| ```String``` | ```cert``` | Path to the certificate file to use with https. |

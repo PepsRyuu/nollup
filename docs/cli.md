@@ -21,6 +21,9 @@ The following flags can be passed into Nollup CLI. You can find a full descripti
 * ```--hmr-host [host]```
 * ```--public-path [folder]```
 * ```--environment [variables]```
+* ```--https```
+* ```--key [file]```
+* ```--cert [file]```
 
 ## .nolluprc
 

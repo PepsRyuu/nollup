@@ -33,6 +33,9 @@ The following options can be passed into Nollup Dev Server. You can find a full 
 * ```String publicPath```
 * ```Object proxy```
 * ```Boolean|String historyApiFallback```
+* ```Boolean https```
+* ```String key```
+* ```String cert```
 
 ## .nolluprc
 

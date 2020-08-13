@@ -1,0 +1,10 @@
+{
+    "scripts": {
+        "clean": "rm -rf dist",
+        "start": "node ../../lib/cli.js -c --content-base public --port 9001 --https --cert cert/example.crt --key cert/example.key",
+        "build": "npm run clean && rollup -c"
+    },
+    "devDependencies": {
+        "rollup": "^1.20.1"
+    }
+}
