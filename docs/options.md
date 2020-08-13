@@ -13,6 +13,7 @@ This list provides a description of all of the options for the [CLI](./cli.md), 
 | ```String``` | ```environment``` | Pass environment variables that are set to ```process.ENV```. |
 | ```Object``` | ```proxy``` | Object keys are paths to match. Value is the domain to proxy to. ```"api": "http://localhost:8080"``` will have a request such as ```/api/todos``` proxy to ```http://localhost:8080/api/todos```. |
 | ```Boolean``` | ```verbose``` | Enable verbose logging. Default is ```false```. |
+| ```Object``` | ```headers``` | Object that will provide headers for express server. Useful to set e.g. cors headers for the server. |
 | ```String``` | ```hmrHost``` | Host to connect to for HMR. Default is ```window.location.host```. Useful for Electron environments. |
 | ```Function``` | ```before``` | Receives Express app as argument. You can inject custom middleware before Nollup dev middleware. |
 | ```Function``` | ```after``` | Receives Express app as argument. You can inject custom middleware after Nollup dev middleware. |
