@@ -28,6 +28,7 @@ The following options can be passed into Nollup Dev Server. You can find a full 
 * ```Boolean hot```
 * ```Number port```
 * ```Boolean verbose```
+* ```String headers```
 * ```String hmrHost```
 * ```String contentBase```
 * ```String publicPath```

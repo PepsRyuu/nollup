@@ -1132,4 +1132,27 @@ describe('Dev Middleware', () => {
         expect(bundleRes.status).to.equal(200);
         expect(bundleRes.body.indexOf('123') > -1).to.be.true;
     });
+    it ('should add headers provided', async function () {
+        this.timeout(5000);
+
+        fs.stub('./src/main.js', () => 'export default 123');
+
+        let config = {
+            input: './src/main.js',
+            output: {
+                dir: 'dist',
+                entryFileNames: '[name].js',
+                format: 'esm'
+            }
+        };
+
+        let mw = middleware({}, config, {
+            publicPath: 'client/',
+            headers: {"Access-Control-Allow-Origin": "*"}
+        });
+
+        let bundleRes = await mwFetch(mw, '/client/main.js');
+        expect(bundleRes.status).to.equal(200);
+        expect(bundleRes.headers['Access-Control-Allow-Origin']).to.equal("*");
+    });
 });

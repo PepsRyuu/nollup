@@ -24,6 +24,7 @@ The following options can be passed into Nollup Dev Middleware. You can find a f
 
 * ```Boolean hot```
 * ```Boolean verbose```
+* ```String headers```
 * ```String hmrHost```
 * ```String contentBase```
 * ```String publicPath```
