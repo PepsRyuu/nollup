@@ -461,8 +461,319 @@ describe ('API: Plugin Context', () => {
     });
 
     describe ('error', () => {
-        it ('should accept a string or Error object');
-        it ('should abort the build');
+        it ('should accept a string', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.error('my error');
+                    }
+                }]
+            });
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e instanceof Error).to.be.true;
+                expect(e.message).to.equal('my error');
+                passed = true;
+            }
+
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should accept an error object', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.error(new Error('my error'));
+                    }
+                }]
+            });
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e instanceof Error).to.be.true;
+                expect(e.message).to.equal('my error');
+                passed = true;
+            }
+
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should accept an error-like object', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.error({ message: 'my error' });
+                    }
+                }]
+            });
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e.message).to.equal('my error');
+                passed = true;
+            }
+
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should support async plugin hook', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async transform () {
+                        this.error('my error');
+                    }
+                }]
+            });
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e instanceof Error).to.be.true;
+                expect(e.message).to.equal('my error');
+                passed = true;
+            }
+
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should support disconnected async plugin hook', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        return new Promise(resolve => {
+                            setTimeout(() => {
+                                this.error('my error');
+                            }, 10)
+                        });
+                    }
+                }]
+            });
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e instanceof Error).to.be.true;
+                expect(e.message).to.equal('my error');
+                passed = true;
+            }
+
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should support disconnected async plugin hook (Error object)', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        return new Promise(resolve => {
+                            setTimeout(() => {
+                                this.error(new Error('my error'));
+                            }, 10)
+                        });
+                    }
+                }]
+            });
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e instanceof Error).to.be.true;
+                expect(e.message).to.equal('my error');
+                passed = true;
+            }
+
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should be able to rebuild after error (sync)', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed, phase = 1;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code) {
+                        if (phase === 1) {
+                            this.error('my error');
+                        }
+
+                        if (phase === 2) {
+                            return code;
+                        }
+                    }
+                }]
+            });
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e.message).to.equal('my error');
+                phase++;
+                let { output } = await bundle.generate({ format: 'esm' });
+                expect(output[0].code.indexOf('123') > -1).to.be.true;
+                passed = true;
+            }
+
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should be able to rebuild after error (async)', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed, phase = 1;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async transform (code) {
+                        if (phase === 1) {
+                            this.error('my error');
+                        }
+
+                        if (phase === 2) {
+                            return code;
+                        }
+                    }
+                }]
+            });
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e.message).to.equal('my error');
+                phase++;
+                let { output } = await bundle.generate({ format: 'esm' });
+                expect(output[0].code.indexOf('123') > -1).to.be.true;
+                passed = true;
+            }
+
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should be able to rebuild after error (disconnected async)', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed, phase = 1;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async transform (code) {
+                        if (phase === 1) {
+                            return new Promise(resolve => {
+                                setTimeout(() => {
+                                    this.error('my error');
+                                }, 10)
+                            });
+                        }
+
+                        if (phase === 2) {
+                            return code;
+                        }
+                    }
+                }]
+            });
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e.message).to.equal('my error');
+                phase++;
+                let { output } = await bundle.generate({ format: 'esm' });
+                expect(output[0].code.indexOf('123') > -1).to.be.true;
+                passed = true;
+            }
+
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should not trigger twice in a single build in async', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        return new Promise(resolve => {
+                            setTimeout(() => {
+                                this.error('my error');
+
+                                setTimeout(() => {
+                                    try {
+                                        this.error('other error');
+                                    } catch (e) {
+                                        // should never get here
+                                        passed = false;
+                                    }
+                                }, 10);
+                            }, 10)
+                        });
+                    }
+                }]
+            });
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e instanceof Error).to.be.true;
+                expect(e.message).to.equal('my error');
+                passed = true;
+            }
+
+            await new Promise(resolve => {
+                setTimeout(resolve, 1000);
+            });
+
+            expect(passed).to.be.true;
+            passed = false;
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e instanceof Error).to.be.true;
+                expect(e.message).to.equal('my error');
+                passed = true;
+            }
+
+            expect(passed).to.be.true;
+
+            fs.reset();
+        });
     });
 
     describe('emitFile', () => {
