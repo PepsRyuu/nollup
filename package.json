@@ -26,7 +26,8 @@
     "express-ws": "^4.0.0",
     "magic-string": "^0.25.7",
     "mime-types": "^2.1.24",
-    "source-map": "^0.5.6"
+    "source-map": "^0.5.6",
+    "source-map-fast": "npm:source-map@0.7.3"
   },
   "devDependencies": {
     "chai": "^4.1.2",

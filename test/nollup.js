@@ -2,6 +2,10 @@ let proxyquire = require('proxyquire');
 let path = require('path');
 let fs_impl = require('fs');
 let expect = require('chai').expect;
+let SourceMapFast = require('source-map-fast');
+
+// Source map lib has a check for browser
+window.fetch = undefined;
 
 let fs = {
     '@global': true,
@@ -32,19 +36,19 @@ let fs = {
 
     readFile: function (file, encoding, callback) {
         try {
-            let output = this.readFileSync(file);
-            callback(null, output);
+            let output = this.readFileSync(file, encoding);
+            callback(null, output);     
         } catch (e) {
             callback(e);
         }
     },
 
-    readFileSync: function (file) {
+    readFileSync: function (file, encoding) {
         if (this._stubs[file]) {
             return this._stubs[file]();
         }
 
-        return fs_impl.readFileSync(file, 'utf8');
+        return fs_impl.readFileSync(file, encoding);
     },
 
     reset: function () {
