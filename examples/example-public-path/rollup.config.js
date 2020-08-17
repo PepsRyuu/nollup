@@ -2,9 +2,20 @@ import node_resolve from 'rollup-plugin-node-resolve';
 import babel from 'rollup-plugin-babel';
 import hotcss from 'rollup-plugin-hot-css';
 import commonjs from 'rollup-plugin-commonjs-alternate';
-import replace from 'rollup-plugin-replace';
 import static_files from 'rollup-plugin-static-files';
 import { terser } from 'rollup-plugin-terser';
+
+let env = function () {
+    return {
+        banner: `
+            self.process = {
+                env: {
+                    NODE_ENV: ${JSON.stringify(process.env.NODE_ENV)}
+                }
+            };
+        `
+    }
+};
 
 let config = {
     input: './src/main.js',
@@ -15,14 +26,14 @@ let config = {
         assetFileNames: '[name].[hash][extname]'
     },
     plugins: [
-        replace({
-            'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
-        }),
+        env(),
         hotcss({
             hot: process.env.NODE_ENV === 'development',
             filename: 'styles.css'
         }),
-        babel(),
+        babel({
+            exclude: 'node_modules/**'
+        }),
         node_resolve(),
         commonjs()
     ]
