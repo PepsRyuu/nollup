@@ -1,0 +1,12 @@
+{
+    "scripts": {
+        "clean": "rm -rf dist",
+        "start": "node ../../lib/cli.js -c --content-base public --port 9001 --history-api-fallback --public-path client",
+        "build": "npm run clean && rollup -c"
+    },
+    "devDependencies": {
+        "@rollup/plugin-html": "^0.2.0",
+        "rollup": "^2.26.5",
+        "rollup-plugin-hot-css": "^0.4.0"
+    }
+}
