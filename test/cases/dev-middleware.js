@@ -1132,6 +1132,7 @@ describe('Dev Middleware', () => {
         expect(bundleRes.status).to.equal(200);
         expect(bundleRes.body.indexOf('123') > -1).to.be.true;
     });
+
     it ('should add headers provided', async function () {
         this.timeout(5000);
 
@@ -1154,5 +1155,69 @@ describe('Dev Middleware', () => {
         let bundleRes = await mwFetch(mw, '/client/main.js');
         expect(bundleRes.status).to.equal(200);
         expect(bundleRes.headers['Access-Control-Allow-Origin']).to.equal("*");
+    });
+
+    it ('should check for index.html if accessing /', async function () {
+        this.timeout(5000);
+
+        fs.stub('./src/main.js', () => 'export default 123');
+
+        let config = {
+            input: './src/main.js',
+            output: {
+                dir: 'dist',
+                entryFileNames: '[name].js',
+                assetFileNames: '[name].[hash][extname]',
+                format: 'esm'
+            },
+            plugins: [{
+                transform (code) {
+                    this.emitFile({
+                        fileName: 'index.html',
+                        type: 'asset',
+                        source: '<p>hello world</p>'
+                    });
+                }
+            }]
+        };
+
+        let mw = middleware({}, config, {});
+
+        let bundleRes = await mwFetch(mw, '/');
+        expect(bundleRes.status).to.equal(200);
+        expect(bundleRes.body.indexOf('<p>hello world</p>') > -1).to.be.true;
+    });
+
+    it ('should check for index.html if accessing public path', async function () {
+        this.timeout(5000);
+
+        fs.stub('./src/main.js', () => 'export default 123');
+
+        let config = {
+            input: './src/main.js',
+            output: {
+                dir: 'dist',
+                entryFileNames: '[name].js',
+                assetFileNames: '[name].[hash][extname]',
+                format: 'esm'
+            },
+            plugins: [{
+                transform (code) {
+                    this.emitFile({
+                        fileName: 'index.html',
+                        type: 'asset',
+                        source: '<p>hello world</p>'
+                    });
+                }
+            }]
+        };
+
+        let mw = middleware({}, config, {
+            publicPath: 'client'
+        });
+
+        let bundleRes = await mwFetch(mw, '/client/');
+        expect(bundleRes.status).to.equal(200);
+        expect(bundleRes.body.indexOf('<p>hello world</p>') > -1).to.be.true;
     });
 });
