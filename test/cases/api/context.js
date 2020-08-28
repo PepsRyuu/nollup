@@ -429,7 +429,36 @@ describe ('API: Plugin Context', () => {
 
             let { output } = await bundle.generate({ format: 'esm', assetFileNames: 'asset-[name][extname]' });
             fs.reset();
-        })
+        });
+
+        it ('should throw an error if invalid syntax', async () => {
+            fs.stub('./src/main.css', () => '.hello { color: blue}')
+            fs.stub('./src/main.js', () => 'import "./main.css";');
+            let failedError;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        try {
+                            this.parse(code);
+                        } catch (e) {
+                            failedError = e;
+                            return '';
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+
+            expect(failedError.name).to.equal('SyntaxError');
+            expect(failedError.message).to.equal([
+                'Unexpected token (1:0)',
+                '    .hello { color: blue}',
+                '    ^'
+            ].join('\n'));
+        });
     })
 
     describe ('resolveId', () => {

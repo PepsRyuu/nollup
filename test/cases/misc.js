@@ -1,4 +1,4 @@
-let { nollup, fs, expect } = require('../nollup');
+let { nollup, fs, expect, rollup } = require('../nollup');
 
 describe ('Misc', () => {
     it ('should not throw error if using require with string in CJS format', async () => {
@@ -107,5 +107,33 @@ describe ('Misc', () => {
         expect(output[0].code.indexOf('hello')).to.equal(-1);
         expect(output[0].code.indexOf('world') > -1).to.be.true;
         expect(Object.keys(myplugin).length).to.equal(1);
+    });
+
+    it ('should throw syntax error if there is a problem parsing the syntax', async () => {
+        fs.stub('./src/main.js', () => [
+            'console.log(123);',
+            'var abc def = 123;'
+        ].join('\n'));
+        let compiled = false, thrown = false;
+
+        let bundle = await nollup({
+            input: './src/main.js'
+        });
+
+        try {
+            await bundle.generate({ format: 'esm' });
+            compiled = true;
+        } catch (e) {
+            thrown = true;
+            expect(e.name).to.equal('SyntaxError');
+            expect(e.message).to.equal([
+                'Unexpected token (2:8)',
+                '    var abc def = 123;',
+                '            ^'
+            ].join('\n'));
+        }
+
+        expect(compiled).to.be.false;
+        expect(thrown).to.be.true;
     });
 });
