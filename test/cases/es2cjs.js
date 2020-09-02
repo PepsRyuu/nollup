@@ -322,6 +322,12 @@ let tests = [{
         exports: ['foo', 'bar', 'hello'],
         code: `const { foo, bar } = myvar, hello = 123;; __e__('foo', foo), __e__('bar', bar), __e__('hello', hello);`
     }
+}, {
+    input: 'export {};',
+    output: {
+        exports: [],
+        code: ``
+    }
 }];
 
 describe ('es_to_cjs', () => {
