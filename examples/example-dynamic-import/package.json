@@ -16,7 +16,7 @@
         "react-hot-loader": "^4.12.11",
         "rollup": "^2.13.1",
         "rollup-plugin-babel": "^4.3.3",
-        "rollup-plugin-commonjs-alternate": "^0.1.0",
+        "rollup-plugin-commonjs-alternate": "^0.6.1",
         "rollup-plugin-hot-css": "^0.3.0",
         "rollup-plugin-node-resolve": "^5.2.0",
         "rollup-plugin-static-files": "0.0.1",
