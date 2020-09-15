@@ -136,4 +136,38 @@ describe ('Misc', () => {
         expect(compiled).to.be.false;
         expect(thrown).to.be.true;
     });
+
+    it ('should remove null byte from sourceURL comments', async () => {
+        fs.stub('./src/main.js', () => 'console.log("hello");');
+
+        let VIRTUAL_MODULE_ID = '\0virtual-module';
+
+        let myplugin = {
+            resolveId (id) {
+                if (id === VIRTUAL_MODULE_ID) {
+                    return VIRTUAL_MODULE_ID;
+                }
+            },
+
+            load (id) {
+                if (id === VIRTUAL_MODULE_ID) {
+                    return 'export default 123';
+                }
+            },
+
+            transform (code, id) {
+                if (id.indexOf('main.js') > -1) {
+                    return `import MyNumber from '${VIRTUAL_MODULE_ID}';${code}`
+                }
+            }
+        };
+
+        let bundle = await nollup({
+            input: './src/main.js',
+            plugins: [myplugin]
+        });
+
+        let { output } = await bundle.generate({ format: 'esm' });
+        expect(output[0].code.indexOf('\0')).to.equal(-1);
+    });
 });
