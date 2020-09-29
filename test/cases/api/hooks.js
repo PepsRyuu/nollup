@@ -62,6 +62,7 @@ describe ('API: Plugin Hooks', () => {
             bundle.invalidate('./src/lol.js');
             output = (await bundle.generate({ format: 'iife' })).output;
             result = eval(output[0].code);
+
             expect(result.default.hello()).to.equal('world');
             expect(result.hello()).to.equal('world');
 
@@ -398,7 +399,7 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
-            expect(output[0].code.indexOf(`__e__(\\'default\\', 999)`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return 999 })`) > -1).to.be.true;
             fs.reset();
         });
 
@@ -427,7 +428,7 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
-            expect(output[0].code.indexOf(`__e__(\\'default\\', 999)`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return 999 })`) > -1).to.be.true;
             fs.reset();
         });
 
@@ -452,7 +453,7 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
-            expect(output[0].code.indexOf(`__e__(\\'default\\', 999)`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return 999 })`) > -1).to.be.true;
             fs.reset();
         });
 
@@ -478,7 +479,7 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
-            expect(output[0].code.indexOf(`__e__(\\'default\\', 999)`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return 999 })`) > -1).to.be.true;
             fs.reset();
         });
 
@@ -631,7 +632,7 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
-            expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return 123 })`) > -1).to.be.true;
             fs.reset();
         });
 
@@ -658,7 +659,7 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
-            expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return 123 })`) > -1).to.be.true;
             expect(passed1).to.be.true;
             expect(passed2).to.be.true;
             fs.reset();
@@ -681,7 +682,7 @@ describe ('API: Plugin Hooks', () => {
 
             let { output } = await bundle.generate({ format: 'esm' });
             expect(output[0].code.indexOf('import \'haha\';') > -1).to.be.true;
-            expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) === -1).to.be.true;
+            expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return 123 })`) === -1).to.be.true;
             fs.reset();
         });
 
@@ -705,7 +706,7 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
-            expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return 123 })`) > -1).to.be.true;
             fs.reset();
         });
 
@@ -725,7 +726,7 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
-            expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return 123 })`) > -1).to.be.true;
             fs.reset();
         });
 
@@ -745,7 +746,7 @@ describe ('API: Plugin Hooks', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
-            expect(output[0].code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.false;
+            expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return 123 })`) > -1).to.be.false;
             fs.reset();
         });
 

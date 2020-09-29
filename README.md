@@ -74,4 +74,3 @@ Nollup provides additional plugin hooks for plugin authors to implement features
 
 * Only Rollup configurations that make sense in development are implemented.
 * Might be some inconsistencies with Rollup, but should be fine for majority of projects.
-* No support for live-bindings, but circular dependencies are supported. 

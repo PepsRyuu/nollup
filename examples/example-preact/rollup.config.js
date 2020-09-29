@@ -13,7 +13,7 @@ let config = {
         entryFileNames: '[name].[hash].js',
         assetFileNames: '[name].[hash][extname]'
     },
-    plugins: [
+    plugins: [ 
         hotcss({
             hot: process.env.NODE_ENV === 'development',
             file: 'styles.css'

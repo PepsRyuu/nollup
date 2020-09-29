@@ -1,0 +1,11 @@
+{
+    "scripts": {
+        "clean": "rm -rf target && rm -rf dist",
+        "start": "cross-env NODE_ENV=development node ../../lib/cli.js -c --content-base public --port 9001 --hot --live-bindings",
+        "start:reference": "cross-env NODE_ENV=development node ../../lib/cli.js -c --content-base public --port 9001 --hot --live-bindings reference",
+        "start:with-scope": "cross-env NODE_ENV=development node ../../lib/cli.js -c --content-base public --port 9001 --hot --live-bindings with-scope"
+    },
+    "devDependencies": {
+        "cross-env": "^5.2.0"
+    }
+}

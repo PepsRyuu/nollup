@@ -44,7 +44,7 @@ describe ('API: Nollup Hooks', () => {
                             modules[1] = function (c, r, d, e) {
                                 d(function () {
                                 }, function () {
-                                    e('default', 456);
+                                    e('default', function () { return 456 });
                                 })
                             };
                             expect(Object.keys(modules).length).to.equal(2);
@@ -124,7 +124,7 @@ describe ('API: Nollup Hooks', () => {
                             modules[1] = function (c, r, d, e) {
                                 d(function () {
                                 }, function () {
-                                    e('default', 456);
+                                    e('default', function () { return 456 });
                                 })
                             };
                             expect(Object.keys(modules).length).to.equal(2);

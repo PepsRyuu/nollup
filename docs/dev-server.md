@@ -38,6 +38,7 @@ The following options can be passed into Nollup Dev Server. You can find a full 
 * ```Boolean https```
 * ```String key```
 * ```String cert```
+* ```String|Boolean liveBindings```
 
 ## .nolluprc
 
