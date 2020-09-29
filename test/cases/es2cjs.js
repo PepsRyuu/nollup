@@ -1,4 +1,5 @@
 let es_to_cjs = require('../../lib/impl/ImportExportResolver');
+let live_bindings_resolver = require('../../lib/impl/LiveBindingsResolver');
 let { expect } = require('../nollup');
 let path = require('path');
 
@@ -106,139 +107,139 @@ let tests = [{
     input: 'export default Hello;',
     output: {
         exports: ['default'],
-        code: `__e__('default', Hello);;`
+        code: `__e__('default', function () { return Hello });;`
     }
 }, {
     input: 'export default Hello',
     output: {
         exports: ['default'],
-        code: `__e__('default', Hello);`
+        code: `__e__('default', function () { return Hello });`
     }
 }, {
     input: 'export default 123;',
     output: {
         exports: ['default'],
-        code: `__e__('default', 123);;`
+        code: `__e__('default', function () { return 123 });;`
     }
 }, {
     input: 'export default () => {};',
     output: {
         exports: ['default'],
-        code: `__e__('default', () => {});;`
+        code: `__e__('default', function () { return () => {} });;`
     }
 }, {
     input: 'export default () => {}',
     output: {
         exports: ['default'],
-        code: `__e__('default', () => {});`
+        code: `__e__('default', function () { return () => {} });`
     }
 }, {
     input: 'export default (() => {});',
     output: {
         exports: ['default'],
-        code: `__e__('default', (() => {}));;`
+        code: `__e__('default', function () { return (() => {}) });;`
     }
 }, {
     input: 'export default(() => {});',
     output: {
         exports: ['default'],
-        code: `__e__('default', (() => {}));;`
+        code: `__e__('default', function () { return (() => {}) });;`
     }
 }, {
     input: 'export default(() => {})',
     output: {
         exports: ['default'],
-        code: `__e__('default', (() => {}));`
+        code: `__e__('default', function () { return (() => {}) });`
     }
 }, {
     input: 'let hello = 123;export default function () {}export { hello }',
     output: {
         exports: ['default', 'hello'],
-        code: `let hello = 123;__e__('default', function () {}); __e__('hello', hello);`
+        code: `let hello = 123;__e__('default', function () { return function () {} }); __e__('hello', function () { return hello });`
     }
 }, {
     input: 'export default(() => {});export let hello = 123;',
     output: {
         exports: ['default', 'hello'],
-        code: `__e__('default', (() => {}));;let hello = 123;; __e__('hello', hello);`
+        code: `__e__('default', function () { return (() => {}) });;let hello = 123;; __e__('hello', function () { return hello });`
     }
 }, {
     input: 'export default function(){}export let hello = 123;',
     output: {
         exports: ['default', 'hello'],
-        code: `__e__('default', function(){});let hello = 123;; __e__('hello', hello);`
+        code: `__e__('default', function () { return function(){} });let hello = 123;; __e__('hello', function () { return hello });`
     }
 }, {
     input: 'export let hello = 123;export let world = 456;',
     output: {
         exports: ['hello', 'world'],
-        code: `let hello = 123;; __e__('hello', hello);let world = 456;; __e__('world', world);`
+        code: `let hello = 123;; __e__('hello', function () { return hello });let world = 456;; __e__('world', function () { return world });`
     }
 },  {
     input: 'export default class Hello {};',
     output: {
         exports: ['default'],
-        code: `class Hello {}; __e__('default', Hello);;`
+        code: `class Hello {}; __e__('default', function () { return Hello });;`
     }
 }, {
     input: 'export default class Hello {}',
     output: {
         exports: ['default'],
-        code: `class Hello {}; __e__('default', Hello);`
+        code: `class Hello {}; __e__('default', function () { return Hello });`
     }
 }, {
     input: 'export class Hello {};',
     output: {
         exports: ['Hello'],
-        code: `class Hello {}; __e__('Hello', Hello);;`
+        code: `class Hello {}; __e__('Hello', function () { return Hello });;`
     }
 }, {
     input: 'export class Hello {}',
     output: {
         exports: ['Hello'],
-        code: `class Hello {}; __e__('Hello', Hello);`
+        code: `class Hello {}; __e__('Hello', function () { return Hello });`
     }
 }, {
     input: 'export function Hello () {};',
     output: {
         exports: ['Hello'],
-        code: `function Hello () {}; __e__('Hello', Hello);;`
+        code: `function Hello () {}; __e__('Hello', function () { return Hello });;`
     }
 }, {
     input: 'let name1 = 123, name2 = 456; export {name1, name2};',
     output: {
         exports: ['name1', 'name2'],
-        code: `let name1 = 123, name2 = 456; __e__('name1', name1);__e__('name2', name2);`
+        code: `let name1 = 123, name2 = 456; __e__('name1', function () { return name1 });__e__('name2', function () { return name2 });`
     }
 }, {
     input: 'let hello = 123, name = 456; export {hello as world, name};',
     output: {
         exports: ['world', 'name'],
-        code: `let hello = 123, name = 456; __e__('world', hello);__e__('name', name);`
+        code: `let hello = 123, name = 456; __e__('world', function () { return hello });__e__('name', function () { return name });`
     }
 }, {
     input: 'export var MyVar1 = 123;',
     output: {
         exports: ['MyVar1'],
-        code: `var MyVar1 = 123;; __e__('MyVar1', MyVar1);`
+        code: `var MyVar1 = 123;; __e__('MyVar1', function () { return MyVar1 });`
     }
 }, {
     input: 'export var MyVar1 = () => {}, MyVar2 = 456;',
     output: {
         exports: ['MyVar1', 'MyVar2'],
-        code: `var MyVar1 = () => {}, MyVar2 = 456;; __e__('MyVar1', MyVar1), __e__('MyVar2', MyVar2);`
+        code: `var MyVar1 = () => {}, MyVar2 = 456;; __e__('MyVar1', function () { return MyVar1 }), __e__('MyVar2', function () { return MyVar2 });`
     }
 }, {
     input: 'export var MyVar1 = () => {}, MyVar2 = 456',
     output: {
         exports: ['MyVar1', 'MyVar2'],
-        code: `var MyVar1 = () => {}, MyVar2 = 456; __e__('MyVar1', MyVar1), __e__('MyVar2', MyVar2);`
+        code: `var MyVar1 = () => {}, MyVar2 = 456; __e__('MyVar1', function () { return MyVar1 }), __e__('MyVar2', function () { return MyVar2 });`
     }
 }, {
     input: 'export const MyVar1 = () => {}, MyVar2 = 456;',
     output: {
         exports: ['MyVar1', 'MyVar2'],
-        code: `const MyVar1 = () => {}, MyVar2 = 456;; __e__('MyVar1', MyVar1), __e__('MyVar2', MyVar2);`
+        code: `const MyVar1 = () => {}, MyVar2 = 456;; __e__('MyVar1', function () { return MyVar1 }), __e__('MyVar2', function () { return MyVar2 });`
     }
 }, {
     input: 'export { MyVar } from "./file"',
@@ -308,19 +309,19 @@ let tests = [{
     input: 'export const { foo, bar } = myvar;',
     output: {
         exports: ['foo', 'bar'],
-        code: `const { foo, bar } = myvar;; __e__('foo', foo), __e__('bar', bar);`
+        code: `const { foo, bar } = myvar;; __e__('foo', function () { return foo }), __e__('bar', function () { return bar });`
     }
 }, {
     input: 'export const { foo: hello, bar: world } = myvar;',
     output: {
         exports: ['hello', 'world'],
-        code: `const { foo: hello, bar: world } = myvar;; __e__('hello', hello), __e__('world', world);`
+        code: `const { foo: hello, bar: world } = myvar;; __e__('hello', function () { return hello }), __e__('world', function () { return world });`
     }
 }, {
     input: 'export const { foo, bar } = myvar, hello = 123;',
     output: {
         exports: ['foo', 'bar', 'hello'],
-        code: `const { foo, bar } = myvar, hello = 123;; __e__('foo', foo), __e__('bar', bar), __e__('hello', hello);`
+        code: `const { foo, bar } = myvar, hello = 123;; __e__('foo', function () { return foo }), __e__('bar', function () { return bar }), __e__('hello', function () { return hello });`
     }
 }, {
     input: 'export {};',
@@ -742,8 +743,8 @@ describe('misc transform issues', () => {
         ].join('\n'), process.cwd() + '/_entry');
         expect(res.code).to.equal([
             'var Hello, World, Foo, Bar;',
-            '                       __e__(\'Hello\', Hello);__e__(\'World\', World);',
-            '                    __e__(\'Foo\', Foo);__e__(\'Bar\', Bar);',
+            '                       __e__(\'Hello\', function () { return Hello });__e__(\'World\', function () { return World });',
+            '                    __e__(\'Foo\', function () { return Foo });__e__(\'Bar\', function () { return Bar });',
             'console.log(Hello, World)'
         ].join('\n'));
     });
@@ -762,7 +763,7 @@ describe('misc transform issues', () => {
             '                           ',
             '                           ',
             '                           ',
-            ' __e__(\'Hello\', Hello);__e__(\'World\', World);                          ',
+            ' __e__(\'Hello\', function () { return Hello });__e__(\'World\', function () { return World });                          ',
             'console.log(Hello, World)'
         ].join('\n'));
     });
@@ -776,7 +777,7 @@ describe ('Export Live Bindings', () => {
         ].join('\n'), process.cwd() + '/_entry');
         expect(res.code).to.equal([
             'let hello;; ;',
-            'hello = 123;;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+            'hello = 123;;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
         ].join('\n'));
     });
 
@@ -789,9 +790,9 @@ describe ('Export Live Bindings', () => {
         ].join('\n'), process.cwd() + '/_entry');
         expect(res.code).to.equal([
             'let hello;; ;',
-            'hello = 123;;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
+            'hello = 123;;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
             'let world;; ;',
-            'world = 456;;__e__(\'world\', typeof world !== \'undefined\' && world);'
+            'world = 456;;__e__(\'world\', function () { return typeof world !== \'undefined\' && world });'
         ].join('\n'));
     });
 
@@ -802,7 +803,7 @@ describe ('Export Live Bindings', () => {
         ].join('\n'), process.cwd() + '/_entry');
         expect(res.code).to.equal([
             'let hello;; ;',
-            '(function () {})(hello || (hello = 123));__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+            '(function () {})(hello || (hello = 123));__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
         ].join('\n'));
     });
 
@@ -813,7 +814,7 @@ describe ('Export Live Bindings', () => {
         ].join('\n'), process.cwd() + '/_entry');
         expect(res.code).to.equal([
             'let hello;; ;',
-            '(function () {})(hello || (hello = 123));;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+            '(function () {})(hello || (hello = 123));;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
         ].join('\n'));
     });
 
@@ -825,8 +826,8 @@ describe ('Export Live Bindings', () => {
         ].join('\n'), process.cwd() + '/_entry');
         expect(res.code).to.equal([
             'let hello;; ;',
-            '(function (hello) { hello = 123 })();;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
-            'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+            '(function (hello) { hello = 123 })();;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
+            'hello = 123;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
         ].join('\n'));
     });
 
@@ -842,10 +843,10 @@ describe ('Export Live Bindings', () => {
         expect(res.code).to.equal([
             'let hello;; ;',
             'let world;; ;',
-            '(function (hello) { hello = 123 })();;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
-            '(function (world) { world = 123 })();;__e__(\'world\', typeof world !== \'undefined\' && world);',
-            'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
-            'world = 456;__e__(\'world\', typeof world !== \'undefined\' && world);'
+            '(function (hello) { hello = 123 })();;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
+            '(function (world) { world = 123 })();;__e__(\'world\', function () { return typeof world !== \'undefined\' && world });',
+            'hello = 123;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
+            'world = 456;__e__(\'world\', function () { return typeof world !== \'undefined\' && world });'
         ].join('\n'));
     });
 
@@ -856,9 +857,9 @@ describe ('Export Live Bindings', () => {
             'hello = 123'
         ].join('\n'), process.cwd() + '/_entry');
         expect(res.code).to.equal([
-            'function print (hello) { hello = 123 };__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
+            'function print (hello) { hello = 123 };__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
             'let hello;; ;',
-            'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+            'hello = 123;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
         ].join('\n'));
     });
 
@@ -869,9 +870,9 @@ describe ('Export Live Bindings', () => {
             'hello = 123'
         ].join('\n'), process.cwd() + '/_entry');
         expect(res.code).to.equal([
-            '(hello => { hello = 123 })();;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
+            '(hello => { hello = 123 })();;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
             'let hello;; ;',
-            'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+            'hello = 123;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
         ].join('\n'));
     });
 
@@ -890,9 +891,327 @@ describe ('Export Live Bindings', () => {
             '   function nested (hello) {',
             '       hello = 123;',
             '   }',
-            '};__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
+            '};__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
             'let hello;; ;',
-            'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
+            'hello = 123;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
+        ].join('\n'));
+    });
+});
+
+describe ('Import Live Bindings', () => {
+    async function resolve (code) {
+        let ctx = { plugins: [], liveBindings: true };
+        let curr = process.cwd() + '/_entry';
+        let res1 = await es_to_cjs(ctx, code.join('\n'), curr);
+        let res2 = live_bindings_resolver(ctx, res1.code, curr, res1.imports);
+        return res2.code;
+    }
+
+    it ('should change import usage to binding variable', async () => {
+        let res = await resolve([
+            'import MyVar1 from "./myfile";',
+            'console.log(MyVar1);'
+        ]);
+        expect(res).to.equal([
+            '                              ',
+            'console.log(__i__["MyVar1"]);'
+        ].join('\n'));
+    });
+
+    it ('should change import usage to binding variable for named', async () => {
+        let res = await resolve([
+            'import MyDefault, { MyVar1, MyVar2 } from "./myfile";',
+            'console.log(MyDefault, MyVar1, MyVar2);'
+        ]);
+        expect(res).to.equal([
+            '                                                     ',
+            'console.log(__i__["MyDefault"], __i__["MyVar1"], __i__["MyVar2"]);'
+        ].join('\n'));
+    });
+
+    it ('should allow shadowing by function declaration params', async () => {
+        let res = await resolve([
+            'import MyDefault, { MyVar } from "./myfile";',
+            'function MyFunction (MyDefault) {',
+            '    console.log(MyDefault, MyVar);',
+            '}',
+            'console.log(MyDefault);'
+        ]);
+        expect(res).to.equal([
+            '                                            ',
+            'function MyFunction (MyDefault) {',
+            '    console.log(MyDefault, __i__["MyVar"]);',
+            '}',
+            'console.log(__i__["MyDefault"]);'
+        ].join('\n'));
+    });
+
+    it ('should allow nested function shadowing', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'function MyFunction () {',
+            '    console.log(MyDefault);',
+            '    function MyNestedFunction (MyDefault) {',
+            '       console.log(MyDefault);',
+            '    }',
+            '}'
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            'function MyFunction () {',
+            '    console.log(__i__["MyDefault"]);',
+            '    function MyNestedFunction (MyDefault) {',
+            '       console.log(MyDefault);',
+            '    }',
+            '}'
+        ].join('\n'));
+    });
+
+    it ('should allow shadowing by function expression params', async () => {
+        let res = await resolve([
+            'import MyDefault, { MyVar } from "./myfile";',
+            'var MyFunction = function (MyDefault) {',
+            '    console.log(MyDefault, MyVar);',
+            '}',
+            'console.log(MyDefault);'
+        ]);
+        expect(res).to.equal([
+            '                                            ',
+            'var MyFunction = function (MyDefault) {',
+            '    console.log(MyDefault, __i__["MyVar"]);',
+            '}',
+            'console.log(__i__["MyDefault"]);'
+        ].join('\n'));
+    });
+
+    it ('should allow shadowing by arrow function expression params', async () => {
+        let res = await resolve([
+            'import MyDefault, { MyVar } from "./myfile";',
+            'var MyFunction = (MyDefault) => {',
+            '    console.log(MyDefault, MyVar);',
+            '}',
+            'console.log(MyDefault);'
+        ]);
+        expect(res).to.equal([
+            '                                            ',
+            'var MyFunction = (MyDefault) => {',
+            '    console.log(MyDefault, __i__["MyVar"]);',
+            '}',
+            'console.log(__i__["MyDefault"]);'
+        ].join('\n'));
+    });
+
+    it ('should allow shadowing by var declaration in a block', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'console.log(MyDefault);',
+            '{',
+            '    console.log(MyDefault);',
+            '    {',
+            '       let MyDefault;',
+            '       console.log(MyDefault)',
+            '    }',
+            '    console.log(MyDefault);',
+            '}' 
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            'console.log(__i__["MyDefault"]);',
+            '{',
+            '    console.log(__i__["MyDefault"]);',
+            '    {',
+            '       let MyDefault;',
+            '       console.log(MyDefault)',
+            '    }',
+            '    console.log(__i__["MyDefault"]);',
+            '}' 
+        ].join('\n'));
+    });
+
+    it ('should allow shadowing by local variable in function', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'console.log(MyDefault);',
+            'function MyFunction () {',
+            '    var MyDefault',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(MyDefault)'
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            'console.log(__i__["MyDefault"]);',
+            'function MyFunction () {',
+            '    var MyDefault',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(__i__["MyDefault"])'
+        ].join('\n'));
+    });
+
+     it ('should support object declarations using a binding', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'var obj1 = { MyDefault }',
+            'var obj2 = { Other: MyDefault }',
+            'var obj3 = { MyDefault: MyDefault }',
+            'var obj4 = { MyDefault: Other }'
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            'var obj1 = { MyDefault: __i__["MyDefault"] }',
+            'var obj2 = { Other: __i__["MyDefault"] }',
+            'var obj3 = { MyDefault: __i__["MyDefault"] }',
+            'var obj4 = { MyDefault: Other }'
+        ].join('\n'));
+    });
+
+    it ('should support export statement with a binding', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'export { MyDefault as MyDefault }'
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            '                                 __e__(\'MyDefault\', function () { return __i__["MyDefault"] });',
+        ].join('\n'));
+    });
+
+    it ('should not transform identifier on object keys', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'var obj = { MyDefault: 123 }',
+            'console.log(obj.MyDefault)'
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            'var obj = { MyDefault: 123 }',
+            'console.log(obj.MyDefault)'
+        ].join('\n'));
+    });
+
+    it ('should support shadowing by array variable declarations', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'function MyFunction () {',
+            '    var [ MyDefault, Other ] = someFn();',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(MyDefault)'
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            'function MyFunction () {',
+            '    var [ MyDefault, Other ] = someFn();',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(__i__["MyDefault"])'
+        ].join('\n'));
+    });
+
+    it ('should support shadowing by nested array variable declarations', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'function MyFunction () {',
+            '    var [ A, [ MyDefault, B ]] = someFn();',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(MyDefault)'
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            'function MyFunction () {',
+            '    var [ A, [ MyDefault, B ]] = someFn();',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(__i__["MyDefault"])'
+        ].join('\n'));
+    });
+
+    it ('should support shadowing by nested array variable declarations with omitted', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'function MyFunction () {',
+            '    var [, [, MyDefault ]] = someFn();',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(MyDefault)'
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            'function MyFunction () {',
+            '    var [, [, MyDefault ]] = someFn();',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(__i__["MyDefault"])'
+        ].join('\n'));
+    });
+
+    it ('should support shadowing by destructured variable declarations', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'function MyFunction () {',
+            '    var { MyDefault, Other } = someFn();',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(MyDefault)'
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            'function MyFunction () {',
+            '    var { MyDefault, Other } = someFn();',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(__i__["MyDefault"])'
+        ].join('\n'));
+    });
+
+    it ('should support shadowing by renamed destructured variable declarations', async () => {
+        let res = await resolve([
+            'import MyDefault, { MyVar } from "./myfile";',
+            'function MyFunction () {',
+            '    var { Other: MyDefault, MyVar: Something } = someFn();',
+            '    console.log(MyDefault, MyVar);',
+            '}',
+            'console.log(MyDefault, MyVar)'
+        ]);
+        expect(res).to.equal([
+            '                                            ',
+            'function MyFunction () {',
+            '    var { Other: MyDefault, MyVar: Something } = someFn();',
+            '    console.log(MyDefault, __i__["MyVar"]);',
+            '}',
+            'console.log(__i__["MyDefault"], __i__["MyVar"])'
+        ].join('\n'));
+    });
+
+    it ('should support shadowing by nested destructured variable declarations', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'function MyFunction () {',
+            '    var { A, Other: { MyDefault, B } } = someFn();',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(MyDefault)'
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            'function MyFunction () {',
+            '    var { A, Other: { MyDefault, B } } = someFn();',
+            '    console.log(MyDefault);',
+            '}',
+            'console.log(__i__["MyDefault"])'
+        ].join('\n'));
+    });
+
+    it ('should modify implicit arrow function expressions', async () => {
+        let res = await resolve([
+            'import MyDefault from "./myfile";',
+            'let fn = () => MyDefault(123);'
+        ]);
+        expect(res).to.equal([
+            '                                 ',
+            'let fn = () => __i__["MyDefault"](123);'
         ].join('\n'));
     });
 });

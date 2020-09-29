@@ -81,16 +81,16 @@ describe ('API: generate', () => {
         expect(main1.isEntry).to.be.true;
         expect(!main1.isAsset).to.be.true;
         expect(main1.fileName).to.equal('main1.js');
-        expect(main1.code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.true; 
-        expect(main1.code.indexOf(`__e__(\\'default\\', 456)`) > -1).to.be.false;
+        expect(main1.code.indexOf(`__e__(\\'default\\', function () { return 123 })`) > -1).to.be.true; 
+        expect(main1.code.indexOf(`__e__(\\'default\\', function () { return 456 })`) > -1).to.be.false;
         expect(main1.map).to.be.null;
 
         let main2 = output.find(o => o.fileName === 'main2.js');
         expect(main2.isEntry).to.be.true;
         expect(!main2.isAsset).to.be.true;
         expect(main2.fileName).to.equal('main2.js');
-        expect(main2.code.indexOf(`__e__(\\'default\\', 456)`) > -1).to.be.true;
-        expect(main2.code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.false;
+        expect(main2.code.indexOf(`__e__(\\'default\\', function () { return 456 })`) > -1).to.be.true;
+        expect(main2.code.indexOf(`__e__(\\'default\\', function () { return 123 })`) > -1).to.be.false;
         expect(main2.map).to.be.null;
         fs.reset();
     });
