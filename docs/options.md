@@ -4,7 +4,7 @@ This list provides a description of all of the options for the [CLI](./cli.md), 
 
 | Type | Name | Description |
 |------|------|-------------|
-| ```String``` | ```config``` | Pass a Rollup configuration file. By default it will look for ```rollup.config.js``` but can be specified otherwise. |
+| ```String\|Object``` | ```config``` | Pass a Rollup configuration file. By default it will look for ```rollup.config.js``` but can be specified otherwise. If object is supported, can receive Rollup config object. |
 | ```String``` | ```contentBase``` | Folder to serve static content from. Typically the content would contain additional resources like images. By default it will be looking in ```./```. |
 | ```Boolean``` | ```hot``` | Enable Hot Module Replacement. Default is ```false```. |
 | ```Number``` | ```port``` | Port number to run server on. Default is ```8080```. |

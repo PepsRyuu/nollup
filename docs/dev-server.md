@@ -24,7 +24,7 @@ The following options can be passed into Nollup Dev Server. You can find a full 
 
 * ```Function before```
 * ```Function after```
-* ```Object config```
+* ```Object|String config```
 * ```Boolean hot```
 * ```Number port```
 * ```Boolean verbose```
