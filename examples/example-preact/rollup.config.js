@@ -1,5 +1,5 @@
-import node_resolve from 'rollup-plugin-node-resolve';
-import babel from 'rollup-plugin-babel';
+import node_resolve from '@rollup/plugin-node-resolve';
+import babel from '@rollup/plugin-babel';
 import hotcss from 'rollup-plugin-hot-css';
 import static_files from 'rollup-plugin-static-files';
 import { terser } from 'rollup-plugin-terser';
