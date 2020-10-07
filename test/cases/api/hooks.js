@@ -517,6 +517,39 @@ describe ('API: Plugin Hooks', () => {
             fs.reset();
         });
 
+        it ('should should accept a string for syntheticNamedExports', async () => {
+            fs.stub('./src/main.js', () => 'export { hello } from "./lol";');
+            fs.stub('./src/lol.js', () => 'export var __moduleExports = { hello: "world" };')
+            let phase = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    load (id) {
+                        if (id.indexOf('lol') > -1) {
+                            return { 
+                                code: fs.readFileSync(id, 'utf8'),
+                                syntheticNamedExports: phase === 0? false : '__moduleExports'
+                            }
+                        }
+                        
+                    }
+                }]
+            });
+
+            let output = (await bundle.generate({ format: 'iife' })).output;
+            let result = eval(output[0].code);
+            expect(result.hello).to.be.undefined;
+
+            phase = 1;
+            bundle.invalidate('./src/lol.js');
+            output = (await bundle.generate({ format: 'iife' })).output;
+            result = eval(output[0].code);
+            expect(result.hello).to.equal('world');
+
+            fs.reset();
+        });
+
         it ('should be allowed to return an AST');
     });
 
@@ -710,6 +743,40 @@ describe ('API: Plugin Hooks', () => {
             output = (await bundle.generate({ format: 'iife' })).output;
             result = eval(output[0].code);
             expect(result.default.hello).to.equal('world');
+            expect(result.hello).to.equal('world');
+
+            fs.reset();
+        });
+
+        it ('should allow string for syntheticNamedExports', async () => {
+            fs.stub('./src/main.js', () => 'export { hello } from "./lol";');
+            fs.stub('./src/lol.js', () => 'export var __moduleExports = { hello: "world" };')
+            let phase = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (id) {
+                        if (id.indexOf('lol') > -1) {
+                            return { 
+                                id: path.resolve(process.cwd(), './src/lol.js'),
+                                syntheticNamedExports: phase === 0? false : '__moduleExports'
+                            }
+                        }
+                        
+                    }
+                }]
+            });
+
+            let output = (await bundle.generate({ format: 'iife' })).output;
+            let result = eval(output[0].code);
+            expect(result.hello).to.be.undefined;
+
+            phase = 1;
+            bundle.invalidate('./src/lol.js');
+            bundle.invalidate('./src/main.js');
+            output = (await bundle.generate({ format: 'iife' })).output;
+            result = eval(output[0].code);
             expect(result.hello).to.equal('world');
 
             fs.reset();
@@ -1175,6 +1242,41 @@ describe ('API: Plugin Hooks', () => {
             result = eval(output[0].code);
             expect(result.default.default.hello).to.equal('world');
             expect(result.default.hello).to.equal('world');
+
+            fs.reset();
+        });
+
+        it ('should allow strings for syntheticNamedExports', async () => {
+            fs.stub('./src/main.js', () => `
+                export { hello } from './lol'
+            `);
+            fs.stub('./src/lol.js', () => 'export var __moduleExports = { hello: "world" };')
+            let phase = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        if (id.indexOf('lol') > -1) {
+                            return { 
+                                code,
+                                syntheticNamedExports: phase === 0? false : '__moduleExports'
+                            }
+                        }
+                        
+                    }
+                }]
+            });
+
+            let output = (await bundle.generate({ format: 'iife' })).output;
+            let result = eval(output[0].code);
+            expect(result.hello).to.be.undefined;
+
+            phase = 1;
+            bundle.invalidate('./src/lol.js');
+            output = (await bundle.generate({ format: 'iife' })).output;
+            result = eval(output[0].code);
+            expect(result.hello).to.equal('world');
 
             fs.reset();
         });
