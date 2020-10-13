@@ -136,4 +136,40 @@ describe ('Misc', () => {
         expect(compiled).to.be.false;
         expect(thrown).to.be.true;
     });
+
+    it ('should not fail if plugin returns no sourcesContent is not returned from plugin', async () => {
+        fs.stub('./src/main.js', () => `console.log(123)`);
+        let thrown = false;
+
+        let bundle = await nollup({
+            input: './src/main.js',
+            plugins: [{
+                transform (code, id) {
+                    return {
+                        code,
+                        map: {
+                            version: 3,
+                            file: 'main.js',
+                            sources: ['main.js'],
+                            mappings: 'A;'
+                        }
+                    }
+                }
+            }, {
+                transform (code, id) {
+                    return {
+                        code,
+                        map: {
+                            version: 3,
+                            file: 'main.js',
+                            sources: ['main.js'],
+                            mappings: 'A;'
+                        }
+                    }
+                }
+            }]
+        });
+
+        await bundle.generate({ format: 'esm' });
+    });
 });
