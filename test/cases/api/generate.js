@@ -390,4 +390,25 @@ describe ('API: generate', () => {
         fs.reset();
     });
 
+    it ('should include deconflicted external dynamic imports in outputted chunkinfos', async () => {
+        fs.stub('./src/a/dep.js', () => 'export default 123; import("jquery");');
+        fs.stub('./src/b/dep.js', () => 'export default 456; import("../c/dep");');
+        fs.stub('./src/c/dep.js', () => 'export default 789;');
+        fs.stub('./src/main.js', () => 'import("./a/dep"); import("./b/dep"); ');
+
+        let bundle = await nollup({
+            input: './src/main.js',
+            external: ['jquery']
+        });
+
+        let { output } = await bundle.generate({ format: 'esm', chunkFileNames: '[name].js' });
+
+        expect(output.length).to.equal(4);
+        expect(output[0].dynamicImports).to.deep.equal(['dep.js', 'dep2.js']);
+        expect(output[1].dynamicImports).to.deep.equal(['jquery']);
+        expect(output[2].dynamicImports).to.deep.equal(['dep3.js']);
+        expect(output[3].dynamicImports).to.deep.equal([]);
+        fs.reset();
+    });
+
 });
