@@ -1646,9 +1646,12 @@ describe ('API: Plugin Context', () => {
 
     describe ('getModuleInfo', () => {
         it ('should provide information about module using the provided module id', async function () {
-            fs.stub('./src/main.js', () => 'import "jquery"; import "underscore"; import "./lol"; import("backbone"); import("./rofl");');
-            fs.stub('./src/lol.js', () => 'export default 123');
-            fs.stub('./src/rofl.js', () => 'export default 456');
+            let mainCode = 'import "jquery"; import "underscore"; import "./lol"; import("backbone"); import("./rofl");';
+            let lolCode = 'export default 123';
+            let roflCode = 'export default 456'
+            fs.stub('./src/main.js', () => mainCode);
+            fs.stub('./src/lol.js', () => lolCode);
+            fs.stub('./src/rofl.js', () => roflCode);
             
             let fn;
             let bundle = await nollup({
@@ -1665,7 +1668,7 @@ describe ('API: Plugin Context', () => {
 
                     transform (code, id) {
                         fn = id => this.getModuleInfo(id);
-                        return null;
+                        return 'console.log(123);' + code;
                     }
                 }]
             });
@@ -1674,59 +1677,52 @@ describe ('API: Plugin Context', () => {
 
             // local module
             let local_info = fn(path.resolve(process.cwd(), './src/main.js'));
-            expect(local_info).to.deep.equal({
-                id: path.resolve(process.cwd(), './src/main.js'),
-                isEntry: true,
-                isExternal: false,
-                importedIds: ['jquery', 'underscore', path.resolve(process.cwd(), './src/lol.js')],
-                // hasModuleSideEffects: true
-            });
+            expect(local_info.id).to.equal(path.resolve(process.cwd(), './src/main.js'));
+            expect(local_info.code.indexOf('console.log(123);') > -1).to.be.true;
+            expect(local_info.isEntry).to.be.true;
+            expect(local_info.isExternal).to.be.false;
+            expect(local_info.importedIds).to.deep.equal(['jquery', 'underscore', path.resolve(process.cwd(), './src/lol.js')])
+            expect(local_info.meta).to.deep.equal({});
 
             let local_info_dep = fn(path.resolve(process.cwd(), './src/lol.js'));
-            expect(local_info_dep).to.deep.equal({
-                id: path.resolve(process.cwd(), './src/lol.js'),
-                isEntry: false,
-                isExternal: false,
-                importedIds: [],
-                // hasModuleSideEffects: true
-            });
+            expect(local_info_dep.id).to.equal(path.resolve(process.cwd(), './src/lol.js'));
+            expect(local_info_dep.code.indexOf('console.log(123);') > -1).to.be.true;
+            expect(local_info_dep.isEntry).to.be.false;
+            expect(local_info_dep.isExternal).to.be.false;
+            expect(local_info_dep.importedIds).to.deep.equal([]);
+            expect(local_info_dep.meta).to.deep.equal({});
 
             let external_info = fn('jquery');
-            expect(external_info).to.deep.equal({
-                id: 'jquery',
-                isEntry: false,
-                isExternal: true,
-                importedIds: [],
-                // hasModuleSideEffects: true
-            });
+            expect(external_info.id).to.equal('jquery');
+            expect(external_info.code).to.equal(null);
+            expect(external_info.isEntry).to.be.false;
+            expect(external_info.isExternal).to.be.true;
+            expect(external_info.importedIds).to.deep.equal([]);
+            expect(external_info.meta).to.deep.equal({});
 
             let external_resolve_info = fn('underscore');
-            expect(external_resolve_info).to.deep.equal({
-                id: 'underscore',
-                isEntry: false,
-                isExternal: true,
-                importedIds: [],
-                // hasModuleSideEffects: true
-            });
+            expect(external_resolve_info.id).to.equal('underscore');
+            expect(external_resolve_info.code).to.equal(null);
+            expect(external_resolve_info.isEntry).to.be.false;
+            expect(external_resolve_info.isExternal).to.be.true;
+            expect(external_resolve_info.importedIds).to.deep.equal([]);
+            expect(external_resolve_info.meta).to.deep.equal({});
 
             let dynamic_external_resolve_info = fn('backbone');
-            expect(dynamic_external_resolve_info).to.deep.equal({
-                id: 'backbone',
-                isEntry: false,
-                isExternal: true,
-                importedIds: [],
-                // hasModuleSideEffects: true
-            });
-
+            expect(dynamic_external_resolve_info.id).to.equal('backbone');
+            expect(dynamic_external_resolve_info.code).to.equal(null);
+            expect(dynamic_external_resolve_info.isEntry).to.be.false;
+            expect(dynamic_external_resolve_info.isExternal).to.be.true;
+            expect(dynamic_external_resolve_info.importedIds).to.deep.equal([]);
+            expect(dynamic_external_resolve_info.meta).to.deep.equal({});
 
             let dynamic_import_info = fn(path.resolve(process.cwd(), './src/rofl.js'));
-            expect(dynamic_import_info).to.deep.equal({
-                id: path.resolve(process.cwd(), './src/rofl.js'),
-                isEntry: false,
-                isExternal: false,
-                importedIds: [],
-                // hasModuleSideEffects: true
-            });
+            expect(dynamic_import_info.id).to.equal(path.resolve(process.cwd(), './src/rofl.js'));
+            expect(dynamic_import_info.code.indexOf('console.log(123);') > -1).to.be.true;
+            expect(dynamic_import_info.isEntry).to.be.false;
+            expect(dynamic_import_info.isExternal).to.be.false;
+            expect(dynamic_import_info.importedIds).to.deep.equal([]);
+            expect(dynamic_import_info.meta).to.deep.equal({});
 
             fs.reset();
         });

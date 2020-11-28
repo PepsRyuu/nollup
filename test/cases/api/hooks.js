@@ -551,6 +551,43 @@ describe ('API: Plugin Hooks', () => {
         });
 
         it ('should be allowed to return an AST');
+
+        it ('should allow meta option to be returned', async () => {
+            fs.stub('./src/main.js', () => `
+                import Value from "lol";
+                console.log(Value);
+            `);
+            
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (id) {
+                        return path.resolve(process.cwd(), id);
+                    },
+                    load (id) {
+                        if (id.indexOf('lol') > -1) {
+                            return {
+                                code: 'export default 999;',
+                                meta: {
+                                    prop: 123
+                                }
+                            }
+                        }
+                    },
+                    buildEnd () {
+                        let [ mainId, lolId ] = Array.from(this.getModuleIds());
+                        expect(this.getModuleInfo(mainId).meta.prop).to.be.undefined;
+                        expect(this.getModuleInfo(lolId).meta.prop).to.equal(123);
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+        });
     });
 
 
@@ -855,6 +892,52 @@ describe ('API: Plugin Hooks', () => {
             expect(output[1].code.indexOf('console.log(456)') > -1).to.be.true;
             fs.reset();
         })
+
+        it ('should allow meta option to be returned', async () => {
+            fs.stub('./src/main.js', () => `
+                import Value from "./lol";
+                console.log(Value);
+            `);
+            
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (source, importer) {
+                        if (source.indexOf('lol') > -1) {
+                            return {
+                                id: path.resolve(process.cwd(), './src/lol.js'),
+                                meta: {
+                                    prop: 123
+                                }
+                            }
+                        }
+                    },
+                    load (id) {
+                        if (id.indexOf('lol') > -1) {
+                            return {
+                                code: 'export default 999',
+                                meta: {
+                                    prop2: 456
+                                }
+                            }
+                        }
+                    },
+                    buildEnd () {
+                        let [ mainId, lolId ] = Array.from(this.getModuleIds());
+                        expect(this.getModuleInfo(mainId).meta.prop).to.be.undefined;
+                        expect(this.getModuleInfo(lolId).meta.prop).to.equal(123);
+                        expect(this.getModuleInfo(lolId).meta.prop2).to.equal(456);
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
     });
 
     describe ('resolveDynamicImport', () => {
@@ -1285,6 +1368,82 @@ describe ('API: Plugin Hooks', () => {
 
         it ('should accept an object with code and map returned');
         it ('should accept a string with code, map, and ast returned');
+
+        it ('should allow meta option to be returned', async () => {
+            fs.stub('./src/lol.js', () => `export default 999`)
+            fs.stub('./src/main.js', () => `
+                import Value from "./lol";
+                console.log(Value);
+            `);
+            
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        if (id.indexOf('lol') > -1) {
+                            return {
+                                code,
+                                meta: {
+                                    prop1: 123
+                                }
+                            }
+                        }
+                    }
+                }, {
+                    transform (code, id) {
+                        if (id.indexOf('lol') > -1) {
+                            return {
+                                code,
+                                meta: {
+                                    prop2: 456
+                                }
+                            }
+                        }
+                    },
+                    buildEnd () {
+                        let [ mainId, lolId ] = Array.from(this.getModuleIds());
+                        expect(this.getModuleInfo(mainId).meta.prop).to.be.undefined;
+                        expect(this.getModuleInfo(lolId).meta.prop1).to.equal(123);
+                        expect(this.getModuleInfo(lolId).meta.prop2).to.equal(456);
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should not fail if object returned without code', async () => {
+            fs.stub('./src/other.css', () => '.Other { color: blue; }');
+            fs.stub('./src/other.js', () => 'import "./other.css"; export default 123;');
+            fs.stub('./src/main.js', () => 'import value from "./other"; console.log(value);');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        if (id.indexOf('.css') > -1) {
+                            return {
+                                code: ''
+                            };
+                        }
+                    }
+                }, {
+                    transform (code, id) {
+                        return { code: undefined };
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf('123') > -1).to.be.true;
+            expect(output[0].code.indexOf('color: blue') > -1).to.be.false;
+            fs.reset();
+        });
     });
 
     describe('options', () => {
@@ -1934,7 +2093,7 @@ describe ('API: Plugin Hooks', () => {
         });
     });
 
-   describe ('renderError', () => {
+    describe ('renderError', () => {
         it ('should receive an error when a chunk has failed to render', async () => {
             fs.stub('./src/main.js', () => 'export default 123');
             let passed = false;
@@ -2859,6 +3018,81 @@ describe ('API: Plugin Hooks', () => {
 
             await bundle.generate({ format: 'esm' });
             expect(watchChangeCnt).to.be.equal(1);
+            fs.reset();
+        });
+    });
+
+    describe ('moduleParsed', () => {
+        it ('should receive module info', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    moduleParsed (moduleInfo) {
+                        expect(moduleInfo.id.indexOf('src/main') > -1).to.be.true;
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should execute multiple in parallel', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed1 = false;
+            let passed2 = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    moduleParsed (moduleInfo) {
+                        expect(moduleInfo.id.indexOf('src/main') > -1).to.be.true;
+                        passed1 = true;
+                    }    
+                }, {
+                    moduleParsed (moduleInfo) {
+                        expect(moduleInfo.id.indexOf('src/main') > -1).to.be.true;
+                        passed2 = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed1).to.be.true;
+            expect(passed2).to.be.true;
+            fs.reset();
+        });
+        it ('should execute again even if module has not changed', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let mcount = 0;
+            let tcount = 0;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        tcount++;
+                    },
+                    moduleParsed (moduleInfo) {
+                        expect(moduleInfo.id.indexOf('src/main') > -1).to.be.true;
+                        mcount++;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(tcount).to.equal(1);
+            expect(mcount).to.equal(1);
+
+            await bundle.generate({ format: 'esm' });
+            expect(tcount).to.equal(1);
+            expect(mcount).to.equal(2);
+
             fs.reset();
         });
     });

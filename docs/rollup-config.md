@@ -60,7 +60,8 @@ renderChunk,
 renderError,
 renderStart,
 resolveFileUrl,
-resolveImportMeta
+resolveImportMeta,
+moduleParsed
 ```
 
 ### Plugin Context
