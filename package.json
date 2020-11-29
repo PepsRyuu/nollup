@@ -33,6 +33,6 @@
     "chai": "^4.1.2",
     "mocha-istanbul-ui": "^0.4.0",
     "proxyquire": "^2.0.1",
-    "rollup": "^1.28.0"
+    "rollup": "^2.33.3"
   }
 }
