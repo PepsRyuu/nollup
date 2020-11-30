@@ -1179,7 +1179,7 @@ describe ('API: Plugin Context', () => {
                 input: './src/main.js',
                 plugins: [{
                     transform () {
-                        expect(this.meta.rollupVersion).to.equal('2.0');
+                        expect(this.meta.rollupVersion).to.equal('2.30');
                     }
                 }]
             });
