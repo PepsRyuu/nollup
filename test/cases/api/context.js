@@ -1446,6 +1446,77 @@ describe ('API: Plugin Context', () => {
             fs.reset();
         });
 
+        it ('should support skipSelf for multiple plugins', async function () {
+            fs.stub('./src/jqueryimpl.js', () => 'export default {}');
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let passed1 = false;
+            let passed2 = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                            throw new Error('Should not reach here');
+                        }
+                    },
+                    transform () {
+                        return new Promise(resolve => { 
+                            this.resolve('jquery', path.resolve(process.cwd(), './src/main.js'), { skipSelf: true }).then(resolved => {
+                                expect(resolved.id).to.equal(path.resolve(process.cwd(), './src/jqueryimpl.js'));
+                                passed2 = true;
+                                resolve();
+                            });
+                        });
+                    }
+                }, {
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                            passed1 = true;
+                            return path.resolve(process.cwd(), './src/jqueryimpl.js');
+                        }
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed1).to.be.true;
+            expect(passed2).to.be.true;
+            fs.reset();
+        });
+
+        it ('should support skipSelf for multiple inputs inside resolveId and not lose plugins #162', async function () {
+            fs.stub('./src/main1.js', () => `export default 123`);
+            fs.stub('./src/main2.js', () => `export default 456`);
+
+            let passed = false;
+
+            let bundle = await nollup({
+                input: ['./src/main1.js', './src/main2.js'],
+                plugins: [{
+                    resolveId (id) {
+                        // do nothing
+                    }
+                }, {
+                    resolveId (id) {
+                        return this.resolve(id, path.resolve(process.cwd(), './src/main.js'), { skipSelf: true }).then(resolved => {
+                            // do nothing
+                        });
+                    },
+                    transform (code, id) {
+                        passed = true;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+
         it ('should return null if module cannot be resolved by anyone and isn\'t external');
 
     });
