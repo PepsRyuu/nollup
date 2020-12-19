@@ -19,6 +19,7 @@ The following flags can be passed into Nollup CLI. You can find a full descripti
 * ```--port [port]```
 * ```--verbose```
 * ```--hmr-host [host]```
+* ```--host [host]```
 * ```--public-path [folder]```
 * ```--environment [variables]```
 * ```--https```

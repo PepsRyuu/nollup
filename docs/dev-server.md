@@ -30,6 +30,7 @@ The following options can be passed into Nollup Dev Server. You can find a full 
 * ```Boolean verbose```
 * ```String headers```
 * ```String hmrHost```
+* ```String host```
 * ```String contentBase```
 * ```String publicPath```
 * ```Object proxy```
