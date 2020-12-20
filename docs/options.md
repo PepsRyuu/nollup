@@ -15,6 +15,7 @@ This list provides a description of all of the options for the [CLI](./cli.md), 
 | ```Boolean``` | ```verbose``` | Enable verbose logging. Default is ```false```. |
 | ```Object``` | ```headers``` | Provide custom headers for Express server responses. Useful to set cors headers for the server. |
 | ```String``` | ```hmrHost``` | Host to connect to for HMR. Default is ```window.location.host```. Useful for Electron environments. |
+| ```String``` | ```host``` | Specify the host to use. Default is ```localhost```. Useful for allowing remote connections, eg. ```0.0.0.0```|
 | ```Function``` | ```before``` | Receives Express app as argument. You can inject custom middleware before Nollup dev middleware. |
 | ```Function``` | ```after``` | Receives Express app as argument. You can inject custom middleware after Nollup dev middleware. |
 | ```Boolean``` | ```https``` | Enable https. Default is ```false```. Requires ```key``` and ```cert``` to be set |
