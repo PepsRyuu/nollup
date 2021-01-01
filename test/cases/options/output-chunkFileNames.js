@@ -46,8 +46,7 @@ describe ('Options: output.chunkFileNames', () => {
 
         let file = output.find(o => o.fileName === 'main.js');
         let importId = path.resolve(process.cwd(), './src/dynamic.js');
-        expect(file.code.indexOf(`require.dynamic(\\'${importId.replace(/\\/g, '\\\\\\\\')}`) > -1).to.be.true;
-        expect(file.code.indexOf(`'${importId.replace(/\\/g, '\\\\')}': getRelativePath('.', 'lol-esm.js')`) > -1).to.be.true;
+        expect(file.code.indexOf(`require.dynamic(\\'lol-esm.js`) > -1).to.be.true;
     });
 
     it ('should use "esm" as format for "es" output', async () => {

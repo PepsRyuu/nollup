@@ -10,14 +10,15 @@
   "homepage": "https://github.com/PepsRyuu/nollup",
   "scripts": {
     "test": "mocha-istanbul-ui \"test/cases/**/*.js\" --instrument --console --once",
-    "test:ui": "mocha-istanbul-ui \"test/cases/**/*.js\" --instrument --watch"
+    "test:ui": "mocha-istanbul-ui \"test/cases/**/*.js\" --instrument --watch",
+    "test:headless": "xvfb-run npm run test"
   },
   "bin": {
     "nollup": "./lib/cli.js"
   },
   "dependencies": {
     "@rollup/pluginutils": "^3.0.8",
-    "acorn": "^7.3.1",
+    "acorn": "^8.0.4",
     "chokidar": "^3.0.0",
     "convert-source-map": "^1.5.1",
     "express": "^4.16.3",

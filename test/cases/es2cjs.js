@@ -1,4 +1,7 @@
-let es_to_cjs = require('../../lib/impl/ImportExportResolver');
+let es_to_cjs = require('../../lib/impl/NollupImportExportResolver');
+let CodeGenerator = require('../../lib/impl/NollupCodeGenerator');
+let PluginContainer = require('../../lib/impl/PluginContainer');
+let RollupConfigContainer = require('../../lib/impl/RollupConfigContainer');
 let { expect } = require('../nollup');
 let path = require('path');
 
@@ -8,7 +11,6 @@ let tests = [{
         code: '',
         imports: [{
             source: './world',
-            importee: '_i0',
             specifiers: [{
                 local: 'Hello',
                 imported: 'default'
@@ -20,7 +22,6 @@ let tests = [{
     output: {
         imports: [{
             source: './styles.css',
-            importee: '_i0',
             specifiers: []
         }]
     }
@@ -29,7 +30,6 @@ let tests = [{
     output: {
         imports: [{
             source: './file',
-            importee: '_i0',
             specifiers: [{
                 local: 'member',
                 imported: 'member'
@@ -41,7 +41,6 @@ let tests = [{
     output: {
         imports: [{
             source: './file',
-            importee: '_i0',
             specifiers: [{
                 local: 'member',
                 imported: 'member'
@@ -53,7 +52,6 @@ let tests = [{
     output: {
         imports: [{
             source: './file',
-            importee: '_i0',
             specifiers: [{
                 local: 'mem1',
                 imported: 'mem1'
@@ -68,7 +66,6 @@ let tests = [{
     output: {
         imports: [{
             source: './file',
-            importee: '_i0',
             specifiers: [{
                 local: 'lol',
                 imported: 'member'
@@ -80,7 +77,6 @@ let tests = [{
     output: {
         imports: [{
             source: './file',
-            importee: '_i0',
             specifiers: [{
                 local: 'lol',
                 imported: '*'
@@ -92,7 +88,6 @@ let tests = [{
     output: {
         imports: [{
             source: './file',
-            importee: '_i0',
             specifiers: [{
                 local: 'Hello',
                 imported: 'default'
@@ -154,7 +149,7 @@ let tests = [{
     input: 'let hello = 123;export default function () {}export { hello }',
     output: {
         exports: ['default', 'hello'],
-        code: `let hello = 123;__e__('default', function () {}); __e__('hello', hello);`
+        code: `let hello = 123;__e__('default', function () {}); ; __e__('hello', hello);`
     }
 }, {
     input: 'export default(() => {});export let hello = 123;',
@@ -208,13 +203,13 @@ let tests = [{
     input: 'let name1 = 123, name2 = 456; export {name1, name2};',
     output: {
         exports: ['name1', 'name2'],
-        code: `let name1 = 123, name2 = 456; __e__('name1', name1);__e__('name2', name2);`
+        code: `let name1 = 123, name2 = 456; ; __e__('name1', name1);__e__('name2', name2);`
     }
 }, {
     input: 'let hello = 123, name = 456; export {hello as world, name};',
     output: {
         exports: ['world', 'name'],
-        code: `let hello = 123, name = 456; __e__('world', hello);__e__('name', name);`
+        code: `let hello = 123, name = 456; ; __e__('world', hello);__e__('name', name);`
     }
 }, {
     input: 'export var MyVar1 = 123;',
@@ -226,31 +221,30 @@ let tests = [{
     input: 'export var MyVar1 = () => {}, MyVar2 = 456;',
     output: {
         exports: ['MyVar1', 'MyVar2'],
-        code: `var MyVar1 = () => {}, MyVar2 = 456;; __e__('MyVar1', MyVar1), __e__('MyVar2', MyVar2);`
+        code: `var MyVar1 = () => {}, MyVar2 = 456;; __e__('MyVar1', MyVar1);__e__('MyVar2', MyVar2);`
     }
 }, {
     input: 'export var MyVar1 = () => {}, MyVar2 = 456',
     output: {
         exports: ['MyVar1', 'MyVar2'],
-        code: `var MyVar1 = () => {}, MyVar2 = 456; __e__('MyVar1', MyVar1), __e__('MyVar2', MyVar2);`
+        code: `var MyVar1 = () => {}, MyVar2 = 456; __e__('MyVar1', MyVar1);__e__('MyVar2', MyVar2);`
     }
 }, {
     input: 'export const MyVar1 = () => {}, MyVar2 = 456;',
     output: {
         exports: ['MyVar1', 'MyVar2'],
-        code: `const MyVar1 = () => {}, MyVar2 = 456;; __e__('MyVar1', MyVar1), __e__('MyVar2', MyVar2);`
+        code: `const MyVar1 = () => {}, MyVar2 = 456;; __e__('MyVar1', MyVar1);__e__('MyVar2', MyVar2);`
     }
 }, {
     input: 'export { MyVar } from "./file"',
     output: {
         imports: [{
             source: './file',
-            importee: '_i0',
             specifiers: [{
-                local: 'ex_MyVar',
-                imported: 'MyVar',
-                exportFrom: true
-            }]
+                local: 'MyVar',
+                imported: 'MyVar'
+            }],
+            export: true
         }],
         exports: ['MyVar'],
         code: ``
@@ -260,12 +254,11 @@ let tests = [{
     output: {
         imports: [{
             source: './file',
-            importee: '_i0',
             specifiers: [{
-                local: 'ex_default',
-                imported: 'default',
-                exportFrom: true
-            }]
+                local: 'default',
+                imported: 'default'
+            }],
+            export: true
         }],
         exports: ['default'],
         code: ``
@@ -275,12 +268,10 @@ let tests = [{
     output: {
         imports: [{
             source: './file',
-            importee: '_i0',
             specifiers: [{
-                local: 'ex_i0',
-                imported: '*',
-                exportFrom: true
-            }]
+                imported: '*'
+            }],
+            export: true
         }],
         exports: [],
         code: ``
@@ -290,14 +281,12 @@ let tests = [{
     output: {
         imports: [{
             source: 'hello',
-            importee: '_i0',
             specifiers: [{
                 local: 'Hello',
                 imported: 'default'
             }]
         }, {
             source: 'world',
-            importee: '_i1',
             specifiers: [{
                 local: 'World',
                 imported: 'default'
@@ -308,25 +297,25 @@ let tests = [{
     input: 'export const { foo, bar } = myvar;',
     output: {
         exports: ['foo', 'bar'],
-        code: `const { foo, bar } = myvar;; __e__('foo', foo), __e__('bar', bar);`
+        code: `const { foo, bar } = myvar;; __e__('foo', foo);__e__('bar', bar);`
     }
 }, {
     input: 'export const { foo: hello, bar: world } = myvar;',
     output: {
         exports: ['hello', 'world'],
-        code: `const { foo: hello, bar: world } = myvar;; __e__('hello', hello), __e__('world', world);`
+        code: `const { foo: hello, bar: world } = myvar;; __e__('hello', hello);__e__('world', world);`
     }
 }, {
     input: 'export const { foo, bar } = myvar, hello = 123;',
     output: {
         exports: ['foo', 'bar', 'hello'],
-        code: `const { foo, bar } = myvar, hello = 123;; __e__('foo', foo), __e__('bar', bar), __e__('hello', hello);`
+        code: `const { foo, bar } = myvar, hello = 123;; __e__('foo', foo);__e__('bar', bar);__e__('hello', hello);`
     }
 }, {
     input: 'export {};',
     output: {
         exports: [],
-        code: ``
+        code: `;`
     }
 }];
 
@@ -342,7 +331,12 @@ describe ('es_to_cjs', () => {
                 ...test.output
             };
 
-            let res = await es_to_cjs({ plugins: [] }, test.input, process.cwd() + '/__entry');
+            let config = new RollupConfigContainer({ input: '', plugins: [] });
+            let plugins = new PluginContainer(config, {});
+            plugins.start(); 
+            plugins.start();
+
+            let res = await es_to_cjs(plugins, test.input, process.cwd() + '/__entry', new CodeGenerator());
             let to_check = {};
             for (let key in test.output) {
                 to_check[key] = res[key];
@@ -360,7 +354,7 @@ describe ('es_to_cjs', () => {
             } catch (e) {
                 throw new Error(`
                     Expected: ${JSON.stringify(test.output)}
-                    Actual: ${JSON.stringify(res)}
+                    Actual: ${JSON.stringify(to_check)}
                 `)
             }
         });
@@ -374,11 +368,11 @@ let external_tests = [{
         imports: [],
         externalImports: [{
             source: 'jquery',
-            importee: '__nollup__external__jquery__',
             specifiers: [{
                 local: 'jQuery',
                 imported: 'default'
-            }]
+            }],
+            external: true
         }]
     },
     config: {
@@ -391,11 +385,11 @@ let external_tests = [{
         imports: [],
         externalImports: [{
             source: 'jquery',
-            importee: '__nollup__external__jquery__',
             specifiers: [{
                 local: '$',
                 imported: 'default'
-            }]
+            }],
+            external: true
         }]
     },
     config: {
@@ -408,11 +402,11 @@ let external_tests = [{
         imports: [],
         externalImports: [{
             source: 'jquery',
-            importee: '__nollup__external__jquery__',
             specifiers: [{
                 local: 'jquery',
                 imported: 'default'
-            }]
+            }],
+            external: true
         }]
     },
     config: {
@@ -430,11 +424,11 @@ let external_tests = [{
         imports: [],
         externalImports: [{
             source: 'Math',
-            importee: '__nollup__external__Math__',
             specifiers: [{
                 local: 'max',
                 imported: 'max'
-            }]
+            }],
+            external: true
         }]
     },
     config: {
@@ -447,14 +441,14 @@ let external_tests = [{
         imports: [],
         externalImports: [{
             source: 'Math',
-            importee: '__nollup__external__Math__',
             specifiers: [{
                 local: 'max',
                 imported: 'max'
             }, {
                 local: 'min',
                 imported: 'min'
-            }]
+            }],
+            external: true
         }]
     },
     config: {
@@ -467,14 +461,14 @@ let external_tests = [{
         imports: [],
         externalImports: [{
             source: 'jquery',
-            importee: '__nollup__external__jquery__',
             specifiers: [{
                 local: '$',
                 imported: 'default'
             }, {
                 local: 'ajax',
                 imported: 'ajax'
-            }]
+            }],
+            external: true
         }]
     },
     config: {
@@ -487,11 +481,11 @@ let external_tests = [{
         imports: [],
         externalImports: [{
             source: 'jquery',
-            importee: '__nollup__external__jquery__',
             specifiers: [{
                 local: 'net',
                 imported: 'ajax'
-            }]
+            }],
+            external: true
         }]
     },
     config: {
@@ -510,12 +504,12 @@ let external_tests = [{
         exports: ['ajax'],
         externalImports: [{
             source: 'jquery',
-            importee: '__nollup__external__jquery__',
             specifiers: [{
-                local: 'ex_ajax',
-                imported: 'ajax',
-                exportFrom: true
-            }]
+                local: 'ajax',
+                imported: 'ajax'
+            }],
+            export: true,
+            external: true
         }]
     },
     config: {
@@ -529,12 +523,12 @@ let external_tests = [{
         exports: ['ajax'],
         externalImports: [{
             source: 'jquery',
-            importee: '__nollup__external__jquery__',
             specifiers: [{
-                local: 'ex_ajax',
-                imported: 'ajax',
-                exportFrom: true
-            }]
+                local: 'ajax',
+                imported: 'ajax'
+            }],
+            export: true,
+            external: true
         }]
     },
     config: {
@@ -553,12 +547,12 @@ let external_tests = [{
         exports: ['net'],
         externalImports: [{
             source: 'jquery',
-            importee: '__nollup__external__jquery__',
             specifiers: [{
-                local: 'ex_net',
-                imported: 'ajax',
-                exportFrom: true
-            }]
+                local: 'net',
+                imported: 'ajax'
+            }],
+            export: true,
+            external: true
         }]
     },
     config: {
@@ -577,12 +571,11 @@ let external_tests = [{
         exports: [],
         externalImports: [{
             source: 'jquery',
-            importee: '__nollup__external__jquery__',
             specifiers: [{
-                local: 'ex__nollup__external__jquery__',
-                imported: '*',
-                exportFrom: true
-            }]
+                imported: '*'
+            }],
+            export: true,
+            external: true
         }]
     },
     config: {
@@ -596,12 +589,11 @@ let external_tests = [{
         exports: [],
         externalImports: [{
             source: 'jquery',
-            importee: '__nollup__external__jquery__',
             specifiers: [{
-                local: 'ex__nollup__external__jquery__',
-                imported: '*',
-                exportFrom: true
-            }]
+                imported: '*'
+            }],
+            export: true,
+            external: true
         }]
     },
     config: {
@@ -619,11 +611,11 @@ let external_tests = [{
         imports: [],
         externalImports: [{
             source: 'jquery',
-            importee: '__nollup__external__jquery__',
             specifiers: [{
                 local: 'ajax',
                 imported: 'ajax'
-            }]
+            }],
+            external: true
         }]
     },
     config: {
@@ -636,11 +628,11 @@ let external_tests = [{
         imports: [],
         externalImports: [{
             source: 'some/other/dep',
-            importee: '__nollup__external__some_other_dep__',
             specifiers: [{
                 local: 'ajax',
                 imported: 'ajax'
-            }]
+            }],
+            external: true
         }]
     },
     config: {
@@ -653,11 +645,21 @@ let external_tests = [{
 describe('es_to_cs_externals (ESM)', () => {
     external_tests.forEach(test => {
         it(test.input, async () => {
-            let res = await es_to_cjs({
+            let config = new RollupConfigContainer({
                 ...test.config, 
-                plugins: [],
-                output: { ...test.config.output, format: 'esm' }
-            }, test.input, process.cwd() + '/__entry');
+                plugins: []
+            });
+
+            config.setOutputOptions({
+                ...test.config.output, 
+                format: 'esm'
+            });
+
+            let plugins = new PluginContainer(config, {});
+            plugins.start(); 
+            plugins.start();
+
+            let res = await es_to_cjs(plugins, test.input, process.cwd() + '/__entry', new CodeGenerator());
             let to_check = {}; 
 
             for (let key in test.output) {
@@ -680,19 +682,27 @@ describe('es_to_cs_externals (ESM)', () => {
 
 describe('misc transform issues', () => {
     it ('should not fail on null nodes', async () => {
-        let res = await es_to_cjs({ plugins: [] }, `
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, `
             import Hello from './World';
             let a = [1, 2, , 4];
-        `,  process.cwd() + '/__entry');
+        `,  process.cwd() + '/__entry', new CodeGenerator());
         expect(res.code.indexOf('[1, 2, , 4]') > -1).to.be.true;
     });
 
     it ('should properly blank two imports without semi-colons', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'import Hello from "hello"',
             'import World from "world"',
             'console.log(Hello, World)'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
             '                         ',
             '                         ',
@@ -701,10 +711,14 @@ describe('misc transform issues', () => {
     });
 
     it ('should properly blank two imports on the same line', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'import Hello from "hello";import World from "world"',
             'console.log(Hello, World)'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
             '                                                   ',
             'console.log(Hello, World)'
@@ -713,7 +727,11 @@ describe('misc transform issues', () => {
 
 
     it ('should properly blank imports that span multiple lines', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'import {',
             '   Hello',
             '} from "hello";',
@@ -721,7 +739,7 @@ describe('misc transform issues', () => {
             '   World',
             '} from "world";',
             'console.log(Hello, World)'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
             '        ',
             '        ',
@@ -734,35 +752,43 @@ describe('misc transform issues', () => {
     });
 
     it ('should properly blank export {} blocks', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'var Hello, World, Foo, Bar;',
             'export { Hello, World }',
             'export { Foo, Bar };',
             'console.log(Hello, World)'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
             'var Hello, World, Foo, Bar;',
-            '                       __e__(\'Hello\', Hello);__e__(\'World\', World);',
-            '                    __e__(\'Foo\', Foo);__e__(\'Bar\', Bar);',
+            '                       ; __e__(\'Hello\', Hello);__e__(\'World\', World);',
+            '                    ; __e__(\'Foo\', Foo);__e__(\'Bar\', Bar);',
             'console.log(Hello, World)'
         ].join('\n'));
     });
 
     it ('should properly blank export {} blocks over multiple lines with padding', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'var Hello, World, Foo, Bar;',
             'export {                   ',
             '    Hello,                 ',
             '    World                  ',
             '}                          ',
             'console.log(Hello, World)'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
             'var Hello, World, Foo, Bar;',
             '                           ',
             '                           ',
             '                           ',
-            ' __e__(\'Hello\', Hello);__e__(\'World\', World);                          ',
+            ' ; __e__(\'Hello\', Hello);__e__(\'World\', World);                          ',
             'console.log(Hello, World)'
         ].join('\n'));
     });
@@ -770,78 +796,102 @@ describe('misc transform issues', () => {
 
 describe ('Export Live Bindings', () => {
     it ('should only export when export is assigned for declarations', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'export let hello;',
             'hello = 123;'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
-            'let hello;; ;',
+            'let hello;; ',
             'hello = 123;;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
         ].join('\n'));
     });
 
     it ('should work for multiple exports', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'export let hello;',
             'hello = 123;',
             'export let world;',
             'world = 456;'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
-            'let hello;; ;',
+            'let hello;; ',
             'hello = 123;;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
-            'let world;; ;',
+            'let world;; ',
             'world = 456;;__e__(\'world\', typeof world !== \'undefined\' && world);'
         ].join('\n'));
     });
 
     it ('should support inline assignments', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'export let hello;',
             '(function () {})(hello || (hello = 123))'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
-            'let hello;; ;',
+            'let hello;; ',
             '(function () {})(hello || (hello = 123));__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
         ].join('\n'));
     });
 
     it ('should support inline assignments 2', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'export let hello;',
             '(function () {})(hello || (hello = 123));'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
-            'let hello;; ;',
+            'let hello;; ',
             '(function () {})(hello || (hello = 123));;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
         ].join('\n'));
     });
 
     it ('should not fail when found inside shadowing function expression', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'export let hello;',
             '(function (hello) { hello = 123 })();',
             'hello = 123'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
-            'let hello;; ;',
+            'let hello;; ',
             '(function (hello) { hello = 123 })();;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
             'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
         ].join('\n'));
     });
 
     it ('should not fail when found inside shadowing function expression for multiple exports', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'export let hello;',
             'export let world;',
             '(function (hello) { hello = 123 })();',
             '(function (world) { world = 123 })();',
             'hello = 123',
             'world = 456'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
-            'let hello;; ;',
-            'let world;; ;',
+            'let hello;; ',
+            'let world;; ',
             '(function (hello) { hello = 123 })();;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
             '(function (world) { world = 123 })();;__e__(\'world\', typeof world !== \'undefined\' && world);',
             'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
@@ -850,33 +900,45 @@ describe ('Export Live Bindings', () => {
     });
 
     it ('should not fail when exported after shadowed function statement', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'function print (hello) { hello = 123 }',
             'export let hello;',
             'hello = 123'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
             'function print (hello) { hello = 123 };__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
-            'let hello;; ;',
+            'let hello;; ',
             'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
         ].join('\n'));
     });
 
     it ('should not fail when exported after shadowed arrow expression', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             '(hello => { hello = 123 })();',
             'export let hello;',
             'hello = 123'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
             '(hello => { hello = 123 })();;__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
-            'let hello;; ;',
+            'let hello;; ',
             'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
         ].join('\n'));
     });
 
     it ('should not fail when shadowed in nested functions', async () => {
-        let res = await es_to_cjs({ plugins: [] }, [
+        let config = new RollupConfigContainer({ plugins: [] });
+        let plugins = new PluginContainer(config, {});
+        plugins.start();
+
+        let res = await es_to_cjs(plugins, [
             'function parent (hello) {',
             '   function nested (hello) {',
             '       hello = 123;',
@@ -884,14 +946,14 @@ describe ('Export Live Bindings', () => {
             '}',
             'export let hello;',
             'hello = 123'
-        ].join('\n'), process.cwd() + '/_entry');
+        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
         expect(res.code).to.equal([
             'function parent (hello) {',
             '   function nested (hello) {',
             '       hello = 123;',
             '   }',
             '};__e__(\'hello\', typeof hello !== \'undefined\' && hello);',
-            'let hello;; ;',
+            'let hello;; ',
             'hello = 123;__e__(\'hello\', typeof hello !== \'undefined\' && hello);'
         ].join('\n'));
     });

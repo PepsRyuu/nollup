@@ -1519,6 +1519,7 @@ describe ('API: Plugin Hooks', () => {
 
         it ('should modify options for rest of hooks', async () => {
             fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/main2.js', () => 'export default 456');
             let passed = false;
 
             let bundle = await nollup({
@@ -1528,18 +1529,19 @@ describe ('API: Plugin Hooks', () => {
                         expect(opts.input).to.equal('./src/main.js');
                         return {
                             ...opts,
-                            hello: 'world'
+                            input: './src/main2.js'
                         }
                     }
                 }, {
                     buildStart (opts) {
-                        expect(opts.hello).to.equal('world');
+                        expect(opts.input).to.deep.equal(['./src/main2.js']);
                         passed = true;
                     }
                 }]
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf('456') > -1).to.be.true;
             expect(passed).to.be.true;
             fs.reset();
         });
@@ -1602,12 +1604,13 @@ describe ('API: Plugin Hooks', () => {
                 input: './src/main.js',
                 plugins: [{
                     outputOptions (opts) {
+                        expect(opts.format).to.equal('esm'); // do not normalize
                         expect(opts.dir).to.equal('dist');
-                        opts.hello = 'world';
+                        opts.dir = 'dist2';
                     }
                 }, {
                     outputOptions (opts) {
-                        expect(opts.hello).to.equal('world');
+                        expect(opts.dir).to.equal('dist2');
                         passed = true;
                     }
                 }]
@@ -1712,7 +1715,7 @@ describe ('API: Plugin Hooks', () => {
                 plugins: [{
                     buildStart (opts) {
                         expect(this.resolve).not.to.be.undefined;
-                        expect(opts.input).to.equal('./src/main.js');
+                        expect(opts.input).to.deep.equal(['./src/main.js']);
                     }
                 }, {
                     buildStart (opts) {
@@ -1729,23 +1732,24 @@ describe ('API: Plugin Hooks', () => {
 
         it ('should run after all options hooks have ran', async () => {
             fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/main2.js', () => 'export default 456');
+            fs.stub('./src/main3.js', () => 'export default 789');
             let passed = false;
 
             let bundle = await nollup({
                 input: './src/main.js',
                 plugins: [{
                     options (opts) {
-                        opts.hello = 'world';
+                        opts.input = './src/main2.js';
                     }, 
 
                     buildStart (opts) {
-                        expect(opts.hello).to.equal('world');
-                        expect(opts.foo).to.equal('bar');
+                        expect(opts.input).to.deep.equal(['./src/main3.js']);
                         passed = true;
                     }
                 }, {
                     options (opts) {
-                        opts.foo = 'bar';
+                        opts.input = './src/main3.js';
                     }
                 }]
             });
@@ -1765,7 +1769,7 @@ describe ('API: Plugin Hooks', () => {
                 plugins: [{
                     async buildStart (opts) {
                         expect(this.resolve).not.to.be.undefined;
-                        expect(opts.input).to.equal('./src/main.js');
+                        expect(opts.input).to.deep.equal(['./src/main.js']);
                     }
                 }, {
                     async buildStart (opts) {
@@ -1998,7 +2002,7 @@ describe ('API: Plugin Hooks', () => {
                 plugins: [{
                     renderStart (output, input) {
                         expect(output.dir).to.equal('dist');
-                        expect(input.input).to.equal('./src/main.js');
+                        expect(input.input).to.deep.equal(['./src/main.js']);
                         passed = true;
                     }
                 }]
@@ -2808,8 +2812,7 @@ describe ('API: Plugin Hooks', () => {
                 format: 'esm'
             });
 
-            expect(output[0].code.indexOf('console.log(__nollup__import__meta__.url)') > -1).to.be.true;
-            expect(output[0].code.indexOf('\'url\': 123') > -1).to.be.true;
+            expect(output[0].code.indexOf('console.log(123)') > -1).to.be.true;
             fs.reset();
         });
 
@@ -2862,8 +2865,7 @@ describe ('API: Plugin Hooks', () => {
                 format: 'esm'
             });
 
-            expect(output[0].code.indexOf('console.log(__nollup__import__meta__.null)') > -1).to.be.true;
-            expect(output[0].code.indexOf('\'null\': 123') > -1).to.be.true;
+            expect(output[0].code.indexOf('console.log(123)') > -1).to.be.true;
             expect(passed).to.be.true;
             fs.reset();
         });
@@ -3002,7 +3004,7 @@ describe ('API: Plugin Hooks', () => {
                 input: './src/main.js',
                 plugins: [{
                     transform () {
-                        this.addWatchFile('./other.js');
+                        this.addWatchFile('./src/other.js');
                     },
 
                     watchChange (id) {

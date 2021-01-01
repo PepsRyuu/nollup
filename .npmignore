@@ -9,3 +9,6 @@ API.md
 *.tgz
 coverage/
 docs/
+src/
+rollup.config.js
+jsconfig.json

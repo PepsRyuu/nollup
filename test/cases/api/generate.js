@@ -53,7 +53,7 @@ describe ('API: generate', () => {
         expect(output.length).to.equal(2);
 
         let asset = output.find(o => o.fileName.indexOf('style') > -1);
-        expect(asset.isAsset).to.be.true;
+        expect(asset.type).to.equal('asset');
         expect(!asset.isEntry).to.be.true;
         expect(asset.fileName).to.equal('assets/style-[hash].css');
         expect(asset.source).to.equal('*{color: blue}');
@@ -79,7 +79,6 @@ describe ('API: generate', () => {
 
         let main1 = output.find(o => o.fileName === 'main1.js');
         expect(main1.isEntry).to.be.true;
-        expect(!main1.isAsset).to.be.true;
         expect(main1.fileName).to.equal('main1.js');
         expect(main1.code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.true; 
         expect(main1.code.indexOf(`__e__(\\'default\\', 456)`) > -1).to.be.false;
@@ -87,7 +86,6 @@ describe ('API: generate', () => {
 
         let main2 = output.find(o => o.fileName === 'main2.js');
         expect(main2.isEntry).to.be.true;
-        expect(!main2.isAsset).to.be.true;
         expect(main2.fileName).to.equal('main2.js');
         expect(main2.code.indexOf(`__e__(\\'default\\', 456)`) > -1).to.be.true;
         expect(main2.code.indexOf(`__e__(\\'default\\', 123)`) > -1).to.be.false;
@@ -133,35 +131,25 @@ describe ('API: generate', () => {
 
         expect(output.length).to.equal(4);
 
+        
         let main1 = output.find(o => o.fileName === 'main1.js');
         expect(main1.isEntry).to.be.true;
         expect(main1.fileName).to.equal('main1.js');
-        expect(main1.code.indexOf(`require.dynamic(\\'${
-            path.resolve(process.cwd(), './src/dynamic.js').replace(/\\/g, '\\\\\\\\')}`
-        ) > -1).to.be.true;
-        expect(main1.code.indexOf(`'${path.resolve(process.cwd(), './src/dynamic.js').replace(/\\/g, '\\\\')}': getRelativePath('.', 'chunk-dynamic-[hash].js')`) > -1).to.be.true;
+        expect(main1.code.indexOf(`require.dynamic(\\'chunk-dynamic-[hash].js\\')`) > -1).to.be.true;
         expect(Object.keys(main1.modules).length).to.equal(1);
         expect(main1.modules[path.resolve(process.cwd(), './src/main1.js')]).not.to.be.undefined;
 
         let main2 = output.find(o => o.fileName === 'main2.js');
         expect(main2.isEntry).to.be.true;
         expect(main2.fileName).to.equal('main2.js');
-        expect(main2.code.indexOf(`require.dynamic(\\'${
-            path.resolve(process.cwd(), './src/dynamic.js').replace(/\\/g, '\\\\\\\\')}`
-        ) > -1).to.be.true;
-        expect(main2.code.indexOf(`'${path.resolve(process.cwd(), './src/dynamic.js').replace(/\\/g, '\\\\')}': getRelativePath('.', 'chunk-dynamic-[hash].js')`) > -1).to.be.true;
+        expect(main2.code.indexOf(`require.dynamic(\\'chunk-dynamic-[hash].js\\'`) > -1).to.be.true;
         expect(Object.keys(main2.modules).length).to.equal(1);
         expect(main2.modules[path.resolve(process.cwd(), './src/main2.js')]).not.to.be.undefined;
 
         let dynamic = output.find(o => o.fileName === 'chunk-dynamic-[hash].js');
         expect(dynamic.isDynamicEntry).to.be.true;
         expect(dynamic.fileName.startsWith('chunk-')).to.be.true;
-        expect(dynamic.code.indexOf(`require.dynamic(\\'${
-            path.resolve(process.cwd(), './src/subdynamic.js').replace(/\\/g, '\\\\\\\\')}`
-        ) > -1).to.be.true;
-        expect(main1.code.indexOf(`'${path.resolve(process.cwd(), './src/subdynamic.js').replace(/\\/g, '\\\\')}': getRelativePath('.', 'chunk-subdynamic-[hash].js')`) > -1).to.be.true;
-        expect(main2.code.indexOf(`'${path.resolve(process.cwd(), './src/subdynamic.js').replace(/\\/g, '\\\\')}': getRelativePath('.', 'chunk-subdynamic-[hash].js')`) > -1).to.be.true;      
-        expect(dynamic.code.indexOf(`'${path.resolve(process.cwd(), './src/subdynamic.js').replace(/\\/g, '\\\\')}': getRelativePath('.', 'chunk-subdynamic-[hash].js')`) === -1).to.be.true;        
+        expect(dynamic.code.indexOf(`require.dynamic(\\'chunk-subdynamic-[hash].js\\')`) > -1).to.be.true;
         expect(Object.keys(dynamic.modules).length).to.equal(1);
         expect(dynamic.modules[path.resolve(process.cwd(), './src/dynamic.js')]).not.to.be.undefined;
 
