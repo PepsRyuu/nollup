@@ -11,7 +11,7 @@ This list provides a description of all of the options for the [CLI](./cli.md), 
 | ```Boolean\|String``` | ```historyApiFallback``` | If set to true, it will fallback to ```index.html``` if accessing a file that doesn't exist. You can pass a string to fallback to a different file. Default is ```false```. |
 | ```String``` | ```publicPath``` | All generated files will be served from this URL. Default is ```/``` |
 | ```String``` | ```environment``` | Pass environment variables that are set to ```process.ENV```. |
-| ```Object``` | ```proxy``` | Object keys are paths to match. Value is the domain to proxy to. ```"api": "http://localhost:8080"``` will have a request such as ```/api/todos``` proxy to ```http://localhost:8080/api/todos```. |
+| ```Object``` | ```proxy``` | Object keys are paths to match. Value can be the domain to proxy to. ```"api": "http://localhost:8080"``` will have a request such as ```/api/todos``` proxy to ```http://localhost:8080/api/todos```. In addition the value can be an object with host key for domain and any additional configurations that [express-http-proxy](https://github.com/villadora/express-http-proxy) consumes. ```"api": {host: 'http://localhost:8080", changeOrigin: true}``` will have a request such as ```/api/todos``` proxy to ```http://localhost:8080/api/todos``` with changeOrigin flag set to true. |
 | ```Boolean``` | ```verbose``` | Enable verbose logging. Default is ```false```. |
 | ```Object``` | ```headers``` | Provide custom headers for Express server responses. Useful to set cors headers for the server. |
 | ```String``` | ```hmrHost``` | Host to connect to for HMR. Default is ```window.location.host```. Useful for Electron environments. |
