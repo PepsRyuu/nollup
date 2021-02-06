@@ -1,4 +1,4 @@
-let proxyquire = require('proxyquire');
+let proxyquire = require('proxyquire').noCallThru();
 let path = require('path');
 let fs_impl = require('fs');
 let expect = require('chai').expect;
@@ -21,9 +21,9 @@ let fs = {
     readdirSync: function (dir) {
         let output = [];
 
-        if (fs.existsSync(dir)) {
-            output = output.concat(fs.readdirSync(dir));
-        }
+        // if (fs.existsSync(dir)) {
+        //     output = output.concat(fs.readdirSync(dir));
+        // }
 
         Object.keys(this._stubs).forEach(file => {
             if (path.dirname(file) === dir) {

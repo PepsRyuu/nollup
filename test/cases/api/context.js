@@ -392,6 +392,47 @@ describe ('API: Plugin Context', () => {
             expect(output[1].source).to.equal('newlol');
             fs.reset();
         });
+
+        it ('should allow setting asset source in build phase', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    load () {
+                        let id = this.emitAsset('style.css');
+                        this.setAssetSource(id, 'newlol');
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm', assetFileNames: 'asset-[name][extname]' });
+            expect(output[1].source).to.equal('newlol');
+            fs.reset();
+        });
+
+        it ('should allow setting asset source in build phase when executing for a different module', async () => {
+            fs.stub('./src/other.js', () => 'export default 456;');
+            fs.stub('./src/main.js', () => 'import value from "./other"; export default value;');
+
+            let id;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    load (name) {
+                        if (name.indexOf('main') > -1) {
+                            id = this.emitAsset('style.css');
+                        } else {
+                            this.setAssetSource(id, 'newlol');
+                        }
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm', assetFileNames: 'asset-[name][extname]' });
+            expect(output[1].source).to.equal('newlol');
+            fs.reset();
+        });
     });
 
     describe ('parse', () => {
@@ -1190,7 +1231,7 @@ describe ('API: Plugin Context', () => {
     });
 
     describe ('addWatchFile', () => {
-        it ('should allow relative paths', async () => {
+        it ('should allow relative paths relative to working directory', async () => {
             fs.stub('./src/main.js', () => 'export default 123');
             fs.stub('./src/other.js', () => 'export default 456');
 
@@ -1198,7 +1239,7 @@ describe ('API: Plugin Context', () => {
                 input: './src/main.js',
                 plugins: [{
                     transform () {
-                        this.addWatchFile('./other.js');
+                        this.addWatchFile('./src/other.js');
                     }
                 }]
             });
@@ -1233,7 +1274,115 @@ describe ('API: Plugin Context', () => {
             expect(output[0].code.indexOf('321') > -1).to.be.true;
             fs.reset();
         });
+        
+        it ('should allow to be used in resolveId hook, but won\'t do anything', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/other.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (id) {
+                        this.addWatchFile('./src/other.js');
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            fs.stub('./src/main.js', () => 'export default 321');
+            bundle.invalidate('src/other.js');
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf('123') > -1).to.be.true;
+            fs.reset();
+        });
+
+        it ('should allow to be used in load hook, but wont do anything', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/other.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    load () {
+                        this.addWatchFile('./src/other.js');
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            fs.stub('./src/main.js', () => 'export default 321');
+            bundle.invalidate('src/other.js');
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf('123') > -1).to.be.true;
+            fs.reset();
+        });
+
+        it ('should allow to be used in buildStart hook, but won\'t do anything', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/other.js', () => 'export default 456');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    buildStart () {
+                        this.addWatchFile('./src/other.js');
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            fs.stub('./src/main.js', () => 'export default 321');
+            bundle.invalidate('src/other.js');
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.indexOf('123') > -1).to.be.true;
+            fs.reset();
+        });
     });
+
+    describe('getWatchFiles', () => {
+        it ('should return watch files exactly as entered via addWatchFile including built files', async () => {
+            fs.stub('./src/main.js', () => 'import "./beta"; import value from "./alpha"; export default value;');
+            fs.stub('./src/alpha.js', () => 'export default 123');
+            fs.stub('./src/beta.js', () => 'export default 123');
+
+            let passed = false;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        if (id.indexOf('main') > -1) {
+                            this.addWatchFile('./src/a.js');
+                            this.addWatchFile('/src/b.js');
+                        }
+
+                        if (id.indexOf('beta') > -1) {
+                            this.addWatchFile('./src/c.js');
+                        }
+                    },
+
+                    buildEnd () {
+                        let watchFiles = this.getWatchFiles();
+                        expect(watchFiles[0]).to.equal(path.resolve(process.cwd(), './src/main.js'));
+                        expect(watchFiles[1]).to.equal('./src/a.js');
+                        expect(watchFiles[2]).to.equal('/src/b.js');
+                        expect(watchFiles[3]).to.equal(path.resolve(process.cwd(), './src/beta.js'));
+                        expect(watchFiles[4]).to.equal('./src/c.js');
+                        expect(watchFiles[5]).to.equal(path.resolve(process.cwd(), './src/alpha.js'));
+                        passed = true;
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+    })
 
     describe ('import.meta.ROLLUP', () => {
         it ('should convert ROLLUP_FILE_URL to string', async () => {

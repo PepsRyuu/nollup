@@ -1423,6 +1423,36 @@ describe('plugin-hmr', () => {
             fs.reset();
         });
 
+        it ('should not have a circular references when updating dynamic import', async () => {
+            fs.stub('./src/main.js', () => `
+                import('dep').then(mod => mod.print()); 
+                module.hot.accept(() => require(module.id));
+            `);
+
+            fs.stub('./src/dep.js', () => `
+                import './main';
+                export function print () { console.log('dep') };
+            `);
+            
+            let env = await createNollupEnv();
+            await sleep(500);
+
+            fs.stub('./src/dep.js', () => `
+                import './main';
+                export function print () { console.log('dep-update') };
+            `);
+            env.bundle.invalidate('./src/dep.js');
+
+            let { changes } = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes });
+            await sleep(500);
+
+            expect(env.stdout.length).to.equal(2);
+            expect(env.stdout[0]).to.equal('dep');
+            expect(env.stdout[1]).to.equal('dep-update');
+            fs.reset();
+        });
+
         it ('should allow new import meta to work via HMR after first bundle');
 
         it ('should allow new external imports to work via HMR after first bundle');

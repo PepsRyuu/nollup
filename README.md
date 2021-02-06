@@ -27,6 +27,7 @@ Nollup provides four ways to use it:
 * [Dev Server API](./docs/dev-server.md)
 * [Dev Middleware API](./docs/dev-middleware.md)
 * [Compiler API](./docs/compiler.md)
+* [SDK 🧪](./docs/sdk.md)
 
 For the majority of projects, it is recommended to use the CLI approach.
 

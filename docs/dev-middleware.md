@@ -15,8 +15,15 @@ app.use(NollupDevMiddleware(app, rollupConfig, {
     hot: true,
     contentBase: './public',
     ...
-}));
+}, server));
 ```
+
+## Parameters
+
+* ```app``` - Reference to the Express app.
+* ```rollupConfig``` - Rollup configuration object.
+* ```nollupOptions``` - See below for options.
+* ```server``` - Optional reference to server if creating custom server instance.
 
 ## Options
 
