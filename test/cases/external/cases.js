@@ -305,6 +305,36 @@ describe('External', () => {
             expect(result).to.equal(true);
             fs.reset();
         });
+    });
+
+    describe ('Misc', () => {
+        it ('should use the resolved id for dependency source, rather than the raw value', async () => {
+            fs.stub('./src/main.js', () => `
+                import Default from "MySpecialModule?key=value"; 
+                if (Default.prop) { 
+                    self.result = true; 
+                }
+            `);
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (id) {
+                        if (id.indexOf('MySpecialModule') > -1) {
+                            return {
+                                id: 'DefaultModule',
+                                external: true
+                            };
+                        }
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            let result = await executeChunkedFiles('esm', 'main.js', output);
+            expect(result).to.equal(true);
+            fs.reset();
+        })
     })
     
 });
