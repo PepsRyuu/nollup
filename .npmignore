@@ -12,3 +12,4 @@ docs/
 src/
 rollup.config.js
 jsconfig.json
+benchmark/
