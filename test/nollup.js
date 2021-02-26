@@ -5,6 +5,10 @@ let expect = require('chai').expect;
 let SourceMapFast = require('source-map-fast');
 
 // Source map lib has a check for browser
+if (!global.window) {
+    global.window = {};
+}
+
 window.fetch = undefined;
 
 let fs = {

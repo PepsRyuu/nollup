@@ -11,7 +11,8 @@
   "scripts": {
     "test": "mocha-istanbul-ui \"test/cases/**/*.js\" --instrument --console --once",
     "test:ui": "mocha-istanbul-ui \"test/cases/**/*.js\" --instrument --watch",
-    "test:headless": "xvfb-run npm run test"
+    "test:headless": "xvfb-run npm run test",
+    "test:mocha": "mocha \"test/cases/**/*.js\""
   },
   "bin": {
     "nollup": "./lib/cli.js"
@@ -32,6 +33,7 @@
   },
   "devDependencies": {
     "chai": "^4.1.2",
+    "mocha": "^8.3.0",
     "mocha-istanbul-ui": "^0.4.0",
     "proxyquire": "^2.0.1",
     "rollup": "^2.33.3"

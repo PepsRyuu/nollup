@@ -1,5 +1,10 @@
 language: node_js
+
+os:
+    - linux
+    - windows
+
 node_js: 
     - "14"
 
-script: xvfb-run npm test
+script: npm run test:mocha

@@ -28,7 +28,7 @@ function createGlobals (env_options = {}) {
         return _ws;
     };
 
-    return { window, console, stdout, ws: _ws, WebSocket, __nollup__global__: window };
+    return { window, console, stdout, ws: _ws, WebSocket, __nollup__global__: window, globalThis: window };
 }
 
 function sleep (delay) {
@@ -37,7 +37,7 @@ function sleep (delay) {
 
 async function createNollupEnv () {
     let globals = createGlobals();
-    let { window, console, WebSocket, __nollup__global__ } = globals;
+    let { window, console, WebSocket, __nollup__global__, globalThis } = globals;
     let generated;
 
     let applyPolyfill = function (code) {
@@ -84,7 +84,7 @@ function createEnv (input, options = {}, env_options = {}) {
 
     let modules = input.map(m => m.code);
     let globals = createGlobals(env_options);
-    let { window, console, WebSocket, __nollup__global__ } = globals;
+    let { window, console, WebSocket, __nollup__global__, globalThis } = globals;
 
     let plugin_instance = plugin(options);
     eval(plugin_instance.nollupBundleInit());
