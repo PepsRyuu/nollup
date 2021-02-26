@@ -216,7 +216,8 @@ describe('External', () => {
 
     describe ('Externals in Chunks', () => {
         ['esm', 'cjs'].forEach(format => {
-            it ('should allow external imports for chunks (' + format + ')', async () => {
+            it ('should allow external imports for chunks (' + format + ')', async function () {
+                this.timeout(10000);
                 fs.stub('./src/chunk.js', () => `export { NamedExport1, NamedExport2 } from 'NamedModule';`)
                 fs.stub('./src/main.js', () => `
                     import('./chunk').then(mod => {

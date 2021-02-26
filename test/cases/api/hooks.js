@@ -3025,6 +3025,10 @@ describe ('API: Plugin Hooks', () => {
     });
 
     describe ('moduleParsed', () => {
+        function normalizeDelimiter (id) {
+            return id.replace(/\\/g, '/');
+        }
+
         it ('should receive module info', async () => {
             fs.stub('./src/main.js', () => 'export default 123');
             let passed = false;
@@ -3033,7 +3037,7 @@ describe ('API: Plugin Hooks', () => {
                 input: './src/main.js',
                 plugins: [{
                     moduleParsed (moduleInfo) {
-                        expect(moduleInfo.id.indexOf('src/main') > -1).to.be.true;
+                        expect(normalizeDelimiter(moduleInfo.id).indexOf('src/main') > -1).to.be.true;
                         passed = true;
                     }
                 }]
@@ -3053,12 +3057,12 @@ describe ('API: Plugin Hooks', () => {
                 input: './src/main.js',
                 plugins: [{
                     moduleParsed (moduleInfo) {
-                        expect(moduleInfo.id.indexOf('src/main') > -1).to.be.true;
+                        expect(normalizeDelimiter(moduleInfo.id).indexOf('src/main') > -1).to.be.true;
                         passed1 = true;
                     }    
                 }, {
                     moduleParsed (moduleInfo) {
-                        expect(moduleInfo.id.indexOf('src/main') > -1).to.be.true;
+                        expect(normalizeDelimiter(moduleInfo.id).indexOf('src/main') > -1).to.be.true;
                         passed2 = true;
                     }
                 }]
@@ -3081,7 +3085,7 @@ describe ('API: Plugin Hooks', () => {
                         tcount++;
                     },
                     moduleParsed (moduleInfo) {
-                        expect(moduleInfo.id.indexOf('src/main') > -1).to.be.true;
+                        expect(normalizeDelimiter(moduleInfo.id).indexOf('src/main') > -1).to.be.true;
                         mcount++;
                     }
                 }]
