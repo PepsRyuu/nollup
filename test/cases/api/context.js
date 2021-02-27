@@ -527,7 +527,92 @@ describe ('API: Plugin Context', () => {
     });
 
     describe ('warn', () => {
-        it ('should output warning message');
+        let _consoleLog = console.warn;
+        let _logged = [];
+
+        beforeEach(() => {
+            console.warn = function (...args) {
+                _logged.push(args.join(' ').replace('\x1b[1m\x1b[33m', '').replace('\x1b[39m\x1b[22m', ''));
+            }
+        });
+
+        afterEach(() => {
+            console.warn = _consoleLog;
+            _logged = [];
+        });
+
+        it ('should output warning message', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.warn('my warning');
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(_logged[0]).to.equal('my warning');
+            fs.reset();
+        });
+
+        it ('should allow message object', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.warn({ message: 'my warning' });
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(_logged[0]).to.equal('my warning');
+            fs.reset();
+        });
+
+        it ('should allow message object with frame', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        this.warn({ message: 'my warning', frame: '    var abc;\n    ^'});
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(_logged[0]).to.equal('my warning\n    var abc;\n    ^');
+            fs.reset();
+        });
+
+        it ('should allow message object with pluginCode, message, loc and frame', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        this.warn({ 
+                            message: 'my warning', 
+                            pluginCode: 'TS1234',
+                            loc: { line: 1, column: 5, file: id },
+                            frame: '    var abc;\n    ^'
+                        });
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(_logged[0]).to.equal(`TS1234: my warning\n${path.resolve(process.cwd(), './src/main.js').replace(process.cwd(), '')} (1:5)\n    var abc;\n    ^`);
+            fs.reset();
+        });
     });
 
     describe ('error', () => {
