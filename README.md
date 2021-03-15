@@ -36,7 +36,14 @@ For the majority of projects, it is recommended to use the CLI approach.
 [create-nollup-app](https://github.com/PepsRyuu/create-nollup-app) is a CLI that will generate a Nollup project for you.
 
 ```
+// npm 6 and below
 npm init nollup-app --name <project-name> --template <template>
+
+// npm 7+ which requires extra dashes
+npm init nollup-app -- --name <project-name> --template <template>
+
+// any npm version
+npx create-nollup-app --name <project-name> --template <template>
 ```
 
 <img src="https://user-images.githubusercontent.com/6637882/111074224-f0f09380-84d9-11eb-9f9e-8a7b2c3d5bb4.gif" width="500">
