@@ -21,3 +21,4 @@ This list provides a description of all of the options for the [CLI](./cli.md), 
 | ```Boolean``` | ```https``` | Enable https. Default is ```false```. Requires ```key``` and ```cert``` to be set |
 | ```String``` | ```key``` | Path to the private key file to use with https. |
 | ```String``` | ```cert``` | Path to the certificate file to use with https. |
+| ```String|Boolean``` | ```liveBindings``` | Enable live-bindings. Default is ```false```. Supports ```"with-scope"``` or ```"reference"```. If set to ```true```, it will use ```"reference"```. See [Live Bindings](./live-bindings.md) for more information. |

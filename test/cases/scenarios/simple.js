@@ -15,6 +15,10 @@ async function createNollup (package, config) {
 
     let bundle = await nollup(config);
 
+    if (config.liveBindings) {
+        bundle.configure(config);
+    }
+
     return {
         invalidate: function (file) {
             return bundle.invalidate(path.resolve(__dirname, `../../packages/${file}.js`));
@@ -22,7 +26,8 @@ async function createNollup (package, config) {
 
         generate: async function () {
             let { output } = await bundle.generate(config.output);
-            let code = (output && output[0].code) || '';
+            let code = (output && output[0].code) || '';  
+            let module = undefined; // Shadow nodeJS module.exports
             return eval(code);
         }
     }
@@ -296,4 +301,95 @@ describe('Nollup', function () {
         let entry = await bundle.generate();
         expect(entry.default).to.equal('hello world');
     });
+
+    describe ('Live Bindings', () => {
+        [true, 'reference', 'with-scope'].forEach(liveBindings => {
+            it ('Scenario: Full Live Binding (' + liveBindings + ')', async function () {
+                let bundle = await createNollup('export-full-live-bindings', { liveBindings });
+                let entry = await bundle.generate();
+                expect(entry.default).to.equal('Counter: 3');
+            });
+    
+            it ('Scenario: Circular Dependencies (' + liveBindings + ')', async function () {
+                let bundle = await createNollup('circular', { liveBindings });
+                let entry = await bundle.generate();
+                expect(entry.default).to.equal('A2 - A3 - A1');
+            });
+    
+            it ('Scenario: Circular Dependencies for Export FROM (' + liveBindings + ')', async function () {
+                let bundle = await createNollup('circular-export-from', { liveBindings });
+                let entry = await bundle.generate();
+                expect(entry.default).to.equal('A');
+            });
+    
+            it ('Scenario: Circular Dependencies for Export all FROM (' + liveBindings + ')', async function () {
+                let bundle = await createNollup('circular-export-all-from', { liveBindings });
+                let entry = await bundle.generate();
+                expect(entry.default).to.equal('A');
+            });
+    
+            it ('Scenario: Circular Dependencies for Export from infinite loop (' + liveBindings + ')', async function () {
+                let bundle = await createNollup('circular-export-from-infinite-loop', { liveBindings });
+                let entry = await bundle.generate();
+                expect(entry.default).to.equal('A');
+            });
+    
+            it ('Scenario: Export Declaration Late Binding (' + liveBindings + ')', async function () {
+                let bundle = await createNollup('export-declaration-late-binding', { liveBindings });
+                let entry = await bundle.generate();
+                expect(entry.default).to.equal('hello world');
+            });
+    
+            it ('Scenario: Check different export techniques (' + liveBindings + ')', async function () {
+                let bundle = await createNollup('export-checks', { liveBindings });
+                let entry = await bundle.generate();
+                expect(entry.MyVar).to.equal('MyVar');
+                expect(entry.MyVarAlias).to.equal('MyVar');
+                expect(entry.MyClass.prototype.getValue()).to.equal('MyClass');
+                expect(entry.MyClassAlias.prototype.getValue()).to.equal('MyClass');
+                expect(entry.default).to.equal('MyVarMyVarMyVar');
+                expect(entry.DepFrom).to.equal('dep-from');
+                expect(entry.AliasDepFromProxy).to.equal('alias-dep-from');
+                expect(entry.DefaultDepFrom).to.equal('default-dep-from');
+            });
+    
+            it ('Scenario: Check export default from file (' + liveBindings + ')', async function () {
+                let bundle = await createNollup('export-default-from', { liveBindings });
+                let entry = await bundle.generate();
+                expect(entry.default).to.equal(123);
+            });
+    
+            it ('Scenario: Check export all (' + liveBindings + ')', async function () {
+                let bundle = await createNollup('export-all', { liveBindings });
+                let entry = await bundle.generate();
+                expect(entry.message1).to.equal('hello');
+                expect(entry.message2).to.equal('world');
+                expect(entry.default).to.be.undefined;
+            });
+    
+            it ('Scenario: Check synthetic export all (' + liveBindings + ')', async function () {
+                let bundle = await createNollup('export-synthetic-all-from', { 
+                    liveBindings,
+                    plugins: [{
+                        transform (code, id) {
+                            if (id.indexOf('impl') > -1) {
+                                return {
+                                    code,
+                                    syntheticNamedExports: true
+                                }
+                            }
+                        }
+                    }]
+                });
+                let entry = await bundle.generate();
+                expect(entry.message1).to.equal('hello');
+                expect(entry.message2).to.equal('world');
+                expect(entry.default).to.be.undefined;
+            });
+    
+        })
+        
+    })
+
+    
 });

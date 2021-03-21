@@ -35,3 +35,4 @@ The following options can be passed into Nollup Dev Middleware. You can find a f
 * ```String hmrHost```
 * ```String contentBase```
 * ```String publicPath```
+* ```String|Boolean liveBindings```
