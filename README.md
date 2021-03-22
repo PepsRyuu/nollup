@@ -70,6 +70,10 @@ You can find the list [here](./docs/plugins.md).
 
 Nollup provides additional plugin hooks for plugin authors to implement features such as HMR. See more information [here](./docs/nollup-hooks.md).
 
+## Live Bindings
+
+For performance reasons, by default Nollup does not enable ESM live-bindings (but still supports circular dependencies). If you require live-bindings or are running into an issue where something imported is undefined, you can enable live-bindings. See more information [here](./docs/live-bindings.md).
+
 ## Caveats
 
 * Only Rollup configurations that make sense in development are implemented.

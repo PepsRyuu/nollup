@@ -31,6 +31,12 @@ By default, for performance reasons, Nollup doesn't enable live-bindings. It's a
 liveBindings: true | "with-scope" | "reference"
 ```
 
+**CLI**
+
+```
+nollup -c --live-bindings
+```
+
 ## Reference
 
 This is the default mode if using ```liveBindings: true```, or if set to ```reference```.
