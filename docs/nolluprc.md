@@ -9,7 +9,7 @@ Configuration file that can be used to pass configuration instead of as flags th
 }
 ```
 
-A JavaScript file called ```.nolluprc.js``` can be used instead.
+A JavaScript file called ```.nolluprc.js``` or specified file can be used instead.
 
 ```
 module.exports = {

@@ -13,6 +13,7 @@ The Nollup CLI is the preferred method of using Nollup. You're probably already 
 The following flags can be passed into Nollup CLI. You can find a full description of each of these options [here](./options.md).
 
 * ```-c | --config [file]```
+* ```--rc [file]```
 * ```--content-base [folder]```
 * ```--history-api-fallback [fallback]?``` 
 * ```--hot```
