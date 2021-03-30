@@ -5,6 +5,6 @@
         "build": "npm run clean && rollup -c"
     },
     "devDependencies": {
-        "rollup": "^1.20.1"
+        "rollup": "^2.44.0"
     }
 }

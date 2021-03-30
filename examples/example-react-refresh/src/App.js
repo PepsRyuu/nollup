@@ -1,7 +1,6 @@
 import Counter from './Counter';
 import { Internal } from './Internal';
 import './App.css';
-import React from 'react';
 
 let App = () => (
     <div className="App">

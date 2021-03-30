@@ -5,8 +5,8 @@
         "build": "npm run clean && cross-env NODE_ENV=production rollup -c"
     },
     "devDependencies": {
-        "cross-env": "^5.2.0",
-        "rollup": "^1.1.1",
-        "rollup-plugin-terser": "^5.1.1"
+        "cross-env": "^7.0.3",
+        "rollup": "^2.44.0",
+        "rollup-plugin-terser": "^7.0.2"
     }
 }

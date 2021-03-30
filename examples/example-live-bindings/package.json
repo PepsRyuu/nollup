@@ -6,6 +6,6 @@
         "start:with-scope": "cross-env NODE_ENV=development node ../../lib/cli.js -c --content-base public --port 9001 --hot --live-bindings with-scope"
     },
     "devDependencies": {
-        "cross-env": "^5.2.0"
+        "cross-env": "^7.0.3"
     }
 }
