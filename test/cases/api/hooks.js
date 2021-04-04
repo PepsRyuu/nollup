@@ -1330,6 +1330,95 @@ describe ('API: Plugin Hooks', () => {
             fs.reset();
         });
 
+        it ('should not lose syntheticNamedExports info if last transform does not mention it', async () => {
+            fs.stub('./src/main.js', () => `
+                export default { hello: "world" };
+            `);
+
+            let passed = true;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        if (id.indexOf('main') > -1) {
+                            return { 
+                                code,
+                                syntheticNamedExports: true
+                            };
+                        }
+                        
+                    }
+                }, {
+                    transform (code, id) {
+                        if (id.indexOf('main') > -1) {
+                            passed = true;
+                            return {
+                                code
+                            };
+                        }
+                    }
+                }]
+            });
+
+            let output = (await bundle.generate({ format: 'iife' })).output;
+            let result = eval(output[0].code);
+            expect(passed).to.be.true;
+            expect(result.hello).to.equal('world');
+
+            fs.reset();
+        });
+
+        it ('should not lose syntheticNamedExports info if last transform tries to change truthy value', async () => {
+            fs.stub('./src/main.js', () => `
+                export default { hello: "world" };
+            `);
+
+            let passed = true;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        if (id.indexOf('main') > -1) {
+                            return { 
+                                code,
+                                syntheticNamedExports: false
+                            };
+                        }
+                        
+                    }
+                },{
+                    transform (code, id) {
+                        if (id.indexOf('main') > -1) {
+                            return { 
+                                code,
+                                syntheticNamedExports: true
+                            };
+                        }
+                        
+                    }
+                }, {
+                    transform (code, id) {
+                        if (id.indexOf('main') > -1) {
+                            passed = true;
+                            return {
+                                code,
+                                syntheticNamedExports: '__moduleExports'
+                            };
+                        }
+                    }
+                }]
+            });
+
+            let output = (await bundle.generate({ format: 'iife' })).output;
+            let result = eval(output[0].code);
+            expect(passed).to.be.true;
+            expect(result.hello).to.equal('world');
+
+            fs.reset();
+        });
+
         it ('should allow strings for syntheticNamedExports', async () => {
             fs.stub('./src/main.js', () => `
                 export { hello } from './lol'
