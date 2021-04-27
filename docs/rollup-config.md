@@ -12,6 +12,8 @@ See [Rollup](https://rollupjs.org/guide/en/) documentation for more information 
 * ```external``` - Supports ```Array<String>``` or ```Function```.
 * ```acornInjectPlugins``` - Can pass array of additional Acorn plugins here.
 * ```watch``` See below for notes on this option.
+* ```context``` - Same as Rollup.
+* ```moduleContext``` - Same as rollup.
 
 ## Output Options
 

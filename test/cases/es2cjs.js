@@ -101,67 +101,67 @@ let tests = [{
     input: 'export default Hello;',
     output: {
         exports: ['default'],
-        code: `__e__('default', function () { return Hello });;`
+        code: `var __ex_default__ = Hello; __e__('default', function () { return __ex_default__ });;`
     }
 }, {
     input: 'export default Hello',
     output: {
         exports: ['default'],
-        code: `__e__('default', function () { return Hello });`
+        code: `var __ex_default__ = Hello; __e__('default', function () { return __ex_default__ });`
     }
 }, {
     input: 'export default 123;',
     output: {
         exports: ['default'],
-        code: `__e__('default', function () { return 123 });;`
+        code: `var __ex_default__ = 123; __e__('default', function () { return __ex_default__ });;`
     }
 }, {
     input: 'export default () => {};',
     output: {
         exports: ['default'],
-        code: `__e__('default', function () { return () => {} });;`
+        code: `var __ex_default__ = () => {}; __e__('default', function () { return __ex_default__ });;`
     }
 }, {
     input: 'export default () => {}',
     output: {
         exports: ['default'],
-        code: `__e__('default', function () { return () => {} });`
+        code: `var __ex_default__ = () => {}; __e__('default', function () { return __ex_default__ });`
     }
 }, {
     input: 'export default (() => {});',
     output: {
         exports: ['default'],
-        code: `__e__('default', function () { return (() => {}) });;`
+        code: `var __ex_default__ = (() => {}); __e__('default', function () { return __ex_default__ });;`
     }
 }, {
     input: 'export default(() => {});',
     output: {
         exports: ['default'],
-        code: `__e__('default', function () { return (() => {}) });;`
+        code: `var __ex_default__ = (() => {}); __e__('default', function () { return __ex_default__ });;`
     }
 }, {
     input: 'export default(() => {})',
     output: {
         exports: ['default'],
-        code: `__e__('default', function () { return (() => {}) });`
+        code: `var __ex_default__ = (() => {}); __e__('default', function () { return __ex_default__ });`
     }
 }, {
     input: 'let hello = 123;export default function () {}export { hello }',
     output: {
         exports: ['default', 'hello'],
-        code: `let hello = 123;__e__('default', function () { return function () {} });__e__( { hello: function () { return hello } });`
+        code: `let hello = 123;var __ex_default__ = function () {}; __e__('default', function () { return __ex_default__ });__e__( { hello: function () { return hello } });`
     }
 }, {
     input: 'export default(() => {});export let hello = 123;',
     output: {
         exports: ['default', 'hello'],
-        code: `__e__('default', function () { return (() => {}) });;let hello = 123;; __e__('hello', function () { return hello });`
+        code: `var __ex_default__ = (() => {}); __e__('default', function () { return __ex_default__ });;let hello = 123;; __e__('hello', function () { return hello });`
     }
 }, {
     input: 'export default function(){}export let hello = 123;',
     output: {
         exports: ['default', 'hello'],
-        code: `__e__('default', function () { return function(){} });let hello = 123;; __e__('hello', function () { return hello });`
+        code: `var __ex_default__ = function(){}; __e__('default', function () { return __ex_default__ });let hello = 123;; __e__('hello', function () { return hello });`
     }
 }, {
     input: 'export let hello = 123;export let world = 456;',
@@ -1010,6 +1010,19 @@ describe ('Import Live Bindings (reference)', () => {
         expect(res).to.equal([
             '                              ',
             'console.log(__i__.MyVar1["abc"]);'
+        ].join('\n'));
+    });
+
+    it ('should change import when assigned to a new variable', async () => {
+        let res = await resolve([
+            'import MyVar1 from "./myfile";',
+            'let abc = MyVar1;',
+            'let [ def ] = MyVar1;'
+        ]);
+        expect(res).to.equal([
+            '                              ',
+            'let abc = __i__.MyVar1;',
+            'let [ def ] = __i__.MyVar1;'
         ].join('\n'));
     });
 

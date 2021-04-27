@@ -26,7 +26,7 @@ describe ('Virtual Modules', () => {
         });
 
         let { output } = await bundle.generate({ format: 'esm' });
-        expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return "Virtual Module" })`) > -1).to.be.true;
+        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
     });
 
     it ('should allow null byte in the resolved id', async () => {
@@ -53,7 +53,7 @@ describe ('Virtual Modules', () => {
         });
 
         let { output } = await bundle.generate({ format: 'esm' });
-        expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return "Virtual Module" })`) > -1).to.be.true;
+        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
     });
 
     it ('should allow prefix in the resolved id', async () => {
@@ -80,7 +80,7 @@ describe ('Virtual Modules', () => {
         });
 
         let { output } = await bundle.generate({ format: 'esm' });
-        expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return "Virtual Module" })`) > -1).to.be.true;
+        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
     });
 
     it ('should allow virtual module example to work for entry module', async () => {
@@ -106,7 +106,7 @@ describe ('Virtual Modules', () => {
 
         let { output } = await bundle.generate({ format: 'esm' });
         expect(output[0].fileName).to.equal('virtual-module.js');
-        expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return "Virtual Module" })`) > -1).to.be.true;
+        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
     });
 
     it ('should allow null byte in the resolved id for entry module', async () => {
@@ -132,7 +132,7 @@ describe ('Virtual Modules', () => {
 
         let { output } = await bundle.generate({ format: 'esm' });
         expect(output[0].fileName).to.equal('_virtual-module.js');
-        expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return "Virtual Module" })`) > -1).to.be.true;
+        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
     });
 
     it ('should allow prefix in the resolved id for entry module', async () => {
@@ -158,6 +158,6 @@ describe ('Virtual Modules', () => {
 
         let { output } = await bundle.generate({ format: 'esm' });
         expect(output[0].fileName).to.equal('_prefix:virtual-module.js');
-        expect(output[0].code.indexOf(`__e__(\\'default\\', function () { return "Virtual Module" })`) > -1).to.be.true;
+        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
     });
 });
