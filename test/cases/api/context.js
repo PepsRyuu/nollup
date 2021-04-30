@@ -532,7 +532,8 @@ describe ('API: Plugin Context', () => {
 
         beforeEach(() => {
             console.warn = function (...args) {
-                _logged.push(args.join(' ').replace('\x1b[1m\x1b[33m', '').replace('\x1b[39m\x1b[22m', ''));
+                let output = args.join(' ');
+                _logged.push(output.substring(9, output.length - 10));
             }
         });
 
@@ -588,7 +589,7 @@ describe ('API: Plugin Context', () => {
             });
 
             await bundle.generate({ format: 'esm' });
-            expect(_logged[0]).to.equal('my warning\n    var abc;\n    ^');
+            expect(_logged[0]).to.equal('my warning\n\x1b[1m\x1b[37m    var abc;\n    ^\x1b[39m\x1b[22m');
             fs.reset();
         });
 
@@ -610,7 +611,7 @@ describe ('API: Plugin Context', () => {
             });
 
             await bundle.generate({ format: 'esm' });
-            expect(_logged[0]).to.equal(`TS1234: my warning\n${path.resolve(process.cwd(), './src/main.js').replace(process.cwd(), '')} (1:5)\n    var abc;\n    ^`);
+            expect(_logged[0]).to.equal(`TS1234: my warning\n\x1b[1m\x1b[37m${path.resolve(process.cwd(), './src/main.js').replace(process.cwd(), '')} (1:5)\x1b[39m\x1b[22m\n\x1b[1m\x1b[37m    var abc;\n    ^\x1b[39m\x1b[22m`);
             fs.reset();
         });
     });

@@ -34,7 +34,7 @@
   "devDependencies": {
     "chai": "^4.3.4",
     "mocha": "^8.3.0",
-    "mocha-istanbul-ui": "^0.4.0",
+    "mocha-istanbul-ui": "^0.4.1",
     "proxyquire": "^2.0.1",
     "rollup": "^2.33.3"
   }
