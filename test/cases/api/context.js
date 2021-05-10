@@ -1306,7 +1306,7 @@ describe ('API: Plugin Context', () => {
                 input: './src/main.js',
                 plugins: [{
                     transform () {
-                        expect(this.meta.rollupVersion).to.equal('2.30');
+                        expect(this.meta.rollupVersion).to.equal('2.47');
                     }
                 }]
             });
@@ -1751,6 +1751,144 @@ describe ('API: Plugin Context', () => {
             fs.reset();
         });
 
+        it ('should allow skipSelf to by applied for multiple plugins recursively at the same time', async function () {
+            fs.stub('./src/main.js', () => 'import "jquery"; export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let passed = false;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                            return this.resolve(id, path.resolve(process.cwd(), './src/main.js'), { skipSelf: true }).then(resolved => {
+                                passed = true;
+                                expect(resolved.id).to.equal(path.resolve(process.cwd(), './src/lol.js'));
+                            });
+                        }
+                    }
+                }, {
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                           return this.resolve('jquery', path.resolve(process.cwd(), './src/main.js'), { skipSelf: true });
+                        }
+                        
+                    }
+                }, {
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                            return path.resolve(process.cwd(), './src/lol.js');
+                        }
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should allow skipSelf to reset after a build failure', async function () {
+            fs.stub('./src/main.js', () => 'import "jquery"; export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let passed = false;
+            let phase = 1;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                            return this.resolve(id, path.resolve(process.cwd(), './src/main.js'), { skipSelf: true }).then(resolved => {
+                                passed = true;
+                                expect(resolved.id).to.equal(path.resolve(process.cwd(), './src/lol.js'));
+                            });
+                        }
+                    }
+                }, {
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                           return this.resolve('jquery', path.resolve(process.cwd(), './src/main.js'), { skipSelf: true });
+                        }
+                        
+                    }
+                }, {
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                            if (phase === 1) {
+                                throw new Error('Expected failure');
+                            }
+                            return path.resolve(process.cwd(), './src/lol.js');
+                        }
+                    }
+                }]
+            });
+
+            try {
+                await bundle.generate({ format: 'esm' });
+            } catch (e) {
+                expect(e.message).to.equal('Expected failure');
+                expect(passed).to.be.false;
+                phase++;
+            }
+
+            await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should adhere to skipSelf only if the module being skipped is resolving the same importer importee pair', async function () {
+            fs.stub('./src/main.js', () => 'import "jquery"; export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+
+            let passed = false;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (id, importer) {
+                        if (id === 'jquery' && importer.indexOf('main.js') > -1) {
+                            // 1
+                            return this.resolve(id, path.resolve(process.cwd(), './src/main.js'), { skipSelf: true });
+                        }
+
+                        if (id === 'jquery' && importer.indexOf('customparent') > -1) {
+                            // 3
+                            return this.resolve('jquerynested', 'customparent', { skipSelf: true });
+                        }
+
+                        if (id === 'jquerynested') {
+                            throw new Error('should not hit here');
+                        }
+                    }
+                }, {
+                    resolveId (id) {
+                        if (id === 'jquery') {
+                           // 2
+                           return this.resolve('jquery', 'customparent', { skipSelf: true });
+                        }
+                        
+                        if (id === 'jquerynested') {
+                            // 4
+                            return this.resolve('jquerynested', 'customparent', { skipSelf: true }).then(resolved => {
+                                passed = true;
+                                expect(resolved.id).to.equal(path.resolve(process.cwd(), './src/lol.js'));
+                            })
+                        }
+                    }
+                }, {
+                    resolveId (id) {
+                        // 5
+                        if (id === 'jquerynested') {
+                            return path.resolve(process.cwd(), './src/lol.js');
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
 
         it ('should return null if module cannot be resolved by anyone and isn\'t external');
 
