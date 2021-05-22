@@ -104,6 +104,71 @@ describe ('API: Plugin Hooks', () => {
 
             fs.reset();
         });
+
+        it ('should export default if using custom string for syntheticNamedExports (issue with axios)', async () => {
+            fs.stub('./src/main.js', () => `
+                export { default } from './lol'
+            `);
+            fs.stub('./src/lol.js', () => `
+                var lib = { default: 'hello' };
+                export default lib;
+                export var __moduleExports = lib;
+            `);
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        if (id.indexOf('lol') > -1) {
+                            return { 
+                                code,
+                                syntheticNamedExports: '__moduleExports'
+                            }
+                        }
+                        
+                    }
+                }]
+            });
+
+            let output = (await bundle.generate({ format: 'iife' })).output;
+            let result = eval(output[0].code);
+            expect(result.default).to.equal('hello');
+
+            fs.reset();
+        });
+
+        it ('should export default if using custom string for syntheticNamedExports when using live bindings (issue with axios)', async () => {
+            fs.stub('./src/main.js', () => `
+                export { default } from './lol'
+            `);
+            fs.stub('./src/lol.js', () => `
+                var lib = { default: 'hello' };
+                export default lib;
+                export var __moduleExports = lib;
+            `);
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code, id) {
+                        if (id.indexOf('lol') > -1) {
+                            return { 
+                                code,
+                                syntheticNamedExports: '__moduleExports'
+                            }
+                        }
+                        
+                    }
+                }]
+            });
+
+            bundle.configure({ liveBindings: true });
+            let output = (await bundle.generate({ format: 'iife' })).output;
+            let result = eval(output[0].code);
+            expect(result.default).to.equal('hello');
+
+            fs.reset();
+        });
     });
 
     describe('banner', () => {
