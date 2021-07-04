@@ -293,4 +293,53 @@ describe ('Misc', () => {
         expect(phase).to.equal(2);
         expect(passed).to.be.true;
     });
+
+    it ('should provide second argument to require.dynamic to enable local module import if statically imported as well', async () => {
+        // https://github.com/PepsRyuu/nollup/issues/204
+        fs.stub('./src/other.js', () => `import('./msg').then(res => res)`)
+        fs.stub('./src/msg.js', () => `export default 123;`);
+        fs.stub('./src/main.js', () => `
+            import msg from './msg'; 
+            import('./msg').then(res => res);
+            import('./other').then(res => res);
+        `);
+
+        let bundle = await nollup({
+            input: './src/main.js'
+        });
+
+        let { output } = await bundle.generate({ format: 'esm' });
+        let main = output.find(o => o.fileName === 'main.js');
+        expect(main.code.indexOf('require.dynamic(\\\'other-[hash].js\\\', 2).then') > -1).to.be.true;
+        expect(main.code.indexOf('require.dynamic(\\\'msg-[hash].js\\\', 1') > -1).to.be.true;
+
+        let other = output.find(o => o.fileName === 'other-[hash].js');
+        expect(other.code.indexOf('require.dynamic(\\\'msg-[hash].js\\\', 1') > -1).to.be.true;
+        
+        expect(output.length).to.equal(3);
+    });
+
+    it ('should not export chunk if the same dynamic import exists in the same chunk statically', async () => {
+        // https://github.com/PepsRyuu/nollup/issues/204
+        let __bundle_output;
+        fs.stub('./src/msg.js', () => `export default 123;`);
+        fs.stub('./src/main.js', () => `
+            import msg from './msg'; 
+            import('./msg').then(res => __bundle_output = res.default);
+        `);
+
+        let bundle = await nollup({
+            input: './src/main.js'
+        });
+
+        let { output } = await bundle.generate({ format: 'esm' });
+        let main = output.find(o => o.fileName === 'main.js');
+        expect(main.code.indexOf('require.dynamic(\\\'\\\', 1') > -1).to.be.true;
+        expect(output.length).to.equal(1);
+        eval(output[0].code);
+
+        // imports locally
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        expect(__bundle_output).to.equal(123);
+    });
 });

@@ -135,21 +135,21 @@ describe ('API: generate', () => {
         let main1 = output.find(o => o.fileName === 'main1.js');
         expect(main1.isEntry).to.be.true;
         expect(main1.fileName).to.equal('main1.js');
-        expect(main1.code.indexOf(`require.dynamic(\\'chunk-dynamic-[hash].js\\')`) > -1).to.be.true;
+        expect(main1.code.indexOf(`require.dynamic(\\'chunk-dynamic-[hash].js`) > -1).to.be.true;
         expect(Object.keys(main1.modules).length).to.equal(1);
         expect(main1.modules[path.resolve(process.cwd(), './src/main1.js')]).not.to.be.undefined;
 
         let main2 = output.find(o => o.fileName === 'main2.js');
         expect(main2.isEntry).to.be.true;
         expect(main2.fileName).to.equal('main2.js');
-        expect(main2.code.indexOf(`require.dynamic(\\'chunk-dynamic-[hash].js\\'`) > -1).to.be.true;
+        expect(main2.code.indexOf(`require.dynamic(\\'chunk-dynamic-[hash].js`) > -1).to.be.true;
         expect(Object.keys(main2.modules).length).to.equal(1);
         expect(main2.modules[path.resolve(process.cwd(), './src/main2.js')]).not.to.be.undefined;
 
         let dynamic = output.find(o => o.fileName === 'chunk-dynamic-[hash].js');
         expect(dynamic.isDynamicEntry).to.be.true;
         expect(dynamic.fileName.startsWith('chunk-')).to.be.true;
-        expect(dynamic.code.indexOf(`require.dynamic(\\'chunk-subdynamic-[hash].js\\')`) > -1).to.be.true;
+        expect(dynamic.code.indexOf(`require.dynamic(\\'chunk-subdynamic-[hash].js`) > -1).to.be.true;
         expect(Object.keys(dynamic.modules).length).to.equal(1);
         expect(dynamic.modules[path.resolve(process.cwd(), './src/dynamic.js')]).not.to.be.undefined;
 
