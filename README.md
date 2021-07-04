@@ -78,3 +78,4 @@ For performance reasons, by default Nollup does not enable ESM live-bindings (bu
 
 * Only Rollup configurations that make sense in development are implemented.
 * Might be some inconsistencies with Rollup, but should be fine for majority of projects.
+* May be issues with circular dependencies. See [here](./docs/circular.md) for more information.
