@@ -1,6 +1,8 @@
 let { nollup, fs, expect } = require('../../nollup');
 let path = require('path');
 
+let eval_console = [];
+
 async function createNollup (package, config) {
     config = config || {};
     config.input = path.resolve(__dirname,`../../packages/${package}/index.js`);
@@ -28,6 +30,7 @@ async function createNollup (package, config) {
             let { output } = await bundle.generate(config.output);
             let code = (output && output[0].code) || '';  
             let module = undefined; // Shadow nodeJS module.exports
+            let console = { log: (...args) => eval_console.push(args.join(' ')) }
             return eval(code);
         }
     }
@@ -38,7 +41,9 @@ function stubPackageFile(file, callback) {
 }
 
 describe('Nollup', function () {
+
     afterEach (function () {
+        eval_console = [];
         fs.reset();
     })
 
@@ -247,6 +252,13 @@ describe('Nollup', function () {
         expect(entry.default).to.equal(123);
     });
 
+    it ('Scenario: Check overlapping same name export froms', async function () {
+        let bundle = await createNollup('export-same-export-as-from');
+        let entry = await bundle.generate();
+        expect(entry.hello).to.equal('hello');
+        expect(entry.world).to.equal('world');
+    });
+
     it ('Scenario: Check export all', async function () {
         let bundle = await createNollup('export-all');
         let entry = await bundle.generate();
@@ -276,6 +288,35 @@ describe('Nollup', function () {
         let bundle = await createNollup('circular');
         let entry = await bundle.generate();
         expect(entry.default).to.equal('A2 - A3 - A1');
+    });
+
+    it ('Scenario: Circular Dependencies Deep', async function () {
+        let bundle = await createNollup('circular-deep');
+        let entry = await bundle.generate();
+        expect(entry.default).to.equal('hello world');
+    });
+
+    it ('Scenario: Circular Dependencies Export Function As', async function () {
+        let bundle = await createNollup('circular-export-fn-as');
+        let entry = await bundle.generate();
+        expect(eval_console.length).to.equal(1);
+        expect(eval_console[0]).to.equal('hello');
+    });
+
+    it ('Scenario: Circular Dependencies Hoist Class', async function () {
+        let bundle = await createNollup('circular-hoist-class');
+        let entry = await bundle.generate();
+        expect(eval_console.length).to.equal(1);
+        expect(eval_console[0]).to.equal('hello');
+    });
+
+    it ('Scenario: Circular Dependencies Shared Timing', async function () {
+        let bundle = await createNollup('circular-shared-import-timing');
+        let entry = await bundle.generate();
+        expect(eval_console[0]).to.equal('shared import');
+        expect(eval_console[1]).to.equal('log above and log below');
+        expect(eval_console[2]).to.equal('shared import');
+        expect(eval_console.length).to.equal(3);
     });
 
     it ('Scenario: Circular Dependencies for Export FROM', async function () {

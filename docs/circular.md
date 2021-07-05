@@ -1,6 +1,6 @@
 # Circular Dependencies
 
-While Nollup does its best to resolve circular dependencies at the moment, there are still situations which have not been fully fixed yet. To ensure circular dependencies work, ESM when parsing a module, scans that module for all export bindings, and will hoist all of the declarations, but will not run any code. This behaviour has not been implemented yet. See below on how to workaround this issue, and further information on how ESM handles circular dependencies.
+While Nollup does its best to resolve circular dependencies at the moment, there may be situations which won't resolve correctly. To ensure circular dependencies work, ESM when parsing a module, scans that module for all export bindings, and will hoist all of the declarations, but will not run any code. Nollup tries it best to emulate this behaviour. Circular dependencies are better avoided for the best experience possible. See below on how to workaround this issue, and further information on how ESM handles circular dependencies.
 
 ## How to Workaround
 
