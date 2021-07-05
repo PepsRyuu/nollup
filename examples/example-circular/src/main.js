@@ -1,5 +1,8 @@
 import moment from 'moment';
 import A1 from './A1.js';
+import SweetAlert from 'sweetalert2';
+
+console.log(SweetAlert)
 
 A1();
 

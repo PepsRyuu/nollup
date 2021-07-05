@@ -278,6 +278,12 @@ describe('Nollup', function () {
         expect(entry.default).to.equal('A2 - A3 - A1');
     });
 
+    it ('Scenario: Circular Dependencies Deep', async function () {
+        let bundle = await createNollup('circular-deep');
+        let entry = await bundle.generate();
+        expect(entry.default).to.equal('hello world');
+    });
+
     it ('Scenario: Circular Dependencies for Export FROM', async function () {
         let bundle = await createNollup('circular-export-from');
         let entry = await bundle.generate();
