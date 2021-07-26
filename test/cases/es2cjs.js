@@ -100,139 +100,196 @@ let tests = [{
 }, {
     input: 'export default Hello;',
     output: {
-        exports: ['default'],
+        exports: [{ local: '', exported: 'default' }],
         code: `var __ex_default__ = Hello; __e__('default', function () { return __ex_default__ });;`
     }
 }, {
     input: 'export default Hello',
     output: {
-        exports: ['default'],
+        exports: [{ local: '', exported: 'default' }],
         code: `var __ex_default__ = Hello; __e__('default', function () { return __ex_default__ });`
     }
 }, {
     input: 'export default 123;',
     output: {
-        exports: ['default'],
+        exports: [{ local: '', exported: 'default' }],
         code: `var __ex_default__ = 123; __e__('default', function () { return __ex_default__ });;`
     }
 }, {
     input: 'export default () => {};',
     output: {
-        exports: ['default'],
+        exports: [{ local: '', exported: 'default' }],
         code: `var __ex_default__ = () => {}; __e__('default', function () { return __ex_default__ });;`
     }
 }, {
     input: 'export default () => {}',
     output: {
-        exports: ['default'],
+        exports: [{ local: '', exported: 'default' }],
         code: `var __ex_default__ = () => {}; __e__('default', function () { return __ex_default__ });`
     }
 }, {
     input: 'export default (() => {});',
     output: {
-        exports: ['default'],
+        exports: [{ local: '', exported: 'default' }],
         code: `var __ex_default__ = (() => {}); __e__('default', function () { return __ex_default__ });;`
     }
 }, {
     input: 'export default(() => {});',
     output: {
-        exports: ['default'],
+        exports: [{ local: '', exported: 'default' }],
         code: `var __ex_default__ = (() => {}); __e__('default', function () { return __ex_default__ });;`
     }
 }, {
     input: 'export default(() => {})',
     output: {
-        exports: ['default'],
+        exports: [{ local: '', exported: 'default' }],
         code: `var __ex_default__ = (() => {}); __e__('default', function () { return __ex_default__ });`
     }
 }, {
     input: 'let hello = 123;export default function () {}export { hello }',
     output: {
-        exports: ['default', 'hello'],
+        exports: [{
+            local: '',
+            exported: 'default'
+        }, {
+            local: 'hello',
+            exported: 'hello'
+        }],
         code: `let hello = 123;var __ex_default__ = function () {}; __e__('default', function () { return __ex_default__ });__e__( { hello: function () { return hello } });`
     }
 }, {
     input: 'export default(() => {});export let hello = 123;',
     output: {
-        exports: ['default', 'hello'],
+        exports: [{
+            local: '',
+            exported: 'default'
+        }, {
+            local: 'hello',
+            exported: 'hello'
+        }],
         code: `var __ex_default__ = (() => {}); __e__('default', function () { return __ex_default__ });;let hello = 123;; __e__('hello', function () { return hello });`
     }
 }, {
     input: 'export default function(){}export let hello = 123;',
     output: {
-        exports: ['default', 'hello'],
+        exports: [{
+            local: '',
+            exported: 'default'
+        }, {
+            local: 'hello',
+            exported: 'hello'
+        }],
         code: `var __ex_default__ = function(){}; __e__('default', function () { return __ex_default__ });let hello = 123;; __e__('hello', function () { return hello });`
     }
 }, {
     input: 'export let hello = 123;export let world = 456;',
     output: {
-        exports: ['hello', 'world'],
+        exports: [{
+            local: 'hello',
+            exported: 'hello'
+        }, {
+            local: 'world',
+            exported: 'world'
+        }],
         code: `let hello = 123;; __e__('hello', function () { return hello });let world = 456;; __e__('world', function () { return world });`
     }
 },  {
     input: 'export default class Hello {};',
     output: {
-        exports: ['default'],
+        exports: [{ local: '', exported: 'default' }],
         code: `class Hello {}; __e__('default', function () { return Hello });;`
     }
 }, {
     input: 'export default class Hello {}',
     output: {
-        exports: ['default'],
+        exports: [{ local: '', exported: 'default' }],
         code: `class Hello {}; __e__('default', function () { return Hello });`
     }
 }, {
     input: 'export class Hello {};',
     output: {
-        exports: ['Hello'],
+        exports: [{ local: 'Hello', exported: 'Hello' }],
         code: `class Hello {}; __e__('Hello', function () { return Hello });;`
     }
 }, {
     input: 'export class Hello {}',
     output: {
-        exports: ['Hello'],
+        exports: [{ local: 'Hello', exported: 'Hello' }],
         code: `class Hello {}; __e__('Hello', function () { return Hello });`
     }
 }, {
     input: 'export function Hello () {};',
     output: {
-        exports: ['Hello'],
+        exports: [{ local: 'Hello', exported: 'Hello' }],
         code: `function Hello () {}; __e__('Hello', function () { return Hello });;`
     }
 }, {
     input: 'let name1 = 123, name2 = 456; export {name1, name2};',
     output: {
-        exports: ['name1', 'name2'],
+        exports: [{
+            local: 'name1',
+            exported: 'name1'
+        }, {
+            local: 'name2',
+            exported: 'name2'
+        }],
         code: `let name1 = 123, name2 = 456; __e__( {name1: function () { return name1 }, name2: function () { return name2 }});`
     }
 }, {
     input: 'let hello = 123, name = 456; export {hello as world, name};',
     output: {
-        exports: ['world', 'name'],
+        exports: [{
+            local: 'hello',
+            exported: 'world'
+        }, {
+            local: 'name',
+            exported: 'name'
+        }],
         code: `let hello = 123, name = 456; __e__( {world: function () { return hello }, name: function () { return name }});`
     }
 }, {
     input: 'export var MyVar1 = 123;',
     output: {
-        exports: ['MyVar1'],
+        exports: [{
+            local: 'MyVar1',
+            exported: 'MyVar1'
+        }],
         code: `var MyVar1 = 123;; __e__('MyVar1', function () { return MyVar1 });`
     }
 }, {
     input: 'export var MyVar1 = () => {}, MyVar2 = 456;',
     output: {
-        exports: ['MyVar1', 'MyVar2'],
+        exports: [{
+            local: 'MyVar1',
+            exported: 'MyVar1'
+        }, {
+            local: 'MyVar2',
+            exported: 'MyVar2'
+        }],
         code: `var MyVar1 = () => {}, MyVar2 = 456;; __e__('MyVar1', function () { return MyVar1 });__e__('MyVar2', function () { return MyVar2 });`
     }
 }, {
     input: 'export var MyVar1 = () => {}, MyVar2 = 456',
     output: {
-        exports: ['MyVar1', 'MyVar2'],
+        exports: [{
+            local: 'MyVar1',
+            exported: 'MyVar1'
+        }, {
+            local: 'MyVar2',
+            exported: 'MyVar2'
+        }],
         code: `var MyVar1 = () => {}, MyVar2 = 456; __e__('MyVar1', function () { return MyVar1 });__e__('MyVar2', function () { return MyVar2 });`
     }
 }, {
     input: 'export const MyVar1 = () => {}, MyVar2 = 456;',
     output: {
-        exports: ['MyVar1', 'MyVar2'],
+        exports: [{
+            local: 'MyVar1',
+            exported: 'MyVar1'
+        }, {
+            local: 'MyVar2',
+            exported: 'MyVar2'
+        }],
         code: `const MyVar1 = () => {}, MyVar2 = 456;; __e__('MyVar1', function () { return MyVar1 });__e__('MyVar2', function () { return MyVar2 });`
     }
 }, {
@@ -246,7 +303,27 @@ let tests = [{
             }],
             export: true
         }],
-        exports: ['MyVar'],
+        exports: [{
+            local: 'MyVar',
+            exported: 'MyVar'
+        }],
+        code: ``
+    }
+}, {
+    input: 'export { hello as world } from "./file"',
+    output: {
+        imports: [{
+            source: './file',
+            specifiers: [{
+                local: 'world',
+                imported: 'hello'
+            }],
+            export: true
+        }],
+        exports: [{
+            local: 'world',
+            exported: 'world'
+        }],
         code: ``
     }
 }, {
@@ -260,7 +337,10 @@ let tests = [{
             }],
             export: true
         }],
-        exports: ['default'],
+        exports: [{ 
+            local: 'default',
+            exported: 'default' 
+        }],
         code: ``
     }
 }, {
@@ -296,19 +376,40 @@ let tests = [{
 }, {
     input: 'export const { foo, bar } = myvar;',
     output: {
-        exports: ['foo', 'bar'],
+        exports: [{
+            local: 'foo',
+            exported: 'foo'
+        }, {
+            local: 'bar',
+            exported: 'bar'
+        }],
         code: `const { foo, bar } = myvar;; __e__('foo', function () { return foo });__e__('bar', function () { return bar });`
     }
 }, {
     input: 'export const { foo: hello, bar: world } = myvar;',
     output: {
-        exports: ['hello', 'world'],
+        exports: [{
+            local: 'hello',
+            exported: 'hello'
+        }, {
+            local: 'world',
+            exported: 'world'
+        }],
         code: `const { foo: hello, bar: world } = myvar;; __e__('hello', function () { return hello });__e__('world', function () { return world });`
     }
 }, {
     input: 'export const { foo, bar } = myvar, hello = 123;',
     output: {
-        exports: ['foo', 'bar', 'hello'],
+        exports: [{
+            local: 'foo',
+            exported: 'foo'
+        }, {
+            local: 'bar',
+            exported: 'bar'
+        }, {
+            local: 'hello',
+            exported: 'hello'
+        }],
         code: `const { foo, bar } = myvar, hello = 123;; __e__('foo', function () { return foo });__e__('bar', function () { return bar });__e__('hello', function () { return hello });`
     }
 }, {
@@ -316,6 +417,54 @@ let tests = [{
     output: {
         exports: [],
         code: `__e__( {});`
+    }
+}, {
+    input: 'import { hello } from "file"; export { hello };',
+    output: {
+        imports: [{
+            source: 'file',
+            specifiers: [{
+                local: 'hello',
+                imported: 'hello'
+            }]
+        }],
+        exports: [{
+            local: 'hello',
+            exported: 'hello'
+        }],
+        code: `__e__( { hello: function () { return hello } });`
+    }
+}, {
+    input: 'import { hello as world } from "file"; export { world }',
+    output: {
+        imports: [{
+            source: 'file',
+            specifiers: [{
+                local: 'world',
+                imported: 'hello'
+            }]
+        }],
+        exports: [{
+            local: 'world',
+            exported: 'world'
+        }],
+        code: `__e__( { world: function () { return world } });`
+    }
+}, {
+    input: 'import { hello as world } from "file"; export { world as foo }',
+    output: {
+        imports: [{
+            source: 'file',
+            specifiers: [{
+                local: 'world',
+                imported: 'hello'
+            }]
+        }],
+        exports: [{
+            local: 'world',
+            exported: 'foo'
+        }],
+        code: `__e__( { foo: function () { return world } });`
     }
 }];
 
@@ -501,7 +650,10 @@ let external_tests = [{
     output: {
         code: ``,
         imports: [],
-        exports: ['ajax'],
+        exports: [{
+            local: 'ajax',
+            exported: 'ajax'
+        }],
         externalImports: [{
             source: 'jquery',
             specifiers: [{
@@ -520,7 +672,10 @@ let external_tests = [{
     output: {
         code: ``,
         imports: [],
-        exports: ['ajax'],
+        exports: [{
+            local: 'ajax',
+            exported: 'ajax'
+        }],
         externalImports: [{
             source: 'jquery',
             specifiers: [{
@@ -544,7 +699,10 @@ let external_tests = [{
     output: {
         code: ``,
         imports: [],
-        exports: ['net'],
+        exports: [{
+            local: 'net',
+            exported: 'net'
+        }],
         externalImports: [{
             source: 'jquery',
             specifiers: [{
