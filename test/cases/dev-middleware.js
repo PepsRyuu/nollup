@@ -30,12 +30,25 @@ let chokidar = {
     }
 }
 
-let expressWs = {
-    _callbacks: []
+let serverUpgradeCallbacks = {
+    _callbacks: [],
+    _handled: []
 };
 
+function createServer () {
+    return {
+        on: function (event, callback) {
+            if (event !== 'upgrade') {
+                throw new Error('Invalid Server Event');
+            }
+
+            serverUpgradeCallbacks._callbacks.push(callback);
+        }
+    }
+}
+
 let WebSocket = function (url) {
-    let inst = {
+    let socket = {
         _received: [],
         _callbacks: [],
         send: function (data) {
@@ -55,24 +68,25 @@ let WebSocket = function (url) {
         }
     };
 
-    expressWs._callbacks.forEach(handle => {
-        if (handle.path === url) {
-            handle.callback(inst);
-        }
+    serverUpgradeCallbacks._callbacks.forEach(handle => {
+        handle({ url }, socket, {});
     });
 
-    return inst;
+    return socket;
 };
+
+WebSocket.Server = function () {}
+WebSocket.Server.prototype.handleUpgrade = function (req, socket, head, callback) {
+    serverUpgradeCallbacks._handled.push(req.url);
+    callback(socket);
+};
+
 
 let middleware = proxyquire('../../lib/dev-middleware', { 
     './index': nollup,
     'chokidar': chokidar,
     'fs': fs,
-    'express-ws': (app) => {
-        app.ws = function (path, callback) {
-            expressWs._callbacks.push({ path, callback });
-        }
-    }
+    'ws': WebSocket
 }); 
 
 function createRequest (url) {
@@ -128,14 +142,14 @@ describe('Dev Middleware', () => {
         };
         fs.reset();
         chokidar.clear();
-        expressWs._callbacks = [];
+        serverUpgradeCallbacks._callbacks = [];
     });
 
     afterEach(() => {
         console.log = _log;
         fs.reset();
         chokidar.clear();
-        expressWs._callbacks = [];
+        serverUpgradeCallbacks._callbacks = [];
     });
 
     it ('should output simple bundle for response', function (done) {
@@ -892,10 +906,10 @@ describe('Dev Middleware', () => {
             }
         }
 
-        let mw = middleware({}, config, {});
+        let mw = middleware({}, config, {}, createServer());
 
         mwFetch(mw, '/bundle.js').then(res => {
-            expect(expressWs._callbacks.length).to.equal(0);
+            expect(serverUpgradeCallbacks._callbacks.length).to.equal(0);
             done();
         });
     });
@@ -928,7 +942,7 @@ describe('Dev Middleware', () => {
 
         let mw = middleware({}, config, {
             hot: true
-        });
+        }, createServer());
 
         Promise.all([
             mwFetch(mw, '/bundle-a.esm.js'),
@@ -936,11 +950,17 @@ describe('Dev Middleware', () => {
             mwFetch(mw, '/bundle-b.esm.js'),
             mwFetch(mw, '/bundle-b.cjs.js'),
         ]).then(responses => {
-            expect(expressWs._callbacks.length).to.equal(4);
-            expect(expressWs._callbacks[0].path).to.equal('/__hmr')
-            expect(expressWs._callbacks[1].path).to.equal('/__hmr1')
-            expect(expressWs._callbacks[2].path).to.equal('/__hmr2')
-            expect(expressWs._callbacks[3].path).to.equal('/__hmr3')
+            expect(serverUpgradeCallbacks._callbacks.length).to.equal(4);
+            new WebSocket('/__hmr');
+            new WebSocket('/__hmr1');
+            new WebSocket('/__hmr2');
+            new WebSocket('/__hmr3');
+            new WebSocket('/__hmr4');
+            expect(serverUpgradeCallbacks._handled[0]).to.equal('/__hmr')
+            expect(serverUpgradeCallbacks._handled[1]).to.equal('/__hmr1')
+            expect(serverUpgradeCallbacks._handled[2]).to.equal('/__hmr2')
+            expect(serverUpgradeCallbacks._handled[3]).to.equal('/__hmr3')
+            expect(serverUpgradeCallbacks._handled.length).to.equal(4);
             done();
         });
     });
@@ -960,7 +980,7 @@ describe('Dev Middleware', () => {
 
         let mw = middleware({}, config, {
             hot: true
-        });
+        }, createServer());
 
         mwFetch(mw, '/bundle.js').then(res => {
             let ws = new WebSocket('/__hmr');
@@ -984,7 +1004,7 @@ describe('Dev Middleware', () => {
 
         let mw = middleware({}, config, {
             hot: true
-        });
+        }, createServer());
 
         mwFetch(mw, '/bundle.js').then(res => {
             let ws = new WebSocket('/__hmr');
@@ -1019,7 +1039,7 @@ describe('Dev Middleware', () => {
 
         let mw = middleware({}, config, {
             hot: true
-        });
+        }, createServer());
 
         mwFetch(mw, '/bundle.js').then(res => {
             let ws = new WebSocket('/__hmr');
