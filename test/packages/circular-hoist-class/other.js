@@ -1,5 +1,7 @@
-import { Hello } from './index';
+import { HelloImpl } from './index.js';
 
 export const impl = 'hello';
 
-console.log(new Hello().getMessage());
+export function Hello () {
+    return HelloImpl();
+}

@@ -1,9 +1,17 @@
-import { impl } from './other';
+import { impl, Hello } from './other.js';
 
-class Hello  {
+var Base = class {};
+
+class HelloImplImpl extends Base {
     getMessage () {
         return impl;
     }
 }
 
-export { Hello };
+function HelloImpl () {
+    return new HelloImplImpl().getMessage();
+}
+
+export { HelloImpl };
+
+console.log(Hello())
