@@ -28,9 +28,30 @@ async function createNollup (package, config) {
 
         generate: async function () {
             let { output } = await bundle.generate(config.output);
-            let code = (output && output[0].code) || '';  
+
+            let _import = function (dep) {
+                return new Promise(resolve => {
+                    let found = output.find(o => o.fileName === dep.substring(2));
+                    if (found) {
+                        eval(applyPolyfill(found.code));
+                        resolve();
+                    }
+                })
+            };
+
+            let applyPolyfill = function (code) {
+                return code.replace(/import\(/g, '_import(');
+            }
+
+            let code = applyPolyfill(output && output[0].code) || '';
             let module = undefined; // Shadow nodeJS module.exports
             let console = { log: (...args) => eval_console.push(args.join(' ')) }
+            if (config.output.format === 'esm') {
+                let mod = { exports : {} };
+                eval(code.replace('export default ', 'mod.exports = ').replace('export var ', 'mod.exports.'));
+                return mod.exports;
+            }
+
             return eval(code);
         }
     }
@@ -308,6 +329,14 @@ describe('Nollup', function () {
         let entry = await bundle.generate();
         expect(eval_console.length).to.equal(1);
         expect(eval_console[0]).to.equal('hello');
+    });
+
+    it ('Scenario: Circular Dependencies Function Using Require', async function () {
+        let bundle = await createNollup('circular-hoist-fn-require', { output: { format: 'esm' }});
+        let entry = await bundle.generate();
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        expect(eval_console.length).to.equal(1);
+        expect(eval_console[0]).to.equal('hello-dynamic');
     });
 
     it ('Scenario: Circular Dependencies Shared Timing', async function () {
