@@ -1201,6 +1201,59 @@ describe ('Import Live Bindings (reference)', () => {
         ].join('\n'));
     });
 
+    it ('should allow shadowing by function declaration array pattern params', async () => {
+        let res = await resolve([
+            'import MyDefault, { MyVar } from "./myfile";',
+            'function MyFunction ([MyDefault]) {',
+            '    console.log(MyDefault, MyVar);',
+            '}',
+            'console.log(MyDefault);'
+        ]);
+        expect(res).to.equal([
+            '                                            ',
+            'function MyFunction ([MyDefault]) {',
+            '    console.log(MyDefault, __i__.MyVar);',
+            '}',
+            'console.log(__i__.MyDefault);'
+        ].join('\n'));
+    });
+
+    
+    it ('should allow shadowing by function declaration object pattern params', async () => {
+        let res = await resolve([
+            'import MyDefault, { MyVar } from "./myfile";',
+            'function MyFunction ({MyDefault}) {',
+            '    console.log(MyDefault, MyVar);',
+            '}',
+            'console.log(MyDefault);'
+        ]);
+        expect(res).to.equal([
+            '                                            ',
+            'function MyFunction ({MyDefault}) {',
+            '    console.log(MyDefault, __i__.MyVar);',
+            '}',
+            'console.log(__i__.MyDefault);'
+        ].join('\n'));
+    });
+
+
+    it ('should allow shadowing by function declaration array pattern params arrow function', async () => {
+        let res = await resolve([
+            'import MyDefault, { MyVar } from "./myfile";',
+            'let MyFunction = ([MyDefault]) => {',
+            '    console.log(MyDefault, MyVar);',
+            '}',
+            'console.log(MyDefault);'
+        ]);
+        expect(res).to.equal([
+            '                                            ',
+            'let MyFunction = ([MyDefault]) => {',
+            '    console.log(MyDefault, __i__.MyVar);',
+            '}',
+            'console.log(__i__.MyDefault);'
+        ].join('\n'));
+    });
+
     it ('should allow shadowing by function names', async () => {
         let res = await resolve([
             'import MyDefault from "./myfile";',

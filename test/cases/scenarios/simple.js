@@ -372,6 +372,12 @@ describe('Nollup', function () {
         expect(entry.default).to.equal('hello world');
     });
 
+    it ('Scenario: Export Import Delayed', async function () {
+        let bundle = await createNollup('export-import-delayed');
+        let entry = await bundle.generate();
+        expect(entry.message).to.equal('hello');
+    });
+
     describe ('Live Bindings', () => {
         [true, 'reference', 'with-scope'].forEach(liveBindings => {
             it ('Scenario: Full Live Binding (' + liveBindings + ')', async function () {
@@ -455,6 +461,12 @@ describe('Nollup', function () {
                 expect(entry.message1).to.equal('hello');
                 expect(entry.message2).to.equal('world');
                 expect(entry.default).to.be.undefined;
+            });
+
+            it ('Scenario: Export Import Delayed (' + liveBindings + ')', async function () {
+                let bundle = await createNollup('export-import-delayed', { liveBindings });
+                let entry = await bundle.generate();
+                expect(entry.message).to.equal('hello');
             });
     
         })
