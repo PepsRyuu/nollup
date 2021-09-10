@@ -342,4 +342,39 @@ describe ('Misc', () => {
         await new Promise(resolve => setTimeout(resolve, 1000));
         expect(__bundle_output).to.equal(123);
     });
+
+    it ('should not have issue adjusting require dynamic if asset exported when chunk is optimised out', async () => {
+        // https://github.com/PepsRyuu/nollup/issues/212
+        let __bundle_output, emitted;
+        fs.stub('./src/msg.js', () => `export default 123;`);
+        fs.stub('./src/main.js', () => `
+            import './msg';
+            import('./msg').then(res => __bundle_output = res.default);
+        `);
+
+        let bundle = await nollup({
+            input: './src/main.js',
+            plugins: [{
+                transform (code, id) {
+                    if (!emitted) {
+                        emitted = true;
+                        this.emitFile({
+                            type: 'asset',
+                            name: 'myasset',
+                            fileName: 'myasset.css',
+                            source: '.class{}'
+                        })
+                    }
+                }
+            }]
+        });
+
+        let { output } = await bundle.generate({ format: 'esm' });
+        expect(output.length).to.equal(2);
+        eval(output[0].code);
+
+        // imports locally
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        expect(__bundle_output).to.equal(123);
+    });
 });
