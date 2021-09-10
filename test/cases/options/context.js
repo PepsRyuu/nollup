@@ -4,8 +4,8 @@ let path = require('path');
 describe ('Options: context', () => {
     it ('should have default value for this keyword in modules', async () => {
         fs.stub('./src/main.js', () => 'var value = this; export default value;');
-        
-        let bundle = await rollup({
+
+        let bundle = await nollup({
             input: './src/main.js'
         });
 
