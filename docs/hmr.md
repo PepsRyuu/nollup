@@ -26,6 +26,12 @@ The object contains the following:
 
 * ```disposed``` - Contains list of module ids disposed when bubbling to this accept handler.
 
+Note that in order for the module to be resolved, you must call ```require(module.id)``` inside the callback.
+This is slightly different from the way that other bundlers operates, which auto-requires before calling the accept handler.
+Due to backwards compatibility, this cannot be changed at the moment.
+
+However, if you call this function without passing a callback, it will auto-require the module.
+
 ***void* dispose(*Function* callback)**
 
 Executes when the module is about to be replaced.

@@ -85,6 +85,7 @@ function createEnv (input, options = {}, env_options = {}) {
     let modules = input.map(m => m.code);
     let globals = createGlobals(env_options);
     let { window, console, WebSocket, __nollup__global__, globalThis } = globals;
+    let _require = (parent, mod) => {};
 
     let plugin_instance = plugin(options);
     eval(plugin_instance.nollupBundleInit());
@@ -1450,6 +1451,101 @@ describe('plugin-hmr', () => {
             expect(env.stdout.length).to.equal(2);
             expect(env.stdout[0]).to.equal('dep');
             expect(env.stdout[1]).to.equal('dep-update');
+            fs.reset();
+        });
+
+        it ('should not execute modules twice once changed', async () => {
+            fs.stub('./src/main.js', () => `
+                import message from './message';
+            `);
+
+            fs.stub('./src/message.js', () => `
+                if (!window.counter) {
+                    window.counter = 0;
+                }
+                module.hot.accept(() => require(module.id));
+                window.counter++;
+            `);
+
+            let env = await createNollupEnv();    
+            fs.reset();
+
+            fs.stub('./src/message.js', () => `
+                module.hot.accept(() => require(module.id));
+                window.counter++;
+                window.invalidated = true;
+            `);
+
+            env.bundle.invalidate('./src/message.js');
+            let { changes } = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes });
+            expect(env.window.counter).to.equal(2);
+            expect(env.window.invalidated).to.be.true;
+            fs.reset();
+        });
+
+        it ('should allow empty accept to auto-require', async () => {
+            fs.stub('./src/main.js', () => `
+                import message from './message';
+            `);
+
+            fs.stub('./src/message.js', () => `
+                if (!window.counter) {
+                    window.counter = 0;
+                }
+                module.hot.dispose(() => console.log('dispose'));
+                window.counter++;
+                module.hot.accept();
+            `);
+
+            let env = await createNollupEnv();    
+            fs.reset();
+
+            fs.stub('./src/message.js', () => `
+                window.counter++;
+                window.invalidated = true;
+                module.hot.accept();
+            `);
+
+            env.bundle.invalidate('./src/message.js');
+            let { changes } = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes });
+            expect(env.stdout.length).to.equal(1);
+            expect(env.stdout[0]).to.equal('dispose');
+            expect(env.window.counter).to.equal(2);
+            expect(env.window.invalidated).to.be.true;
+            fs.reset();
+        });
+
+        it ('should not auto-require for accept if handler is given', async () => {
+            // Note: This is not compatible with other bundlers.
+            // Ideally Nollup should auto-require to be inline with other bundlers,
+            // but there are projects which rely on the fact that it doesn't and use the accept
+            // handler to dispose, require and accept at once in the one callback.
+            fs.stub('./src/main.js', () => `
+                import message from './message';
+                window.counter = 0;
+            `);
+
+            fs.stub('./src/message.js', () => `
+                module.hot.dispose(() => console.log('dispose'));
+                module.hot.accept(() => {});
+            `);
+
+            let env = await createNollupEnv();    
+            fs.reset();
+
+            fs.stub('./src/message.js', () => `
+                window.counter = 1;
+                module.hot.accept(() => {});
+            `);
+
+            env.bundle.invalidate('./src/message.js');
+            let { changes } = await env.bundle.generate({ format: 'esm' });
+            env.ws.send({ changes });
+            expect(env.stdout.length).to.equal(1);
+            expect(env.stdout[0]).to.equal('dispose');
+            expect(env.window.counter).to.equal(0);
             fs.reset();
         });
 
