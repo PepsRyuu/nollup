@@ -1890,6 +1890,112 @@ describe ('API: Plugin Context', () => {
             fs.reset();
         });
 
+        it ('should accept custom for options', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (importee, importer, options) {
+                        if (importee.indexOf('lol') > -1) {
+                            expect(options.isEntry).to.be.false;
+                            expect(options.custom).to.deep.equal({hello: 'world'})
+                            passed = true;
+                        }
+                    },
+
+                    transform () {
+                        return new Promise(resolve => { 
+                            this.resolve(
+                                './lol', 
+                                path.resolve(process.cwd(), './src/main.js'), 
+                                { custom: { hello: 'world'} }
+                            ).then(resolved => {
+                                resolve();
+                            });
+                        });
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should accept isEntry for options', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (importee, importer, options) {
+                        if (importee.indexOf('lol') > -1) {
+                            expect(options.isEntry).to.be.true;
+                            expect(options.custom).to.be.undefined;
+                            passed = true;
+                        }
+                    },
+
+                    transform () {
+                        return new Promise(resolve => { 
+                            this.resolve(
+                                './lol', 
+                                path.resolve(process.cwd(), './src/main.js'), 
+                                { isEntry: true }
+                            ).then(resolved => {
+                                resolve();
+                            });
+                        });
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it ('should not have skipSelf for options in resolveId', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            fs.stub('./src/lol.js', () => 'export default 456');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (importee, importer, options) {
+                        if (importee.indexOf('lol') > -1) {
+                            expect(options.isEntry).to.be.false;
+                            expect(options.custom).to.be.undefined;
+                            expect(options.skipSelf).to.be.undefined;
+                            passed = true;
+                        }
+                    }
+                }, {
+                    transform () {
+                        return new Promise(resolve => { 
+                            this.resolve(
+                                './lol', 
+                                path.resolve(process.cwd(), './src/main.js'), 
+                                { skipSelf: true }
+                            ).then(resolved => {
+                                resolve();
+                            });
+                        });
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
         it ('should return null if module cannot be resolved by anyone and isn\'t external');
 
     });

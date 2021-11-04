@@ -1004,6 +1004,36 @@ describe ('API: Plugin Hooks', () => {
             expect(passed).to.be.true;
             fs.reset();
         });
+
+        it ('should allow options as third parameter with isEntry and default custom', async () => {
+            fs.stub('./src/main.js', () => 'import "./lol";');
+            fs.stub('./src/lol.js', () => 'export default 123');
+            let passed1 = false;
+            let passed2 = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId (importee, importer, options) {
+                        if (importee.indexOf('main.js') > -1) {
+                            expect(options.isEntry).to.be.true;
+                            expect(options.custom).to.deep.equal({});
+                            passed1 = true;
+                        } 
+
+                        if (importee.indexOf('lol') > -1) {
+                            expect(options.isEntry).to.be.false;
+                            expect(options.custom).to.deep.equal({});
+                            passed2 = true;
+                        }
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed1 && passed2).to.be.true;
+            fs.reset();
+        });
     });
 
     describe ('resolveDynamicImport', () => {
@@ -1253,6 +1283,32 @@ describe ('API: Plugin Hooks', () => {
             expect(output[0].code.indexOf('import(specialvariable)') > -1).to.be.true;
             fs.reset();
         });
+
+        it ('should have options if it fallbacks to resolveId', async () => {
+            fs.stub('./src/main.js', () => 'import("./lol")');
+            fs.stub('./src/lol.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveDynamicImport () {
+                        return null;
+                    },
+                    resolveId (importee, importer, options) {
+                        if (importee.indexOf('lol') > -1) {
+                            expect(options.isEntry).to.be.false;
+                            expect(options.custom).to.deep.equal({});
+                            passed = true;
+                        }
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        })
     });
 
     describe ('transform', () => {

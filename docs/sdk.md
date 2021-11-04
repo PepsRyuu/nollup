@@ -41,7 +41,7 @@ container.start();
 // Call hooks as you need them
 container.hooks.buildStart(options);
 container.hooks.resolveDynamicImport(id, parentId);
-container.hooks.resolveId(id, parentId);
+container.hooks.resolveId(id, parentId, options);
 container.hooks.load(filepath, parentFilepath);
 container.hooks.transform(code, id);
 container.hooks.watchChange(id);
