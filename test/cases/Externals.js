@@ -3,9 +3,9 @@ let Evaluator = require('../utils/evaluator');
 
 let EXTERNAL_MODULES = {
     esm: {
-        'fs': `
-            function readFileSync() {}; 
-            export default { readFileSync }
+        'readline': `
+            function clearLine() {}; 
+            export default { clearLine }
         `,
         'DefaultModule': `
             export default { prop: true };
@@ -33,9 +33,39 @@ let EXTERNAL_MODULES = {
             module.exports = { prop: true };
         `
     },
+    amd: {
+        'readline': `
+            define('readline', function () {
+                return { clearLine() {} }
+            });
+        `,
+        'DefaultModule': `
+            define('DefaultModule', function () {
+                return { default: { prop: true } }
+            });
+        `,
+        'NamedModule': `
+            define('NamedModule', function () {
+                return {
+                    NamedExport1: 123,
+                    NamedExport2: 456
+                }
+            });
+        `,
+        'BareModule': `
+            define('BareModule', function () {
+                self.BareModule = { prop: true };
+            });
+        `,
+        'DefaultFallbackModule': `
+            define('DefaultFallbackModule', function () {
+                return { prop: true }
+            });
+        `
+    },
     iife: {
-        'fs': {
-            readFileSync: true
+        'readline': {
+            clearLine: true
         },
         'DefaultModule': {
             default: { 
@@ -72,7 +102,8 @@ function getModules (output, format) {
         ...output,
         ...Object.entries(EXTERNAL_MODULES[format]).map(entry => ({
             code: entry[1],
-            fileName: entry[0]
+            fileName: entry[0],
+            external: true
         }))
     ];
 
@@ -91,21 +122,22 @@ function getGlobalScope (globals, format) {
 }
 
 describe('External', () => {
-    ['esm', 'cjs', 'iife'].forEach(format => {
+    ['esm', 'cjs', 'iife', 'amd'].forEach(format => {
         describe(format, () => {
             it ('should allow external array to work', async () => {
                 fs.stub('./src/impl.js', () => `export default true;`)
                 fs.stub('./src/main.js', () => `
                     import result from './impl';
-                    import fs from "fs"; 
-                    if (fs.readFileSync) { 
+                    import readline from "readline"; 
+                    console.debug(readline);
+                    if (readline.clearLine) { 
                         self.result = result 
                     }
                 `);
 
                 let bundle = await nollup({
                     input: './src/main.js',
-                    external: ['fs']
+                    external: ['readline']
                 });
 
                 let { output } = await bundle.generate({ format });
@@ -118,15 +150,15 @@ describe('External', () => {
                 fs.stub('./src/impl.js', () => `export default true;`)
                 fs.stub('./src/main.js', () => `
                     import result from './impl';
-                    import fs from "fs"; 
-                    if (fs.readFileSync) { 
+                    import readline from "readline"; 
+                    if (readline.clearLine) { 
                         self.result = result 
                     }
                 `);
 
                 let bundle = await nollup({
                     input: './src/main.js',
-                    external: id => id === 'fs'
+                    external: id => id === 'readline'
                 });
 
                 let { output } = await bundle.generate({ format });
@@ -139,8 +171,8 @@ describe('External', () => {
                 fs.stub('./src/impl.js', () => `export default true;`)
                 fs.stub('./src/main.js', () => `
                     import result from './impl';
-                    import fs from "fs"; 
-                    if (fs.readFileSync) { 
+                    import readline from "readline"; 
+                    if (readline.clearLine) { 
                         self.result = result 
                     }
                 `);
@@ -149,9 +181,9 @@ describe('External', () => {
                     input: './src/main.js',
                     plugins: [{
                         resolveId (id, parent) {
-                            if (id === 'fs') {
+                            if (id === 'readline') {
                                 return {
-                                    id: 'fs',
+                                    id: 'readline',
                                     external: true
                                 }
                             }
@@ -304,7 +336,7 @@ describe('External', () => {
     });
 
     describe ('Externals in Chunks', () => {
-        ['esm', 'cjs'].forEach(format => {
+        ['esm', 'cjs', 'amd'].forEach(format => {
             it ('should allow external imports for chunks (' + format + ')', async function () {
                 this.timeout(10000);
                 fs.stub('./src/chunk.js', () => `export { NamedExport1, NamedExport2 } from 'NamedModule';`)
@@ -330,7 +362,7 @@ describe('External', () => {
     })
 
     describe('Default Fallback', () => {
-        ['cjs', 'iife'].forEach(format => {
+        ['cjs', 'iife', 'amd'].forEach(format => {
             it ('should fallback if default import not found for external (' + format + ')', async () => {
                 fs.stub('./src/main.js', () => `
                     import Default from "DefaultFallbackModule"; 

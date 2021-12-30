@@ -1,0 +1,20 @@
+{
+    "scripts": {
+        "clean": "shx rm -rf dist",
+        "start": "cross-env NODE_ENV=development node ../../lib/cli.js -c --hot --content-base public --port 9001",
+        "build": "npm run clean && cross-env NODE_ENV=production rollup -c"
+    },
+    "dependencies": {
+        "requirejs": "^2.3.6"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.13.14",
+        "@rollup/plugin-babel": "^5.3.0",
+        "@rollup/plugin-node-resolve": "^11.2.1",
+        "cross-env": "^7.0.3",
+        "rollup": "^2.44.0",
+        "rollup-plugin-hot-css": "^0.2.1",
+        "rollup-plugin-static-files": "^0.2.0",
+        "shx": "^0.3.2"
+    }
+}

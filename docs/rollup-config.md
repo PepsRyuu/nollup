@@ -22,7 +22,7 @@ See [Rollup](https://rollupjs.org/guide/en/) documentation for more information 
 * ```entryFileNames``` - See below note.
 * ```chunkFileNames``` - See below note.
 * ```assetFileNames``` - See below note.
-* ```format``` - Only support for ```es```, ```cjs``` or ```iife```. 
+* ```format``` - Only support for ```es```, ```cjs```, ```amd``` or ```iife```. 
 * ```globals``` - Remapping for window variables.
 
 For file name pattern options, when the bundle is generated, it will serve files based on what the pattern says. The ```dir``` option is completely ignored and not part of the generated URL. 

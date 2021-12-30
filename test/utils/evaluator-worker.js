@@ -65,6 +65,67 @@ let Executors = {
         script.runInContext(context);
     },
 
+    amd: async function (entry) {
+        let context = global._activeContext;
+
+        // Have to stub a bunch of things for require.js to work
+        context.process = {
+             argv: [], 
+             versions: { node: process.versions.node },
+             nextTick: cb => cb()
+        }
+
+        // RequireJS in Node mode uses FS to load files.
+        context.fs = {
+            readFileSync (file) {
+                let mod = findModule(file, global._activeChunks);
+                return mod;
+            },
+
+            existsSync (file) {
+                return true;
+            },
+            
+            realpathSync (path) {
+                return path;
+            }
+        }
+
+        context.require = function (spec) {
+            let mod = findModule(spec, global._activeChunks);
+
+            if (spec === 'requirejs') {
+                mod = '//' + require('fs').readFileSync(require.resolve('requirejs'), 'utf8');
+                mod = mod.replace(/vm\.runInThisContext/g, 'eval'); // avoids context issues
+            }
+
+            if (spec === 'fs') {
+                mod = `module.exports = global.fs`;
+            }
+
+            if (mod) {
+                let script = new vm.Script(`
+                    var module = { exports: {} };
+                    ${mod}
+                    module.exports;
+                `, { context });
+
+                return script.runInContext(context);
+            }
+    
+            return require(spec);
+        };
+
+        // Note, preload all non-relative externals as this is how they're probably used anyways.
+        let script = new vm.Script(`
+            var requirejs = require('requirejs');
+            ${Object.keys(global._activeChunks).filter(k => global._activeChunks[k].external).map(k => global._activeChunks[k].code).join('\n')}    
+            let entry = requirejs(['${entry}']);
+        `, { context });
+
+        script.runInContext(context);
+    },
+
     iife: async function (entry) {
         let context = global._activeContext;
         let script = new vm.Script(global._activeChunks[0].code, { context });
@@ -83,16 +144,18 @@ process.on('message', async (msg) => {
 
     if (msg.entry) {
         let log = (...args) => process.send({ log: args.join(' ') });
+        let debug = (...args) => console.log('[DEBUG]', ...args);
 
         let contextObj = {
             ...msg.globals,
             _result: undefined,
             WebSocket,
-            console: { log }
+            console: { log, debug }
         };
 
         contextObj.self = contextObj;
         contextObj.globalThis = contextObj;
+        contextObj.global = contextObj;
 
         let context = vm.createContext(contextObj);
 
@@ -114,6 +177,7 @@ process.on('message', async (msg) => {
             let globals = { ...context };
             delete globals.self;
             delete globals.globalThis;
+            delete globals.global;
 
             process.send({ result: context._result, globals });
         } catch (e) {
