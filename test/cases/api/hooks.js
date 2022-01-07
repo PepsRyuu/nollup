@@ -617,6 +617,7 @@ describe ('API: Plugin Hooks', () => {
         });
 
         it ('should be allowed to return an AST');
+        it ('should be allowed to return an AST as a string');
 
         it ('should allow meta option to be returned', async () => {
             fs.stub('./src/main.js', () => `
