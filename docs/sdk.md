@@ -43,7 +43,7 @@ container.hooks.buildStart(options);
 container.hooks.resolveDynamicImport(id, parentId);
 container.hooks.resolveId(id, parentId, options);
 container.hooks.load(filepath, parentFilepath);
-container.hooks.transform(code, id);
+container.hooks.transform(code, id, map);
 container.hooks.watchChange(id);
 container.hooks.buildEnd(error);
 container.hooks.renderStart(outputOptions, inputOptions);
