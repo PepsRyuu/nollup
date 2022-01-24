@@ -1,4 +1,5 @@
 let { nollup, fs, expect, rollup } = require('../../nollup');
+let Evaluator = require('../../utils/evaluator');
 
 describe ('API: Nollup Hooks', () => {
 
@@ -6,7 +7,6 @@ describe ('API: Nollup Hooks', () => {
         it ('should have access to instances', async () => {
             fs.stub('./src/dep.js', () => 'export default 123');
             fs.stub('./src/main.js', () => 'import Dep from \'./dep\'; export default Dep');
-            let __exports = {}; 
 
             let bundle = await nollup({
                 input: './src/main.js',
@@ -14,56 +14,57 @@ describe ('API: Nollup Hooks', () => {
                     nollupBundleInit () {
                         return `
                             __exports.instances = instances;
-                            expect(Object.keys(instances).length).to.equal(0);
+                            if (Object.keys(instances).length !== 0) {
+                                throw new Error('Failed');
+                            }
                         `;
                     }
                 }]
             });
 
-            let { output } = await bundle.generate({ format: 'iife' });
-            eval(output[0].code);
-            expect(Object.keys(__exports.instances).length).to.equal(2);
-            expect(__exports.instances[0].id).to.equal(0);
-            expect(__exports.instances[0].exports.default).to.equal(123);
-            expect(__exports.instances[0].dependencies).to.deep.equal([1]);
-            expect(__exports.instances[0].invalidate).to.equal(false);
+            let { output } = await bundle.generate({ format: 'esm' });
+            let { globals } = await Evaluator.init('esm', 'main.js', output, { __exports: {} });
+            expect(Object.keys(globals.__exports.instances).length).to.equal(2);
+            expect(globals.__exports.instances[0].id).to.equal(0);
+            expect(globals.__exports.instances[0].exports.default).to.equal(123);
+            expect(globals.__exports.instances[0].dependencies).to.deep.equal([1]);
+            expect(globals.__exports.instances[0].invalidate).to.equal(false);
             fs.reset();
         });
 
         it ('should have access to modules', async () => {
             fs.stub('./src/dep.js', () => 'export default 123');
             fs.stub('./src/main.js', () => 'import Dep from \'./dep\'; export default Dep');
-            let __exports = {}; 
 
             let bundle = await nollup({
                 input: './src/main.js',
                 plugins: [{
                     nollupBundleInit () {
                         return `
-                            __exports.modules = modules;
                             modules[1] = function (c, r, d, e) {
                                 d(function () {
                                 }, function () {
                                     e('default', function () { return 456 });
                                 })
                             };
-                            expect(Object.keys(modules).length).to.equal(2);
+                            if (Object.keys(modules).length !== 2) {
+                                throw new Error('Failed');
+                            }
+                            __exports.modules = Object.keys(modules).length;
                         `;
                     }
                 }]
             });
 
-            let { output } = await bundle.generate({ format: 'iife' });
-            let result = eval(output[0].code);
-            expect(typeof __exports.modules[0]).to.equal('function');
-            expect(result.default).to.equal(456);
+            let { output } = await bundle.generate({ format: 'esm' });
+            let { globals, exports } = await Evaluator.init('esm', 'main.js', output, { __exports: {} });
+            expect(globals.__exports.modules).to.equal(2);
+            expect(exports.default).to.equal(456);
             fs.reset();
         });
 
         it ('should only execute before first module is required',async () => {
             fs.stub('./src/main.js', () => 'export default __testdata');
-            let __testdata = ''; 
-
             let bundle = await nollup({
                 input: './src/main.js',
                 plugins: [{
@@ -75,9 +76,9 @@ describe ('API: Nollup Hooks', () => {
                 }]
             });
 
-            let { output } = await bundle.generate({ format: 'iife' });
-            let result = eval(output[0].code);
-            expect(result.default).to.equal('hello');
+            let { output } = await bundle.generate({ format: 'esm' });
+            let { globals, exports } = await Evaluator.init('esm', 'main.js', output, { __testdata: '' });
+            expect(exports.default).to.equal('hello');
             fs.reset();
         });
     });
@@ -86,18 +87,21 @@ describe ('API: Nollup Hooks', () => {
         it ('should have access to instances', async () => {
             fs.stub('./src/dep.js', () => 'export default 123');
             fs.stub('./src/main.js', () => 'import Dep from \'./dep\';export default Dep');
-            let __exports = {}; 
 
             let bundle = await nollup({
                 input: './src/main.js',
                 plugins: [{
                     nollupModuleInit () {
                         return `
+                            function assert (condition) {
+                                if (!condition) throw new Error('Assert Failed')
+                            }
+
                             if (module.id === 0) {
-                                return expect(Object.keys(instances).length).to.equal(1);
+                                return assert(Object.keys(instances).length === 1);
                             }
                             if (module.id === 1) {
-                                return expect(Object.keys(instances).length).to.equal(2);
+                                return assert(Object.keys(instances).length === 2);
                             }
                             throw new Error('Failed');
                         `;
@@ -105,8 +109,8 @@ describe ('API: Nollup Hooks', () => {
                 }]
             });
 
-            let { output } = await bundle.generate({ format: 'iife' });
-            eval(output[0].code);
+            let { output } = await bundle.generate({ format: 'esm' });
+            await Evaluator.init('esm', 'main.js', output, { __exports: {} });
             fs.reset();
         });
 
@@ -120,23 +124,27 @@ describe ('API: Nollup Hooks', () => {
                 plugins: [{
                     nollupModuleInit () {
                         return `
-                            __exports.modules = modules;
                             modules[1] = function (c, r, d, e) {
                                 d(function () {
                                 }, function () {
                                     e('default', function () { return 456 });
                                 })
                             };
-                            expect(Object.keys(modules).length).to.equal(2);
+
+                            if (Object.keys(modules).length !== 2) {
+                                throw new Error('Failed');
+                            }
+
+                            __exports.modules = Object.keys(modules).length;
                         `;
                     }
                 }]
             });
 
-            let { output } = await bundle.generate({ format: 'iife' });
-            let result = eval(output[0].code);
-            expect(typeof __exports.modules[0]).to.equal('function');
-            expect(result.default).to.equal(456);
+            let { output } = await bundle.generate({ format: 'esm' });
+            let { globals, exports } = await Evaluator.init('esm', 'main.js', output, { __exports: {} });
+            expect(globals.__exports.modules).to.equal(2);
+            expect(exports.default).to.equal(456);
             fs.reset();
         });
 
@@ -157,8 +165,8 @@ describe ('API: Nollup Hooks', () => {
                 }]
             });
 
-            let { output } = await bundle.generate({ format: 'iife' });
-            eval(output[0].code);
+            let { output } = await bundle.generate({ format: 'esm' });
+            await Evaluator.init('esm', 'main.js', output);
             fs.reset();
         });
     });
@@ -167,7 +175,6 @@ describe ('API: Nollup Hooks', () => {
         it ('should have access to instances', async () => {
             fs.stub('./src/dep.js', () => 'export default 123');
             fs.stub('./src/main.js', () => 'import Dep from \'./dep\';export default Dep');
-            let __exports = {}; 
 
             let bundle = await nollup({
                 input: './src/main.js',
@@ -176,21 +183,22 @@ describe ('API: Nollup Hooks', () => {
                         return `
                             ${code}
                             // Wrapped code executes when actually executing module
-                            expect(Object.keys(instances).length).to.equal(2);
+                            if (Object.keys(instances).length !== 2) {
+                                throw new Error('Failed');
+                            }
                         `;
                     }
                 }]
             });
 
-            let { output } = await bundle.generate({ format: 'iife' });
-            eval(output[0].code);
+            let { output } = await bundle.generate({ format: 'esm' });
+            await Evaluator.init('esm', 'main.js', output);
             fs.reset();
         });
 
         it ('should have access to modules', async () => {
             fs.stub('./src/dep.js', () => 'export default 123');
             fs.stub('./src/main.js', () => 'import Dep from \'./dep\'; export default Dep');
-            let __exports = {}; 
 
             let bundle = await nollup({
                 input: './src/main.js',
@@ -198,17 +206,20 @@ describe ('API: Nollup Hooks', () => {
                     nollupModuleWrap (code) {
                         return `
                             ${code}
-                            __exports.modules = modules;
-                            expect(Object.keys(modules).length).to.equal(2);
+                            
+                            if (Object.keys(modules).length !== 2) {
+                                throw new Error('Failed');
+                            }
+                            __exports.modules = Object.keys(modules).length;
                         `;
                     }
                 }]
             });
 
-            let { output } = await bundle.generate({ format: 'iife' });
-            let result = eval(output[0].code);
-            expect(typeof __exports.modules[0]).to.equal('function');
-            expect(result.default).to.equal(123);
+            let { output } = await bundle.generate({ format: 'esm' });
+            let { globals, exports } = await Evaluator.init('esm', 'main.js', output, { __exports: {} });
+            expect(globals.__exports.modules).to.equal(2);
+            expect(exports.default).to.equal(123);
             fs.reset();
         });
 
@@ -230,16 +241,15 @@ describe ('API: Nollup Hooks', () => {
                 }]
             });
 
-            let { output } = await bundle.generate({ format: 'iife' });
-            let results = eval(output[0].code);
-            expect(results.default).to.equal(123);
+            let { output } = await bundle.generate({ format: 'esm' });
+            let { exports } = await Evaluator.init('esm', 'main.js', output);
+            expect(exports.default).to.equal(123);
             fs.reset();
         });
 
         it ('should allow module code to be wrapped', async () => {
             fs.stub('./src/dep.js', () => 'export default 123');
             fs.stub('./src/main.js', () => 'import Dep from \'./dep\'; export default Dep');
-            let counter = 0;
 
             let bundle = await nollup({
                 input: './src/main.js',
@@ -253,18 +263,16 @@ describe ('API: Nollup Hooks', () => {
                 }]
             });
 
-            let { output } = await bundle.generate({ format: 'iife' });
-            eval(output[0].code);
+            let { output } = await bundle.generate({ format: 'esm' });
+            let { globals } = await Evaluator.init('esm', 'main.js', output, { counter: 0 });
             expect(output[0].code.match(/counter\+\+/g).length).to.equal(1);
-            expect(counter).to.equal(2);
+            expect(globals.counter).to.equal(2);
             fs.reset();
         });
     });
 
     describe('Module Invalidate', () => {
         it ('should be able to replace and invalidate modules', async () => {
-            let _global = {};
-            let _exports = {};
 
             fs.stub('./src/dep.js', () => `
                 export var id = module.id;
@@ -275,7 +283,7 @@ describe ('API: Nollup Hooks', () => {
                 export default Dep;
 
                 module.update = () => {
-                    _exports.result = require(id);
+                    console.log(JSON.stringify(require(id)));
                 };
             `);
 
@@ -284,7 +292,7 @@ describe ('API: Nollup Hooks', () => {
                 plugins: [{
                     nollupBundleInit () {
                         return `
-                            _global.apply = function (change) {
+                            globalThis.applyChange = function (change) {
                                 modules[change.id] = eval(change.code);
                                 instances[change.id].invalidate = true;
 
@@ -304,16 +312,18 @@ describe ('API: Nollup Hooks', () => {
                 }]
             })
 
-            let { output } = await bundle.generate({ format: 'iife' });
-            eval(output[0].code);
+            let { output } = await bundle.generate({ format: 'esm' });
+            let { globals } = await Evaluator.init('esm', 'main.js', output, { globalThis: {} });
             fs.stub('./src/dep.js', () => `
                 export var id = module.id;
                 export default 456;
             `);
             bundle.invalidate('./src/dep.js');
-            let { changes } = await bundle.generate({ format: 'iife' });
-            _global.apply(changes[0]);
-            expect(_exports.result.default).to.equal(456);
+            let { changes } = await bundle.generate({ format: 'esm' });
+            await Evaluator.call('applyChange', changes[0]);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            let log = await Evaluator.logs(1);
+            expect(log[0]).to.equal(`{"id":1,"default":456}`);
         });
     });
 });

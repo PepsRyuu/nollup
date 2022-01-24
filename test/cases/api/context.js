@@ -1,6 +1,7 @@
 let { nollup, fs, expect, rollup } = require('../../nollup');
 let path = require('path');
 let MagicString = require('magic-string');
+let Evaluator = require('../../utils/evaluator');
 
 describe ('API: Plugin Context', () => {
     describe('emitAsset', () => {
@@ -1496,7 +1497,8 @@ describe ('API: Plugin Context', () => {
 
             let { output } = await bundle.generate({ format: 'esm', assetFileNames: 'asset-[name][extname]' });
             let main = output.find(o => o.fileName === 'main.js');
-            expect(eval(main.code.replace('export default ', ''))).to.equal('asset-logo.svg');
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default).to.equal('asset-logo.svg');
             fs.reset();
         });
 
@@ -1520,7 +1522,8 @@ describe ('API: Plugin Context', () => {
 
             let { output } = await bundle.generate({ format: 'esm', assetFileNames: 'assets/[name][hash][extname]' });
             let main = output.find(o => o.fileName === 'main.js');
-            expect(eval(main.code.replace('export default ', ''))).to.equal('assets/logo-logo[hash].svg');
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default).to.equal('assets/logo-logo[hash].svg');
             fs.reset();
         });
 

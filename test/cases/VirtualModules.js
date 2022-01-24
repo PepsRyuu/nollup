@@ -1,9 +1,10 @@
 let { nollup, fs, expect, rollup } = require('../nollup');
+let Evaluator = require('../utils/evaluator');
 
 describe ('Virtual Modules', () => {
 
     it ('should allow virtual module example to work', async () => {
-        fs.stub('./src/main.js', () => 'import message from "virtual-module";console.log(123);');
+        fs.stub('./src/main.js', () => 'export { default } from "virtual-module";');
 
         let virtualModulePlugin = {
             resolveId ( source ) {
@@ -26,11 +27,12 @@ describe ('Virtual Modules', () => {
         });
 
         let { output } = await bundle.generate({ format: 'esm' });
-        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
+        let { exports } = await Evaluator.init('esm', 'main.js', output);
+        expect(exports.default).to.equal('Virtual Module');      
     });
 
     it ('should allow null byte in the resolved id', async () => {
-        fs.stub('./src/main.js', () => 'import message from "virtual-module";console.log(123);');
+        fs.stub('./src/main.js', () => 'export { default } from "virtual-module";');
 
         let virtualModulePlugin = {
             resolveId ( source ) {
@@ -53,11 +55,12 @@ describe ('Virtual Modules', () => {
         });
 
         let { output } = await bundle.generate({ format: 'esm' });
-        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
+        let { exports } = await Evaluator.init('esm', 'main.js', output);
+        expect(exports.default).to.equal('Virtual Module'); 
     });
 
     it ('should allow prefix in the resolved id', async () => {
-        fs.stub('./src/main.js', () => 'import message from "virtual-module";console.log(123);');
+        fs.stub('./src/main.js', () => 'export { default } from "virtual-module";');
 
         let virtualModulePlugin = {
             resolveId ( source ) {
@@ -80,7 +83,8 @@ describe ('Virtual Modules', () => {
         });
 
         let { output } = await bundle.generate({ format: 'esm' });
-        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
+        let { exports } = await Evaluator.init('esm', 'main.js', output);
+        expect(exports.default).to.equal('Virtual Module'); 
     });
 
     it ('should allow virtual module example to work for entry module', async () => {
@@ -106,7 +110,9 @@ describe ('Virtual Modules', () => {
 
         let { output } = await bundle.generate({ format: 'esm' });
         expect(output[0].fileName).to.equal('virtual-module.js');
-        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
+
+        let { exports } = await Evaluator.init('esm', 'virtual-module.js', output);
+        expect(exports.default).to.equal('Virtual Module'); 
     });
 
     it ('should allow null byte in the resolved id for entry module', async () => {
@@ -132,7 +138,9 @@ describe ('Virtual Modules', () => {
 
         let { output } = await bundle.generate({ format: 'esm' });
         expect(output[0].fileName).to.equal('_virtual-module.js');
-        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
+
+        let { exports } = await Evaluator.init('esm', '_virtual-module.js', output);
+        expect(exports.default).to.equal('Virtual Module'); 
     });
 
     it ('should allow prefix in the resolved id for entry module', async () => {
@@ -158,6 +166,7 @@ describe ('Virtual Modules', () => {
 
         let { output } = await bundle.generate({ format: 'esm' });
         expect(output[0].fileName).to.equal('_prefix:virtual-module.js');
-        expect(output[0].code.indexOf(`var __ex_default__ = "Virtual Module"; __e__(\\'default\\', function () { return __ex_default__ })`) > -1).to.be.true;
+        let { exports } = await Evaluator.init('esm', '_prefix:virtual-module.js', output);
+        expect(exports.default).to.equal('Virtual Module'); 
     });
 });

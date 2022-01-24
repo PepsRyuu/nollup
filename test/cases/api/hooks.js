@@ -1,6 +1,7 @@
 let { nollup, fs, expect, rollup } = require('../../nollup');
 let path = require('path');
 let MagicString = require('magic-string');
+let Evaluator = require('../../utils/evaluator');
 
 describe ('API: Plugin Hooks', () => {
     async function generate (plugins) {
@@ -25,7 +26,11 @@ describe ('API: Plugin Hooks', () => {
         });
 
         it ('should allow syntheticNamedExports for function exports', async () => {
-            fs.stub('./src/main.js', () => 'import Default, { hello } from "./lol";  export { Default as default, hello };');
+            fs.stub('./src/main.js', () => `
+                import Default, { hello as hello_impl } from "./lol";  
+                export default Default();
+                export var hello = typeof hello_impl === 'function'? hello_impl() : undefined;
+            `);
             fs.stub('./src/lol.js', () => `
                 function hello () { 
                     return "world";
@@ -53,18 +58,17 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
-            expect(result.default.hello()).to.equal('world');
-            expect(result.hello).to.be.undefined;
+            let output = (await bundle.generate({ format: 'esm' })).output;
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default).to.equal('world');
+            expect(result.exports.hello).to.be.undefined;
 
             phase = 1;
             bundle.invalidate('./src/lol.js');
-            output = (await bundle.generate({ format: 'iife' })).output;
-            result = eval(output[0].code);
-
-            expect(result.default.hello()).to.equal('world');
-            expect(result.hello()).to.equal('world');
+            output = (await bundle.generate({ format: 'esm' })).output;
+            result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default).to.equal('world');
+            expect(result.exports.hello).to.equal('world');
 
             fs.reset();
         });
@@ -92,15 +96,15 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
-            expect(result.default).to.equal(123);
+            let output = (await bundle.generate({ format: 'esm' })).output;
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default).to.equal(123);
 
             phase = 1;
             bundle.invalidate('./src/lol.js');
-            output = (await bundle.generate({ format: 'iife' })).output;
-            result = eval(output[0].code);
-            expect(result.default).to.equal(123);
+            output = (await bundle.generate({ format: 'esm' })).output;
+            result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default).to.equal(123);
 
             fs.reset();
         });
@@ -130,9 +134,9 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
-            expect(result.default).to.equal('hello');
+            let output = (await bundle.generate({ format: 'esm' })).output;
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default).to.equal('hello');
 
             fs.reset();
         });
@@ -163,9 +167,9 @@ describe ('API: Plugin Hooks', () => {
             });
 
             bundle.configure({ liveBindings: true });
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
-            expect(result.default).to.equal('hello');
+            let output = (await bundle.generate({ format: 'esm' })).output;
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default).to.equal('hello');
 
             fs.reset();
         });
@@ -568,17 +572,17 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
-            expect(result.default.hello).to.equal('world');
-            expect(result.hello).to.be.undefined;
+            let output = (await bundle.generate({ format: 'esm' })).output;
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default.hello).to.equal('world');
+            expect(result.exports.hello).to.be.undefined;
 
             phase = 1;
             bundle.invalidate('./src/lol.js');
-            output = (await bundle.generate({ format: 'iife' })).output;
-            result = eval(output[0].code);
-            expect(result.default.hello).to.equal('world');
-            expect(result.hello).to.equal('world');
+            output = (await bundle.generate({ format: 'esm' })).output;
+            result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default.hello).to.equal('world');
+            expect(result.exports.hello).to.equal('world');
 
             fs.reset();
         });
@@ -603,15 +607,15 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
-            expect(result.hello).to.be.undefined;
+            let output = (await bundle.generate({ format: 'esm' })).output;
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.hello).to.be.undefined;
 
             phase = 1;
             bundle.invalidate('./src/lol.js');
-            output = (await bundle.generate({ format: 'iife' })).output;
-            result = eval(output[0].code);
-            expect(result.hello).to.equal('world');
+            output = (await bundle.generate({ format: 'esm' })).output;
+            result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.hello).to.equal('world');
 
             fs.reset();
         });
@@ -836,18 +840,18 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
-            expect(result.default.hello).to.equal('world');
-            expect(result.hello).to.be.undefined;
+            let output = (await bundle.generate({ format: 'esm' })).output;
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default.hello).to.equal('world');
+            expect(result.exports.hello).to.be.undefined;
 
             phase = 1;
             bundle.invalidate('./src/lol.js');
             bundle.invalidate('./src/main.js');
-            output = (await bundle.generate({ format: 'iife' })).output;
-            result = eval(output[0].code);
-            expect(result.default.hello).to.equal('world');
-            expect(result.hello).to.equal('world');
+            output = (await bundle.generate({ format: 'esm' })).output;
+            result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default.hello).to.equal('world');
+            expect(result.exports.hello).to.equal('world');
 
             fs.reset();
         });
@@ -872,16 +876,16 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
-            expect(result.hello).to.be.undefined;
+            let output = (await bundle.generate({ format: 'esm' })).output;
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.hello).to.be.undefined;
 
             phase = 1;
             bundle.invalidate('./src/lol.js');
             bundle.invalidate('./src/main.js');
-            output = (await bundle.generate({ format: 'iife' })).output;
-            result = eval(output[0].code);
-            expect(result.hello).to.equal('world');
+            output = (await bundle.generate({ format: 'esm' })).output;
+            result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.hello).to.equal('world');
 
             fs.reset();
         });
@@ -1437,17 +1441,17 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
-            expect(result.default.default.hello).to.equal('world');
-            expect(result.default.hello).to.be.undefined;
+            let output = (await bundle.generate({ format: 'esm' })).output;
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default.default.hello).to.equal('world');
+            expect(result.exports.default.hello).to.be.undefined;
 
             phase = 1;
             bundle.invalidate('./src/lol.js');
-            output = (await bundle.generate({ format: 'iife' })).output;
-            result = eval(output[0].code);
-            expect(result.default.default.hello).to.equal('world');
-            expect(result.default.hello).to.equal('world');
+            output = (await bundle.generate({ format: 'esm' })).output;
+            result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default.default.hello).to.equal('world');
+            expect(result.exports.default.hello).to.equal('world');
 
             fs.reset();
         });
@@ -1483,10 +1487,11 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
+            let output = (await bundle.generate({ format: 'cjs' })).output;
+            let result = await Evaluator.init('cjs', 'main.js', output);
             expect(passed).to.be.true;
-            expect(result.hello).to.equal('world');
+            expect(result.exports.default.hello).to.equal('world');
+            expect(result.exports.hello).to.equal('world');
 
             fs.reset();
         });
@@ -1533,10 +1538,11 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
+            let output = (await bundle.generate({ format: 'cjs' })).output;
+            let result = await Evaluator.init('cjs', 'main.js', output);
             expect(passed).to.be.true;
-            expect(result.hello).to.equal('world');
+            expect(result.exports.default.hello).to.equal('world');
+            expect(result.exports.hello).to.equal('world');
 
             fs.reset();
         });
@@ -1563,15 +1569,15 @@ describe ('API: Plugin Hooks', () => {
                 }]
             });
 
-            let output = (await bundle.generate({ format: 'iife' })).output;
-            let result = eval(output[0].code);
-            expect(result.hello).to.be.undefined;
+            let output = (await bundle.generate({ format: 'esm' })).output;
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.hello).to.be.undefined;
 
             phase = 1;
             bundle.invalidate('./src/lol.js');
-            output = (await bundle.generate({ format: 'iife' })).output;
-            result = eval(output[0].code);
-            expect(result.hello).to.equal('world');
+            output = (await bundle.generate({ format: 'esm' })).output;
+            result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.hello).to.equal('world');
 
             fs.reset();
         });

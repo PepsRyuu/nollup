@@ -1,4 +1,4 @@
-let es_to_cjs = require('../../lib/impl/NollupImportExportResolver');
+let ImportExportResolver = require('../../lib/impl/NollupImportExportResolver');
 let CodeGenerator = require('../../lib/impl/NollupCodeGenerator');
 let PluginContainer = require('../../lib/impl/PluginContainer');
 let RollupConfigContainer = require('../../lib/impl/RollupConfigContainer');
@@ -468,7 +468,7 @@ let tests = [{
     }
 }];
 
-describe ('es_to_cjs', () => {
+describe ('ImportExportResolver', () => {
     tests.forEach(test => {
         it(test.input, async () => {
              test.output = {
@@ -485,7 +485,7 @@ describe ('es_to_cjs', () => {
             plugins.start(); 
             plugins.start();
 
-            let res = await es_to_cjs(plugins, test.input, process.cwd() + '/__entry', new CodeGenerator());
+            let res = await ImportExportResolver(plugins, test.input, process.cwd() + '/__entry', new CodeGenerator());
             let to_check = {};
             for (let key in test.output) {
                 to_check[key] = res[key];
@@ -800,7 +800,7 @@ let external_tests = [{
 
 
 
-describe('es_to_cs_externals (ESM)', () => {
+describe('ImportExportResolver Externals (ESM)', () => {
     external_tests.forEach(test => {
         it(test.input, async () => {
             let config = new RollupConfigContainer({
@@ -817,7 +817,7 @@ describe('es_to_cs_externals (ESM)', () => {
             plugins.start(); 
             plugins.start();
 
-            let res = await es_to_cjs(plugins, test.input, process.cwd() + '/__entry', new CodeGenerator());
+            let res = await ImportExportResolver(plugins, test.input, process.cwd() + '/__entry', new CodeGenerator());
             let to_check = {}; 
 
             for (let key in test.output) {
@@ -838,13 +838,13 @@ describe('es_to_cs_externals (ESM)', () => {
     })
 });
 
-describe('misc transform issues', () => {
+describe('ImportExportResolver: misc transform issues', () => {
     it ('should not fail on null nodes', async () => {
         let config = new RollupConfigContainer({ plugins: [] });
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, `
+        let res = await ImportExportResolver(plugins, `
             import Hello from './World';
             let a = [1, 2, , 4];
         `,  process.cwd() + '/__entry', new CodeGenerator());
@@ -856,7 +856,7 @@ describe('misc transform issues', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'import Hello from "hello"',
             'import World from "world"',
             'console.log(Hello, World)'
@@ -873,7 +873,7 @@ describe('misc transform issues', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'import Hello from "hello";import World from "world"',
             'console.log(Hello, World)'
         ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
@@ -889,7 +889,7 @@ describe('misc transform issues', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'import {',
             '   Hello',
             '} from "hello";',
@@ -914,7 +914,7 @@ describe('misc transform issues', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'var Hello, World, Foo, Bar;',
             'export { Hello, World }',
             'export { Foo, Bar };',
@@ -933,7 +933,7 @@ describe('misc transform issues', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'var Hello, World, Foo, Bar;',
             'export {                   ',
             '    Hello,                 ',
@@ -952,13 +952,13 @@ describe('misc transform issues', () => {
     });
 });
 
-describe ('Export Late Init Live Bindings', () => {
+describe ('ImportExportResolver: Export Late Init Live Bindings', () => {
     it ('should only export when export is assigned for declarations', async () => {
         let config = new RollupConfigContainer({ plugins: [] });
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'export let hello;',
             'hello = 123;'
         ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
@@ -973,7 +973,7 @@ describe ('Export Late Init Live Bindings', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'export let hello;',
             'hello = 123;',
             'export let world;',
@@ -992,7 +992,7 @@ describe ('Export Late Init Live Bindings', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'export let hello;',
             '(function () {})(hello || (hello = 123))'
         ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
@@ -1007,7 +1007,7 @@ describe ('Export Late Init Live Bindings', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'export let hello;',
             '(function () {})(hello || (hello = 123));'
         ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
@@ -1022,7 +1022,7 @@ describe ('Export Late Init Live Bindings', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'export let hello;',
             '(function (hello) { hello = 123 })();',
             'hello = 123'
@@ -1039,7 +1039,7 @@ describe ('Export Late Init Live Bindings', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'export let hello;',
             'export let world;',
             '(function (hello) { hello = 123 })();',
@@ -1062,7 +1062,7 @@ describe ('Export Late Init Live Bindings', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'function print (hello) { hello = 123 }',
             'export let hello;',
             'hello = 123'
@@ -1079,7 +1079,7 @@ describe ('Export Late Init Live Bindings', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             '(hello => { hello = 123 })();',
             'export let hello;',
             'hello = 123'
@@ -1096,7 +1096,7 @@ describe ('Export Late Init Live Bindings', () => {
         let plugins = new PluginContainer(config, {});
         plugins.start();
 
-        let res = await es_to_cjs(plugins, [
+        let res = await ImportExportResolver(plugins, [
             'function parent (hello) {',
             '   function nested (hello) {',
             '       hello = 123;',
@@ -1117,13 +1117,13 @@ describe ('Export Late Init Live Bindings', () => {
     });
 });
 
-describe ('Import Live Bindings (reference)', () => {
+describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
     async function resolve (code) {
         let config = new RollupConfigContainer({ plugins: [] });
         let plugins = new PluginContainer(config, {});
         plugins.start();
         let curr = process.cwd() + '/_entry';
-        let res = await es_to_cjs(plugins, code.join('\n'), curr, new CodeGenerator({ liveBindings: 'reference' }), 'reference');
+        let res = await ImportExportResolver(plugins, code.join('\n'), curr, new CodeGenerator({ liveBindings: 'reference' }), 'reference');
         return res.code;
     }
 

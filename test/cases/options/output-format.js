@@ -1,12 +1,5 @@
 let { nollup, fs, expect, rollup } = require('../../nollup');
-let path = require('path');
-
-function requireString (code) {
-    let module = { exports : {} };
-    eval(code);
-    return module.exports;
-}
-
+let Evaluator = require('../../utils/evaluator');
 
 describe ('Options: output.format', () => {
     describe('Misc', () => {
@@ -158,8 +151,7 @@ describe ('Options: output.format', () => {
 
             expect(output[0].code.indexOf('export default ') > -1).to.be.true;
            
-            let code = output[0].code.replace('export default', 'module.exports.default=');
-            let exports = requireString(code);
+            let { exports } = await Evaluator.init('esm', 'main.js', output);
             expect(exports.default).to.equal(123);
             fs.reset();
         });
@@ -178,10 +170,7 @@ describe ('Options: output.format', () => {
             expect(output[0].code.indexOf('export default ') > -1).to.be.true;
             expect(output[0].code.indexOf('export var hello ') > -1).to.be.true;
            
-            let code = output[0].code.replace('export default', 'module.exports.default=');
-            code = code.replace('export var hello', 'module.exports.hello');
-
-            let exports = requireString(code);
+            let { exports } = await Evaluator.init('esm', 'main.js', output);
             expect(exports.default).to.equal(123);
             expect(exports.hello).to.equal(456);
             fs.reset();
@@ -381,7 +370,7 @@ describe ('Options: output.format', () => {
             });
 
             expect(output[0].code.indexOf('export default ') === -1).to.be.true;
-            let exports = requireString(output[0].code);
+            let { exports } = await Evaluator.init('cjs', 'main.js', output);
             expect(exports).to.equal(123);
             fs.reset();
         });
@@ -400,7 +389,7 @@ describe ('Options: output.format', () => {
             expect(output[0].code.indexOf('export default ') === -1).to.be.true;
             expect(output[0].code.indexOf('export var hello ') === -1).to.be.true;
            
-            let exports = requireString(output[0].code);
+            let { exports } = await Evaluator.init('cjs', 'main.js', output);
             expect(exports.default).to.equal(123);
             expect(exports.hello).to.equal(456);
             fs.reset();
@@ -425,7 +414,7 @@ describe ('Options: output.format', () => {
         });
 
         it ('should not conflict with local require', async () => {
-            fs.stub('./src/main.js', () => 'let fs = require("fs"); export default fs;');
+            fs.stub('./src/main.js', () => 'let fs = require("fs"); export default fs.readFileSync.toString();');
         
             let bundle = await nollup({
                 input: './src/main.js'
@@ -435,13 +424,19 @@ describe ('Options: output.format', () => {
                 format: 'cjs'
             });
 
-            let exports = requireString(output[0].code);
-            expect(typeof exports.readFileSync).to.equal('function');
+            let { exports } = await Evaluator.init('cjs', 'main.js', output);
+            expect(exports.startsWith('function readFileSync')).to.be.true;
             fs.reset();
         });
 
         it ('should allow require properties to be accessed', async () => {
-            fs.stub('./src/main.js', () => 'export default require;');
+            fs.stub('./src/main.js', () => `
+                export default {
+                    resolve: typeof require.resolve,
+                    extensions: typeof require.extensions,
+                    cache: typeof require.cache
+                }
+            `);
             let bundle = await nollup({
                 input: './src/main.js'
             });
@@ -450,10 +445,10 @@ describe ('Options: output.format', () => {
                 format: 'cjs'
             });
 
-            let exports = requireString(output[0].code);
-            expect(typeof exports.resolve).to.equal('function');
-            expect(typeof exports.extensions).to.equal('object');
-            expect(typeof exports.cache).to.equal('object');
+            let { exports } = await Evaluator.init('cjs', 'main.js', output);
+            expect(exports.resolve).to.equal('function');
+            expect(exports.extensions).to.equal('object');
+            expect(exports.cache).to.equal('object');
             fs.reset();
         });
 
@@ -467,7 +462,7 @@ describe ('Options: output.format', () => {
                 format: 'cjs'
             });
 
-            let exports = requireString(output[0].code);
+            let { exports } = await Evaluator.init('cjs', 'main.js', output);
             expect(exports).to.equal(123);
             fs.reset();
         });
@@ -628,8 +623,8 @@ describe ('Options: output.format', () => {
             });
 
             expect(output[0].code.indexOf('export default ') === -1).to.be.true;
-            let exports = requireString(output[0].code);
-            expect(exports).to.deep.equal({});
+            let result = await Evaluator.init('iife', 'main.js', output);
+            expect(result.exports).to.be.undefined;
             fs.reset();
         });
 

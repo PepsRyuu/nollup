@@ -1,5 +1,4 @@
 let { nollup, fs, expect, rollup } = require('../../nollup');
-let path = require('path');
 
 describe ('Options: Input', () => {
     it ('should throw error if not defined', async () => {
