@@ -18,7 +18,7 @@ describe ('Options: output.format', () => {
                     format: 'umd'
                 });
             } catch (e) {
-                expect(e.message.indexOf('Invalid format "umd". Only es, cjs, iife supported.') > -1).to.be.true;
+                expect(e.message.indexOf('Invalid format "umd". Only es, cjs, iife, amd supported.') > -1).to.be.true;
                 passed = true;
             }
 
