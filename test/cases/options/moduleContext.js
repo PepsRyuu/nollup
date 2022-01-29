@@ -1,5 +1,6 @@
 let { nollup, fs, rollup, expect } = require('../../nollup');
 let path = require('path');
+let Evaluator = require('../../utils/evaluator');
 
 describe ('Options: moduleContext', () => {
     it ('should allow priortise moduleContext over context if it matches', async () => {
@@ -21,11 +22,11 @@ describe ('Options: moduleContext', () => {
             format: 'esm'
         });
 
-        let exs1 = eval('(function () {\n' + output[0].code.replace('export default ', 'return ') + '\n})()');
-        expect(exs1.hello).to.equal('world');
+        let { exports: exs1 } = await Evaluator.init('esm', 'main1.js', output);
+        expect(exs1.default.hello).to.equal('world');
 
-        let exs2 = eval('(function () {\n' + output[1].code.replace('export default ', 'return ') + '\n})()');
-        expect(exs2.foo).to.equal('bar');
+        let { exports: exs2 } = await Evaluator.init('esm', 'main2.js', output);
+        expect(exs2.default.foo).to.equal('bar');
         fs.reset();
     });
 
@@ -46,11 +47,11 @@ describe ('Options: moduleContext', () => {
             format: 'esm'
         });
 
-        let exs1 = eval('(function () {\n' + output[0].code.replace('export default ', 'return ') + '\n})()');
-        expect(exs1.hello).to.equal('world');
+        let { exports: exs1 } = await Evaluator.init('esm', 'main1.js', output);
+        expect(exs1.default.hello).to.equal('world');
 
-        let exs2 = eval('(function () {\n' + output[1].code.replace('export default ', 'return ') + '\n})()');
-        expect(exs2.foo).to.equal('bar');
+        let { exports: exs2 } = await Evaluator.init('esm', 'main2.js', output);
+        expect(exs2.default.foo).to.equal('bar');
         fs.reset();
     });
 });

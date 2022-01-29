@@ -1,5 +1,94 @@
-let { nollup, fs, expect, rollup } = require('../../nollup');
-let { executeChunkedFiles } = require('./external-runtime.js');
+let { nollup, fs, expect, rollup } = require('../nollup');
+let Evaluator = require('../utils/evaluator');
+
+let EXTERNAL_MODULES = {
+    esm: {
+        'fs': `
+            function readFileSync() {}; 
+            export default { readFileSync }
+        `,
+        'DefaultModule': `
+            export default { prop: true };
+        `,
+        'NamedModule': `
+            export var NamedExport1 = 123;
+            export var NamedExport2 = 456;
+        `,
+        'BareModule': `
+            self.BareModule = { prop: true };
+        `
+    },
+    cjs: {
+        'DefaultModule': `
+            module.exports.default = { prop: true }
+        `,
+        'NamedModule': `
+            module.exports.NamedExport1 = 123;
+            module.exports.NamedExport2 = 456;
+        `,
+        'BareModule': `
+            self.BareModule = { prop: true };
+        `,
+        'DefaultFallbackModule': `
+            module.exports = { prop: true };
+        `
+    },
+    iife: {
+        'fs': {
+            readFileSync: true
+        },
+        'DefaultModule': {
+            default: { 
+                prop: true
+            }
+        },
+        'NamedModule': {
+            NamedExport1: 123,
+            NamedExport2: 456
+        },
+        'BareModule': {
+            prop: true
+        },
+        'DefaultFallbackModule': {
+            prop: true
+        },
+        '_IIFE_Special_Characters_': {
+            NamedExport1: 123,
+            NamedExport2: 456
+        },
+        '__globalModule': {
+            NamedExport1: 123,
+            NamedExport2: 456
+        }
+    }
+};
+
+function getModules (output, format) {
+    if (format === 'iife') {
+        return output;
+    }
+
+    let result = [
+        ...output,
+        ...Object.entries(EXTERNAL_MODULES[format]).map(entry => ({
+            code: entry[1],
+            fileName: entry[0]
+        }))
+    ];
+
+    return result;
+}
+
+function getGlobalScope (globals, format) {
+    if (format !== 'iife') {
+        return globals;
+    }
+    
+    return {
+        ...globals,
+        ...EXTERNAL_MODULES.iife
+    }
+}
 
 describe('External', () => {
     ['esm', 'cjs', 'iife'].forEach(format => {
@@ -20,8 +109,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format });
-                let result = await executeChunkedFiles(format, 'main.js', output);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({}, format));
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
 
@@ -41,8 +130,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format });
-                let result = await executeChunkedFiles(format, 'main.js', output);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({ }, format));
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
 
@@ -71,8 +160,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format });
-                let result = await executeChunkedFiles(format, 'main.js', output);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({ }, format));
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
 
@@ -90,8 +179,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format });
-                let result = await executeChunkedFiles(format, 'main.js', output);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({ }, format));
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
 
@@ -109,8 +198,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format });
-                let result = await executeChunkedFiles(format, 'main.js', output);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({ }, format));
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
 
@@ -128,8 +217,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format });
-                let result = await executeChunkedFiles(format, 'main.js', output);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({ }, format));
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
 
@@ -147,8 +236,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format });
-                let result = await executeChunkedFiles(format, 'main.js', output);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({ }, format));
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
 
@@ -167,8 +256,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format });
-                let result = await executeChunkedFiles(format, 'main.js', output);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({ }, format));
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
 
@@ -187,8 +276,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format });
-                let result = await executeChunkedFiles(format, 'main.js', output);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({ }, format));
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
 
@@ -207,8 +296,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format });
-                let result = await executeChunkedFiles(format, 'main.js', output);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({ }, format));
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
         });
@@ -233,8 +322,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format, chunkFileNames: '[name].js' });
-                let result = await executeChunkedFiles(format, 'main.js', output, true);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), { }, true);
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
         })
@@ -256,8 +345,8 @@ describe('External', () => {
                 });
 
                 let { output } = await bundle.generate({ format });
-                let result = await executeChunkedFiles(format, 'main.js', output);
-                expect(result).to.equal(true);
+                let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({ }, format));
+                expect(globals.result).to.equal(true);
                 fs.reset();
             });
         })
@@ -278,8 +367,8 @@ describe('External', () => {
             });
 
             let { output } = await bundle.generate({ format: 'iife' });
-            let result = await executeChunkedFiles('iife', 'main.js', output);
-            expect(result).to.equal(true);
+            let { globals } = await Evaluator.init('iife', 'main.js', output, getGlobalScope({ }, 'iife'));
+            expect(globals.result).to.equal(true);
             fs.reset();
         });
 
@@ -302,8 +391,8 @@ describe('External', () => {
             });
 
             let { output } = await bundle.generate({ format: 'iife' });
-            let result = await executeChunkedFiles('iife', 'main.js', output);
-            expect(result).to.equal(true);
+            let { globals } = await Evaluator.init('iife', 'main.js', output, getGlobalScope({ }, 'iife'));
+            expect(globals.result).to.equal(true);
             fs.reset();
         });
     });
@@ -332,8 +421,8 @@ describe('External', () => {
             });
 
             let { output } = await bundle.generate({ format: 'esm' });
-            let result = await executeChunkedFiles('esm', 'main.js', output);
-            expect(result).to.equal(true);
+            let { globals } = await Evaluator.init('esm', 'main.js', getModules(output, 'esm'), { });
+            expect(globals.result).to.equal(true);
             fs.reset();
         })
     })

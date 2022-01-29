@@ -1,5 +1,4 @@
 let { nollup, fs, rollup, expect } = require('../../nollup');
-let path = require('path');
 
 describe ('Options: output.file', () => {
     it ('should allow output.file to be defined', async () => {
