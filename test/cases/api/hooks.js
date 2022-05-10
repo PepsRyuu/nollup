@@ -113,8 +113,9 @@ describe ('API: Plugin Hooks', () => {
             fs.stub('./src/main.js', () => `
                 export { default } from './lol'
             `);
+
             fs.stub('./src/lol.js', () => `
-                var lib = { default: 'hello' };
+                var lib = { default: 'hello', impl: true };
                 export default lib;
                 export var __moduleExports = lib;
             `);
@@ -136,7 +137,7 @@ describe ('API: Plugin Hooks', () => {
 
             let output = (await bundle.generate({ format: 'esm' })).output;
             let result = await Evaluator.init('esm', 'main.js', output);
-            expect(result.exports.default).to.equal('hello');
+            expect(result.exports.default).to.deep.equal({ default: 'hello', impl: true });
 
             fs.reset();
         });
@@ -146,7 +147,7 @@ describe ('API: Plugin Hooks', () => {
                 export { default } from './lol'
             `);
             fs.stub('./src/lol.js', () => `
-                var lib = { default: 'hello' };
+                var lib = { default: 'hello', impl: true };
                 export default lib;
                 export var __moduleExports = lib;
             `);
@@ -169,7 +170,7 @@ describe ('API: Plugin Hooks', () => {
             bundle.configure({ liveBindings: true });
             let output = (await bundle.generate({ format: 'esm' })).output;
             let result = await Evaluator.init('esm', 'main.js', output);
-            expect(result.exports.default).to.equal('hello');
+            expect(result.exports.default).to.deep.equal({ default: 'hello', impl: true });
 
             fs.reset();
         });

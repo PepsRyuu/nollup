@@ -295,6 +295,24 @@ describe('Scenarios', function () {
         expect(log[0]).to.equal('hello');
     });
 
+    it ('Scenario: Circular Dependencies Hoist Var Patterns', async function () {
+        let bundle = await nollup({ input: getPackageMain('circular-hoist-var-patterns') });
+        let { output } = await bundle.generate({ format: 'esm' });
+        let { exports } = await Evaluator.init('esm', 'index.js', output);
+        let log = await Evaluator.logs(1);
+        expect(log.length).to.equal(1);
+        expect(log[0]).to.equal('world-bar-ipsum-multi');
+    });
+
+    it ('Scenario: Circular Dependencies Hoist Var Patterns Extra', async function () {
+        let bundle = await nollup({ input: getPackageMain('circular-hoist-var-patterns-extra') });
+        let { output } = await bundle.generate({ format: 'esm' });
+        let { exports } = await Evaluator.init('esm', 'index.js', output);
+        let log = await Evaluator.logs(1);
+        expect(log.length).to.equal(1);
+        expect(log[0]).to.equal('hello-world-foo-bar-lorem');
+    });
+
     it ('Scenario: Circular Dependencies Hoist Class', async function () {
         let bundle = await nollup({ input: getPackageMain('circular-hoist-class') });
         let { output } = await bundle.generate({ format: 'esm' });
