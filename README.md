@@ -1,6 +1,6 @@
 # Nollup
 
-[![Build Status](https://app.travis-ci.com/PepsRyuu/nollup.svg?branch=master)](https://app.travis-ci.com/PepsRyuu/nollup)
+![CI](https://github.com/PepsRyuu/nollup/actions/workflows/main.yml/badge.svg)
 [![NPM Version](https://img.shields.io/npm/v/nollup.svg)](https://www.npmjs.com/package/nollup)
 [![License](https://badgen.net/github/license/pepsryuu/nollup)](./LICENSE)
 [![Downloads](https://img.shields.io/npm/dm/nollup)](https://www.npmjs.com/package/nollup)
