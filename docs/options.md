@@ -23,3 +23,5 @@ This list provides a description of all of the options for the [CLI](./cli.md), 
 | ```String``` | ```key``` | Path to the private key file to use with https. |
 | ```String``` | ```cert``` | Path to the certificate file to use with https. |
 | ```String\|Boolean``` | ```liveBindings``` | Enable live-bindings. Default is ```false```. Supports ```"with-scope"``` or ```"reference"```. If set to ```true```, it will use ```"reference"```. See [Live Bindings](./live-bindings.md) for more information. |
+| ```String\|String[]``` | ```configPlugin``` | Parse the config file using the provide plugin. Can pass array of plugins as well. |
+

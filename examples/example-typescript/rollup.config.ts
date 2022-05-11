@@ -1,6 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
+import { RollupOptions } from 'rollup';
 
-let config = {
+let config: RollupOptions = {
     input: './src/main.ts',
     output: {
         dir: 'dist',

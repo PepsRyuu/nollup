@@ -1,7 +1,7 @@
 {
     "scripts": {
         "clean": "shx rm -rf dist",
-        "start": "cross-env NODE_ENV=development node ../../lib/cli.js -c --hot --content-base public --port 9001",
+        "start": "cross-env NODE_ENV=development node ../../lib/cli.js -c --configPlugin typescript --hot --content-base public --port 9001",
         "build": "npm run clean && cross-env NODE_ENV=production rollup -c"
     },
     "devDependencies": {
