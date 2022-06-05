@@ -505,9 +505,9 @@ describe ('API: Plugin Context', () => {
 
     describe ('resolveId', () => {
         it ('should accept importee and importer', async () => {
+            fs.stub('./src/lol.js', () => 'export default 456');
             fs.stub('./src/main.js', () => 'export default 123');
 
-            // TODO: Fails in rollup
             let bundle = await nollup({
                 input: './src/main.js',
                 plugins: [{
@@ -515,6 +515,27 @@ describe ('API: Plugin Context', () => {
                         return new Promise(resolve => { 
                             this.resolveId('./lol', path.resolve(process.cwd(), './src/main.js')).then(resolved => {
                                 expect(resolved).to.equal(path.resolve(process.cwd(), './src/lol.js'));
+                                resolve();
+                            });
+                        });
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            fs.reset();
+        });
+
+        it ('should resolve to null if file does not exist', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform () {
+                        return new Promise(resolve => { 
+                            this.resolveId('lol', path.resolve(process.cwd(), './src/main.js')).then(resolved => {
+                                expect(resolved).to.equal(null);
                                 resolve();
                             });
                         });
@@ -1307,7 +1328,7 @@ describe ('API: Plugin Context', () => {
                 input: './src/main.js',
                 plugins: [{
                     transform () {
-                        expect(this.meta.rollupVersion).to.equal('2.47');
+                        expect(this.meta.rollupVersion).to.equal('2.70');
                     }
                 }]
             });
@@ -1482,6 +1503,11 @@ describe ('API: Plugin Context', () => {
             let bundle = await nollup({
                 input: './src/main.js',
                 plugins: [{
+                    resolveId(id) {
+                       if (id.endsWith('.svg')) {
+                           return { id };
+                       } 
+                    },
                     load(id) {
                         if (id.endsWith('.svg')) {
                             refId = this.emitFile({
@@ -1511,6 +1537,11 @@ describe ('API: Plugin Context', () => {
             let bundle = await nollup({
                 input: './src/main.js',
                 plugins: [{
+                    resolveId(id) {
+                        if (id.endsWith('.svg')) {
+                            return { id };
+                        } 
+                    },
                     load(id) {
                         if (id.endsWith('.svg')) {
                             let id = this.emitAsset('logo-logo.svg', '<svg></svg>');
@@ -1968,7 +1999,7 @@ describe ('API: Plugin Context', () => {
             fs.stub('./src/lol.js', () => 'export default 456');
             let passed = false;
 
-            let bundle = await nollup({
+            let bundle = await rollup({
                 input: './src/main.js',
                 plugins: [{
                     resolveId (importee, importer, options) {
@@ -2279,10 +2310,673 @@ describe ('API: Plugin Context', () => {
 
             fs.reset();
         });
+
+        it ('should allow getting hasDefaultExport for module in process of being transformed', async () => {
+            fs.stub('./src/main.js', () => `export default 123`);
+
+            let preTransformResult;
+            let postTransformResult;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform(code, id) {
+                        preTransformResult = this.getModuleInfo(id).hasDefaultExport;
+                    },
+
+                    moduleParsed(modInfo) {
+                        postTransformResult = modInfo.hasDefaultExport;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(preTransformResult).to.equal(null);
+            expect(postTransformResult).to.equal(true);
+        });
     });
 
-    
+    describe('load', () => {
+        it ('should be able to load a module when resolving entry', async () => {
+            fs.stub('./src/lol.js', () => `export default 456`);
+            fs.stub('./src/main.js', () => `export default 123`);
 
+            let result;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./lol.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = await this.load(target);
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result.isEntry).to.be.false;
+            expect(result.code.indexOf('456') > -1).to.equal(true);
+            expect(result.id).to.equal(path.resolve(process.cwd(), './src/lol.js'));
+            expect(result.syntheticNamedExports).to.equal(false);
+        });
+
+        it ('should be able to load a module when resolving non-entry', async () => {
+            fs.stub('./src/other.js', () => `export default 789`);
+            fs.stub('./src/lol.js', () => `export default 456`);
+            fs.stub('./src/main.js', () => `import './lol'; export default 123`);
+
+            let result;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('lol') > - 1) {
+                            let target = await this.resolve('./other.js', parent);
+                            result = await this.load(target);
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result.isEntry).to.be.false;
+            expect(result.code.indexOf('789') > -1).to.equal(true);
+            expect(result.id).to.equal(path.resolve(process.cwd(), './src/other.js'));
+        })
+
+        it('should load and allow getModuleInfo to access transformed ESM code', async () => {
+            fs.stub('./src/lol.js', () => `export default 456`);
+            fs.stub('./src/main.js', () => `export default 123`);
+
+            let result;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./lol.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = (await this.load(target)).code;
+                        }
+                    },
+
+                    transform (code, id) {
+                        return `/*transform*/${code}`;
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result).to.equal('/*transform*/export default 456');
+        });
+
+        it ('should allow hasDefaultExport to return boolean if default export exists', async () => {
+            fs.stub('./src/dep2.js', () => `export var abc = 789`);
+            fs.stub('./src/dep1.js', () => `export default 456`);
+            fs.stub('./src/main.js', () => `export default 123`);
+
+            let result1;
+            let result2;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target1 = await this.resolve('./dep1.js', path.resolve(process.cwd(), './src/main.js'));
+                            result1 = (await this.load(target1)).hasDefaultExport;
+
+                            let target2 = await this.resolve('./dep2.js', path.resolve(process.cwd(), './src/main.js'));
+                            result2 = (await this.load(target2)).hasDefaultExport;
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result1).to.be.true;
+            expect(result2).to.be.false;
+        });
+
+        it ('should provide empty for importedIdResolutions if resolveDependencies is false', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789`);
+            fs.stub('./src/dep.js', () => `import './subdep'; export default 456`);
+            fs.stub('./src/main.js', () => `export default 123`);
+
+            let result;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./dep.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = [...(await this.load(target)).importedIdResolutions];
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result.length).to.equal(0);
+        });
+
+        it ('should provide values for importedIdResolutions if resolveDependencies is true', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789`);
+            fs.stub('./src/dep.js', () => `import './subdep'; export default 456`);
+            fs.stub('./src/main.js', () => `export default 123`);
+
+            let result;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./dep.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = [...(await this.load({ ...target, resolveDependencies: true })).importedIdResolutions];
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result.length).to.equal(1);
+            expect(result).to.deep.equal([
+                {
+                    id: path.resolve(process.cwd(), './src/subdep.js'),
+                    external: false,
+                    meta: {}, 
+                    syntheticNamedExports: false, 
+                    moduleSideEffects: true 
+                }
+            ])
+        });
+
+        it ('should not call transform or moduleParsed hooks more than necessary if imported statically and loaded', async () => {
+            fs.stub('./src/lol.js', () => `export default 456`);
+            fs.stub('./src/main.js', () => `import './lol'; export default 123`);
+
+            let transformed = [];
+            let modulesParsed = [];
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./lol.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = (await this.load(target)).code;
+                        }
+                    },
+
+                    transform (code, id) {
+                        transformed.push(id);
+                        return `/*transform*/${code}`;
+                    },
+
+                    moduleParsed(modInfo) {
+                        modulesParsed.push(modInfo.id);
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(transformed.length).to.equal(2);
+            expect(transformed.includes(path.resolve(process.cwd(), './src/main.js'))).to.be.true;
+            expect(transformed.includes(path.resolve(process.cwd(), './src/lol.js'))).to.be.true;
+            expect(modulesParsed.length).to.equal(2);
+            expect(modulesParsed.includes(path.resolve(process.cwd(), './src/main.js'))).to.be.true;
+            expect(modulesParsed.includes(path.resolve(process.cwd(), './src/lol.js'))).to.be.true;
+        });
+
+        it ('should not call moduleParsed hook after this.load if resolveDependencies is false', async () => {
+            fs.stub('./src/lol.js', () => `export default 456`);
+            fs.stub('./src/main.js', () => `import './lol'; export default 123`);
+
+            let transformed = [];
+            let modulesParsed = [];
+            let passed = false;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./lol.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = (await this.load(target)).code;
+                            expect(transformed).to.deep.equal([path.resolve(process.cwd(), './src/lol.js')]);
+                            expect(modulesParsed).to.deep.equal([]);
+                            passed = true;
+                        }
+                    },
+
+                    transform (code, id) {
+                        transformed.push(id);
+                        return `/*transform*/${code}`;
+                    },
+
+                    moduleParsed(modInfo) {
+                        modulesParsed.push(modInfo.id);
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+        });
+
+        it ('should call moduleParsed during this.load if resolveDependencies is true', async () => {
+            fs.stub('./src/lol.js', () => `export default 456`);
+            fs.stub('./src/main.js', () => `import './lol'; export default 123`);
+
+            let transformed = [];
+            let modulesParsed = [];
+            let passed = false;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./lol.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = (await this.load({ ...target, resolveDependencies: true })).code;
+                            expect(transformed).to.deep.equal([path.resolve(process.cwd(), './src/lol.js')]);
+                            expect(modulesParsed).to.deep.equal([path.resolve(process.cwd(), './src/lol.js')]);
+                            passed = true;
+                        }
+                    },
+
+                    transform (code, id) {
+                        transformed.push(id);
+                        return `/*transform*/${code}`;
+                    },
+
+                    moduleParsed(modInfo) {
+                        modulesParsed.push(modInfo.id);
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+        });
+
+        it ('should not transform or call moduleParsed for dependencies at time this.load is called', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789`);
+            fs.stub('./src/lol.js', () => `import './subdep'; export default 456`);
+            fs.stub('./src/main.js', () => `import './lol'; export default 123`);
+
+            let transformed = [];
+            let modulesParsed = [];
+            let passed = false;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./lol.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = (await this.load({ ...target, resolveDependencies: true })).code;
+                            expect(transformed).to.deep.equal([path.resolve(process.cwd(), './src/lol.js')]);
+                            expect(modulesParsed).to.deep.equal([path.resolve(process.cwd(), './src/lol.js')]);
+                            passed = true;
+                        }
+                    },
+
+                    transform (code, id) {
+                        transformed.push(id);
+                        return `/*transform*/${code}`;
+                    },
+
+                    moduleParsed(modInfo) {
+                        modulesParsed.push(modInfo.id);
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            expect(transformed.length).to.equal(3);
+            expect(transformed.includes(path.resolve(process.cwd(), './src/main.js'))).to.be.true;
+            expect(transformed.includes(path.resolve(process.cwd(), './src/lol.js'))).to.be.true;
+            expect(transformed.includes(path.resolve(process.cwd(), './src/subdep.js'))).to.be.true;
+            expect(modulesParsed.length).to.equal(3);
+            expect(modulesParsed.includes(path.resolve(process.cwd(), './src/main.js'))).to.be.true;
+            expect(modulesParsed.includes(path.resolve(process.cwd(), './src/lol.js'))).to.be.true;
+            expect(modulesParsed.includes(path.resolve(process.cwd(), './src/subdep.js'))).to.be.true;
+        });
+
+        it ('should be able to emit assets using this.load that are not repeated', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789`);
+            fs.stub('./src/dep.js', () => `import './subdep'; export default 456`);
+            fs.stub('./src/main.js', () => `import './dep'; export default 123`);
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./dep.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = (await this.load({ ...target })).code;
+                        }
+                    },
+
+                    transform (code, id) {
+                        this.emitFile({
+                            type: 'asset',
+                            name: 'asset-' + path.basename(id).replace('.js', ''),
+                            source: id
+                        });
+
+                        return `/*transform*/${code}`;
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output.length).to.equal(4);
+            expect(output.find(o => o.name.startsWith('asset-main'))).not.to.be.undefined;
+            expect(output.find(o => o.name.startsWith('asset-dep'))).not.to.be.undefined;
+            expect(output.find(o => o.name.startsWith('asset-subdep'))).not.to.be.undefined;
+        });
+
+        it ('should support syntheticNamedExports', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789`);
+            fs.stub('./src/dep.js', () => `import './subdep'; export default 456`);
+            fs.stub('./src/main.js', () => `import './dep'; export default 123`);
+
+            let result;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./dep.js', path.resolve(process.cwd(), './src/main.js'));
+                            let modInfo = (await this.load({ ...target, syntheticNamedExports: true }));
+                            result = modInfo.syntheticNamedExports;
+                            
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result).to.be.true;
+        });
+
+        it ('should support dynamicallyImportedIdResolutions', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789`);
+            fs.stub('./src/dep.js', () => `import('abc'); import './subdep'; export default 456`);
+            fs.stub('./src/main.js', () => `export default 123`);
+
+            let resultStatic;
+            let resultDynamic;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./dep.js', path.resolve(process.cwd(), './src/main.js'));
+                            resultStatic = [...(await this.load({ ...target, resolveDependencies: true })).importedIdResolutions];
+                            resultDynamic = [...(await this.load({ ...target, resolveDependencies: true })).dynamicallyImportedIdResolutions];
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(resultStatic.length).to.equal(1);
+            expect(resultStatic).to.deep.equal([
+                {
+                    id: path.resolve(process.cwd(), './src/subdep.js'),
+                    external: false,
+                    meta: {}, 
+                    syntheticNamedExports: false, 
+                    moduleSideEffects: true 
+                }
+            ])
+            expect(resultDynamic.length).to.equal(1);
+            expect(resultDynamic).to.deep.equal([
+                {
+                    id: 'abc',
+                    external: true,
+                    meta: {},
+                    syntheticNamedExports: false,
+                    moduleSideEffects: true
+                }
+            ]);
+        });
+
+        it ('should support meta', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789`);
+            fs.stub('./src/dep.js', () => `import './subdep'; export default 456`);
+            fs.stub('./src/main.js', () => `import './dep'; export default 123`);
+
+            let result;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./dep.js', path.resolve(process.cwd(), './src/main.js'));
+                            let modInfo = (await this.load({ ...target, meta: { hello: true } }));
+                            result = modInfo.meta;
+                            
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result).to.deep.equal({ hello: true });
+        });
+
+        it ('should support meta via importedIdResolutions', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789`);
+            fs.stub('./src/dep.js', () => `import './subdep'; export default 456`);
+            fs.stub('./src/main.js', () => `export default 123`);
+
+            let result;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./dep.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = [...(await this.load({ ...target, resolveDependencies: true })).importedIdResolutions];
+                        } else if (id.indexOf('subdep') > -1) {
+                            return {
+                                id: path.resolve(process.cwd(), './src/subdep.js'),
+                                meta: { hello: 'world' }
+                            }
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result.length).to.equal(1);
+            expect(result).to.deep.equal([
+                {
+                    id: path.resolve(process.cwd(), './src/subdep.js'),
+                    external: false,
+                    meta: { hello: 'world' }, 
+                    syntheticNamedExports: false, 
+                    moduleSideEffects: true 
+                }
+            ])
+        });
+
+        it ('should support external', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789`);
+            fs.stub('./src/dep.js', () => `import 'abc'; import './subdep'; export default 456`);
+            fs.stub('./src/main.js', () => `export default 123`);
+
+            let result;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./dep.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = [...(await this.load({ ...target, resolveDependencies: true })).importedIdResolutions];
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result.length).to.equal(2);
+            expect(result).to.deep.equal([
+                {
+                    id: 'abc',
+                    external: true,
+                    meta: {},
+                    syntheticNamedExports: false,
+                    moduleSideEffects: true
+                },
+                {
+                    id: path.resolve(process.cwd(), './src/subdep.js'),
+                    external: false,
+                    meta: {}, 
+                    syntheticNamedExports: false, 
+                    moduleSideEffects: true 
+                }
+            ])
+        });
+
+        it ('should work inside other hooks', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789`);
+            fs.stub('./src/dep.js', () => `import './subdep'; export default 456`);
+            fs.stub('./src/main.js', () => `export default 123`);
+
+            let result;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async load (id) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./dep.js', path.resolve(process.cwd(), './src/main.js'));
+                            result = [...(await this.load({ ...target, resolveDependencies: true })).importedIdResolutions];
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result.length).to.equal(1);
+            expect(result).to.deep.equal([
+                {
+                    id: path.resolve(process.cwd(), './src/subdep.js'),
+                    external: false,
+                    meta: {}, 
+                    syntheticNamedExports: false, 
+                    moduleSideEffects: true 
+                }
+            ])
+        });
+
+        it ('should support demo documentation scenario A', async () => {
+            fs.stub('./src/subdep.js', () => `/* use proxy */ export default 789; export var msg = 'hello';`);
+            fs.stub('./src/dep.js', () => `import Value, { msg } from './subdep'; export default Value + '-' + msg;`);
+            fs.stub('./src/main.js', () => `import Message from './dep'; export default Message`);
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId(source, importer, options) {
+                        if (importer && importer.endsWith('?proxy')) {
+                            return null;
+                        }
+
+                        const resolution = await this.resolve(source, importer, { skipSelf: true, ...options });
+                        if (resolution && !resolution.external) {
+                            const moduleInfo = await this.load(resolution);
+                            if (moduleInfo.code.includes('/* use proxy */')) {
+                                return `${resolution.id}?proxy`;
+                            }
+                        }
+
+                        return resolution;
+                    },
+                    load(id) {
+                        if (id.endsWith('?proxy')) {
+                            const importee = id.slice(0, -'?proxy'.length);
+
+                            let code = `console.log('proxy for ${JSON.stringify(importee)}'); export * from ${JSON.stringify(
+                                importee
+                            )};`;
+
+                            if (this.getModuleInfo(importee).hasDefaultExport) {
+                                code += `export { default } from ${JSON.stringify(importee)};`;
+                            }
+                            
+                            return code;
+                        }
+
+                        return null;
+                    }
+                }]
+            });
+
+            let { output } =  await bundle.generate({ format: 'esm' });
+            let result = await Evaluator.init('esm', 'main.js', output);
+            expect(result.exports.default).to.equal('789-hello');
+
+            let logs = await Evaluator.logs();
+            expect(logs.length).to.equal(1);
+            expect(logs[0]).to.equal('proxy for "' + path.resolve(process.cwd(), './src/subdep.js') + '"');
+        })
+
+        it ('should support demo documentation scenario B', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789; export var msg = 'hello';`);
+            fs.stub('./src/dep.js', () => `import Value, { msg } from './subdep'; export default Value + '-' + msg;`);
+            fs.stub('./src/main.js', () => `import('./dep');`);
+
+            const DYNAMIC_IMPORT_PROXY_PREFIX = '\0dynamic-import:';
+
+            let bundle = await rollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveDynamicImport(specifier, importer) {
+                        if (!(typeof specifier === 'string')) return;
+                        const resolved = await this.resolve(specifier, importer);
+                        if (resolved && !resolved.external) {
+                            this.load(resolved);
+                            return `${DYNAMIC_IMPORT_PROXY_PREFIX}${resolved.id}`;
+                        }
+                    },
+                    async load(id) {
+                        if (!id.startsWith(DYNAMIC_IMPORT_PROXY_PREFIX)) return null;
+
+                        const actualId = id.slice(DYNAMIC_IMPORT_PROXY_PREFIX.length);
+                        const moduleInfoPromises = [this.load({ id: actualId, resolveDependencies: true })];
+                        const dependencies = new Set([actualId]);
+
+                        for await (const { importedIdResolutions } of moduleInfoPromises) {
+                            for (const resolved of importedIdResolutions) {
+                                if (!dependencies.has(resolved.id)) {
+                                    dependencies.add(resolved.id);
+                                    moduleInfoPromises.push(this.load({ ...resolved, resolveDependencies: true }));
+                                }
+                            }
+                        }
+
+                        let code = `console.log('${JSON.stringify([...dependencies].join(','))}'); 
+                        export * from ${JSON.stringify(actualId)};`;
+
+                        if (this.getModuleInfo(actualId).hasDefaultExport) {
+                            code += `export { default } from ${JSON.stringify(actualId)};`;
+                        }
+
+                        return code;
+                    }
+                }]
+            });
+
+            let { output } =  await bundle.generate({ format: 'esm' });
+            await Evaluator.init('esm', 'main.js', output);
+            let logs = await Evaluator.logs(1);
+            expect(logs[0]).to.equal('"' + [
+                path.resolve(process.cwd(), './src/dep.js'),
+                path.resolve(process.cwd(), './src/subdep.js')
+            ].join(',') + '"')
+        })
+       
+    });
    
 
 });

@@ -321,7 +321,9 @@ describe ('API: Nollup Hooks', () => {
             bundle.invalidate('./src/dep.js');
             let { changes } = await bundle.generate({ format: 'esm' });
             await Evaluator.call('applyChange', changes[0]);
+
             await new Promise(resolve => setTimeout(resolve, 1000));
+
             let log = await Evaluator.logs(1);
             expect(log[0]).to.equal(`{"id":1,"default":456}`);
         });
