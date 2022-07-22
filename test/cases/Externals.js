@@ -82,7 +82,7 @@ let EXTERNAL_MODULES = {
         'DefaultFallbackModule': {
             prop: true
         },
-        '_IIFE_Special_Characters_': {
+        'IIFESpecial__CharactersTest$__': {
             NamedExport1: 123,
             NamedExport2: 456
         },
@@ -387,7 +387,7 @@ describe('External', () => {
     describe('IIFE Name Conversion', () => {
         it ('should convert special characters to underscore', async () => {
             fs.stub('./src/main.js', () => `
-                import { NamedExport1, NamedExport2 } from "+IIFE-Special-Characters$"; 
+                import { NamedExport1, NamedExport2 } from "-iIFE-special+_Characters-Test$)("; 
                 if (NamedExport1 === 123 && NamedExport2 === 456) { 
                     self.result = true; 
                 }
@@ -395,7 +395,7 @@ describe('External', () => {
 
             let bundle = await nollup({
                 input: './src/main.js',
-                external: ['+IIFE-Special-Characters$']
+                external: ['-iIFE-special+_Characters-Test$)(']
             });
 
             let { output } = await bundle.generate({ format: 'iife' });
@@ -406,18 +406,20 @@ describe('External', () => {
 
         it ('should use global object to determine variable name', async () => {
             fs.stub('./src/main.js', () => `
-                import { NamedExport1, NamedExport2 } from "+IIFE-Special-Characters$"; 
+                import { NamedExport1, NamedExport2 } from "-iIFE-special+_Characters-Test$)("; 
                 if (NamedExport1 === 123 && NamedExport2 === 456) { 
-                    self.result = true; 
+                    if (__globalModule.NamedExport1 && __globalModule.NamedExport2) {
+                        self.result = true; 
+                    }
                 }
             `);
 
             let bundle = await nollup({
                 input: './src/main.js',
-                external: ['+IIFE-Special-Characters$'],
+                external: ['-iIFE-special+_Characters-Test$)('],
                 output: {
                     globals: {
-                        '+IIFE-Special-Characters$': '__globalModule'
+                        '-iIFE-special+_Characters-Test$)(': '__globalModule'
                     }
                 }
             });
