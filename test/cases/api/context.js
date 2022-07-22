@@ -2764,6 +2764,31 @@ describe ('API: Plugin Context', () => {
             expect(result).to.deep.equal({ hello: true });
         });
 
+        it ('should not override meta if not is provided', async () => {
+            fs.stub('./src/subdep.js', () => `export default 789`);
+            fs.stub('./src/dep.js', () => `import './subdep'; export default 456`);
+            fs.stub('./src/main.js', () => `import './dep'; export default 123`);
+
+            let result;
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async resolveId (id, parent) {
+                        if (id.indexOf('main') > - 1) {
+                            let target = await this.resolve('./dep.js', path.resolve(process.cwd(), './src/main.js'));
+                            (await this.load({ ...target, meta: { hello: true } }));
+                            let modInfo = (await this.load({ ...target, meta: undefined }));
+                            result = modInfo.meta;
+                            
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(result).to.deep.equal({ hello: true });
+        });
+
         it ('should support meta via importedIdResolutions', async () => {
             fs.stub('./src/subdep.js', () => `export default 789`);
             fs.stub('./src/dep.js', () => `import './subdep'; export default 456`);
@@ -2928,7 +2953,7 @@ describe ('API: Plugin Context', () => {
 
             const DYNAMIC_IMPORT_PROXY_PREFIX = '\0dynamic-import:';
 
-            let bundle = await rollup({
+            let bundle = await nollup({
                 input: './src/main.js',
                 plugins: [{
                     async resolveDynamicImport(specifier, importer) {
