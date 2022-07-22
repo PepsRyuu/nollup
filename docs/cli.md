@@ -27,6 +27,7 @@ The following flags can be passed into Nollup CLI. You can find a full descripti
 * ```--key [file]```
 * ```--cert [file]```
 * ```--live-bindings [mode]```
+* ```--configPlugin [plugin]```
 
 ## .nolluprc
 

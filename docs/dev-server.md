@@ -40,6 +40,7 @@ The following options can be passed into Nollup Dev Server. You can find a full 
 * ```String key```
 * ```String cert```
 * ```String|Boolean liveBindings```
+* ```String|String[] configPlugin```
 
 ## .nolluprc
 
