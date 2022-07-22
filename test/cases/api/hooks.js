@@ -431,6 +431,7 @@ describe ('API: Plugin Hooks', () => {
 
     describe ('load', () => {
         it ('should receive an id string for the module being loaded', async () => {
+            fs.stub('./src/lol.js', () => 'export default 123;');
             fs.stub('./src/main.js', () => 'import "./lol.js";');
             let passed = false;
 
@@ -454,6 +455,7 @@ describe ('API: Plugin Hooks', () => {
         });
 
         it ('should return a string with code', async () => {
+            fs.stub('./src/lol.js', () => 'export default 123;');
             fs.stub('./src/main.js', () => 'import "./lol.js";');
             let passed = false;
 
@@ -474,6 +476,7 @@ describe ('API: Plugin Hooks', () => {
         });
 
         it ('should return null implying to defer to another loader', async () => {
+            fs.stub('./src/lol.js', () => 'export default 123;');
             fs.stub('./src/main.js', () => 'import "./lol.js";');
 
             let bundle = await nollup({
@@ -504,6 +507,7 @@ describe ('API: Plugin Hooks', () => {
 
 
         it ('should be allowed to return a promise following any return', async () => {
+            fs.stub('./src/lol.js', () => 'export default 123;');
             fs.stub('./src/main.js', () => 'import "./lol.js";');
 
             // TODO: Doesn't work in Rollup
@@ -528,6 +532,7 @@ describe ('API: Plugin Hooks', () => {
         });
 
         it ('should be allowed to return an object with code and map', async () => {
+            fs.stub('./src/lol.js', () => 'export default 123;');
             fs.stub('./src/main.js', () => 'import "./lol.js";');
 
             // TODO: Doesn't work in Rollup
@@ -1698,7 +1703,7 @@ describe ('API: Plugin Hooks', () => {
                 input: './src/main.js',
                 plugins: [{
                     options (opts) {
-                        expect(this.meta.rollupVersion).to.equal('2.47');
+                        expect(this.meta.rollupVersion).to.equal('2.70');
                         passed = true;
                     }
                 }]
@@ -3292,7 +3297,8 @@ describe ('API: Plugin Hooks', () => {
             expect(passed2).to.be.true;
             fs.reset();
         });
-        it ('should execute again even if module has not changed', async () => {
+
+        it ('should not execute again if module has not changed', async () => {
             fs.stub('./src/main.js', () => 'export default 123');
             let mcount = 0;
             let tcount = 0;
@@ -3315,8 +3321,9 @@ describe ('API: Plugin Hooks', () => {
             expect(mcount).to.equal(1);
 
             await bundle.generate({ format: 'esm' });
+
             expect(tcount).to.equal(1);
-            expect(mcount).to.equal(2);
+            expect(mcount).to.equal(1);
 
             fs.reset();
         });

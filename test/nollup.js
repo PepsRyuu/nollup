@@ -55,6 +55,10 @@ let fs = {
         return fs_impl.readFileSync(file, encoding);
     },
 
+    existsSync: function(file) {
+        return Boolean(this._stubs[file]) || fs_impl.existsSync(file);
+    },
+
     reset: function () {
         this._stubs = {};
     },
@@ -62,6 +66,26 @@ let fs = {
     stub: function (file, callback) {
         let fullPath = path.resolve(process.cwd(), file);
         this._stubs[fullPath] = callback;
+    },
+
+    promises: {
+        lstat: async function (file) {
+            return {
+                isSymbolicLink: () => false,
+                isFile: () => true
+            }
+        },
+
+        realpath: async function (file) {
+        },
+
+        readdir: async function (directory) {
+            return fs.readdirSync(directory);
+        },
+
+        readFile: async function (file, encoding) {
+            return fs.readFileSync(file, encoding);
+        }
     }
 }
 

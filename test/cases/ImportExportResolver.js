@@ -2,6 +2,7 @@ let ImportExportResolver = require('../../lib/impl/NollupImportExportResolver');
 let CodeGenerator = require('../../lib/impl/NollupCodeGenerator');
 let PluginContainer = require('../../lib/impl/PluginContainer');
 let RollupConfigContainer = require('../../lib/impl/RollupConfigContainer');
+let { resolvePath } = require('../../lib/impl/utils');
 let { expect } = require('../nollup');
 let path = require('path');
 
@@ -468,6 +469,13 @@ let tests = [{
     }
 }];
 
+function resolveId(id) {
+    return {
+        id: resolvePath(id, process.cwd() + '/__entry'),
+        external: false
+    }
+}
+
 describe ('ImportExportResolver', () => {
     tests.forEach(test => {
         it(test.input, async () => {
@@ -480,12 +488,13 @@ describe ('ImportExportResolver', () => {
                 ...test.output
             };
 
-            let config = new RollupConfigContainer({ input: '', plugins: [] });
+            let config = new RollupConfigContainer({ input: '', plugins: [{ resolveId }] });
             let plugins = new PluginContainer(config, {});
             plugins.start(); 
             plugins.start();
 
-            let res = await ImportExportResolver(plugins, test.input, process.cwd() + '/__entry', new CodeGenerator());
+            let bindings = await ImportExportResolver.getBindings(test.input);
+            let res = await ImportExportResolver.transformBindings(plugins, test.input, bindings, process.cwd() + '/__entry', new CodeGenerator());
             let to_check = {};
             for (let key in test.output) {
                 to_check[key] = res[key];
@@ -805,7 +814,7 @@ describe('ImportExportResolver Externals (ESM)', () => {
         it(test.input, async () => {
             let config = new RollupConfigContainer({
                 ...test.config, 
-                plugins: []
+                plugins: [{ resolveId }]
             });
 
             config.setOutputOptions({
@@ -817,7 +826,8 @@ describe('ImportExportResolver Externals (ESM)', () => {
             plugins.start(); 
             plugins.start();
 
-            let res = await ImportExportResolver(plugins, test.input, process.cwd() + '/__entry', new CodeGenerator());
+            let bindings = await ImportExportResolver.getBindings(test.input);
+            let res = await ImportExportResolver.transformBindings(plugins, test.input, bindings, process.cwd() + '/__entry', new CodeGenerator());
             let to_check = {}; 
 
             for (let key in test.output) {
@@ -838,30 +848,33 @@ describe('ImportExportResolver Externals (ESM)', () => {
     })
 });
 
+async function resolve (code, liveBindings) {
+    let config = new RollupConfigContainer({ plugins: [{ resolveId }] });
+    let plugins = new PluginContainer(config, {});
+    plugins.start();
+    let curr = process.cwd() + '/_entry';
+    let bindings = await ImportExportResolver.getBindings(code.join('\n'));
+    let res = await ImportExportResolver.transformBindings(plugins, code.join('\n'), bindings, curr, new CodeGenerator({ liveBindings }), liveBindings);
+   
+    return res.code;
+}
+
 describe('ImportExportResolver: misc transform issues', () => {
     it ('should not fail on null nodes', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, `
-            import Hello from './World';
-            let a = [1, 2, , 4];
-        `,  process.cwd() + '/__entry', new CodeGenerator());
-        expect(res.code.indexOf('[1, 2, , 4]') > -1).to.be.true;
+        let res = await resolve([
+            `import Hello from './World';`,
+            `let a = [1, 2, , 4];`
+        ]);
+        expect(res.indexOf('[1, 2, , 4]') > -1).to.be.true;
     });
 
     it ('should properly blank two imports without semi-colons', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'import Hello from "hello"',
             'import World from "world"',
             'console.log(Hello, World)'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             '                         ',
             '                         ',
             'console.log(Hello, World)'
@@ -869,15 +882,11 @@ describe('ImportExportResolver: misc transform issues', () => {
     });
 
     it ('should properly blank two imports on the same line', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'import Hello from "hello";import World from "world"',
             'console.log(Hello, World)'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             '                                                   ',
             'console.log(Hello, World)'
         ].join('\n'));
@@ -885,11 +894,7 @@ describe('ImportExportResolver: misc transform issues', () => {
 
 
     it ('should properly blank imports that span multiple lines', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'import {',
             '   Hello',
             '} from "hello";',
@@ -897,8 +902,8 @@ describe('ImportExportResolver: misc transform issues', () => {
             '   World',
             '} from "world";',
             'console.log(Hello, World)'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             '        ',
             '        ',
             '               ',
@@ -910,17 +915,13 @@ describe('ImportExportResolver: misc transform issues', () => {
     });
 
     it ('should properly blank export {} blocks', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'var Hello, World, Foo, Bar;',
             'export { Hello, World }',
             'export { Foo, Bar };',
             'console.log(Hello, World)'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             'var Hello, World, Foo, Bar;',
             '__e__( { Hello: function () { return Hello }, World: function () { return World } });',
             '__e__( { Foo: function () { return Foo }, Bar: function () { return Bar } });',
@@ -929,19 +930,15 @@ describe('ImportExportResolver: misc transform issues', () => {
     });
 
     it ('should properly blank export {} blocks over multiple lines with padding', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'var Hello, World, Foo, Bar;',
             'export {                   ',
             '    Hello,                 ',
             '    World                  ',
             '}                          ',
             'console.log(Hello, World)'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             'var Hello, World, Foo, Bar;',
             '__e__( {                   ',
             '    Hello: function () { return Hello },                 ',
@@ -954,32 +951,24 @@ describe('ImportExportResolver: misc transform issues', () => {
 
 describe ('ImportExportResolver: Export Late Init Live Bindings', () => {
     it ('should only export when export is assigned for declarations', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'export let hello;',
             'hello = 123;'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             'let hello;; ',
             'hello = 123;;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
         ].join('\n'));
     });
 
     it ('should work for multiple exports', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'export let hello;',
             'hello = 123;',
             'export let world;',
             'world = 456;'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             'let hello;; ',
             'hello = 123;;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
             'let world;; ',
@@ -988,46 +977,34 @@ describe ('ImportExportResolver: Export Late Init Live Bindings', () => {
     });
 
     it ('should support inline assignments', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'export let hello;',
             '(function () {})(hello || (hello = 123))'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             'let hello;; ',
             '(function () {})(hello || (hello = 123));__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
         ].join('\n'));
     });
 
     it ('should support inline assignments 2', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'export let hello;',
             '(function () {})(hello || (hello = 123));'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             'let hello;; ',
             '(function () {})(hello || (hello = 123));;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
         ].join('\n'));
     });
 
     it ('should not fail when found inside shadowing function expression', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'export let hello;',
             '(function (hello) { hello = 123 })();',
             'hello = 123'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             'let hello;; ',
             '(function (hello) { hello = 123 })();;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
             'hello = 123;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
@@ -1035,19 +1012,15 @@ describe ('ImportExportResolver: Export Late Init Live Bindings', () => {
     });
 
     it ('should not fail when found inside shadowing function expression for multiple exports', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'export let hello;',
             'export let world;',
             '(function (hello) { hello = 123 })();',
             '(function (world) { world = 123 })();',
             'hello = 123',
             'world = 456'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             'let hello;; ',
             'let world;; ',
             '(function (hello) { hello = 123 })();;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
@@ -1058,16 +1031,12 @@ describe ('ImportExportResolver: Export Late Init Live Bindings', () => {
     });
 
     it ('should not fail when exported after shadowed function statement', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'function print (hello) { hello = 123 }',
             'export let hello;',
             'hello = 123'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             'function print (hello) { hello = 123 };__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
             'let hello;; ',
             'hello = 123;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
@@ -1075,16 +1044,12 @@ describe ('ImportExportResolver: Export Late Init Live Bindings', () => {
     });
 
     it ('should not fail when exported after shadowed arrow expression', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             '(hello => { hello = 123 })();',
             'export let hello;',
             'hello = 123'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             '(hello => { hello = 123 })();;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });',
             'let hello;; ',
             'hello = 123;__e__(\'hello\', function () { return typeof hello !== \'undefined\' && hello });'
@@ -1092,11 +1057,7 @@ describe ('ImportExportResolver: Export Late Init Live Bindings', () => {
     });
 
     it ('should not fail when shadowed in nested functions', async () => {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-
-        let res = await ImportExportResolver(plugins, [
+        let res = await resolve([
             'function parent (hello) {',
             '   function nested (hello) {',
             '       hello = 123;',
@@ -1104,8 +1065,8 @@ describe ('ImportExportResolver: Export Late Init Live Bindings', () => {
             '}',
             'export let hello;',
             'hello = 123'
-        ].join('\n'), process.cwd() + '/_entry', new CodeGenerator());
-        expect(res.code).to.equal([
+        ]);
+        expect(res).to.equal([
             'function parent (hello) {',
             '   function nested (hello) {',
             '       hello = 123;',
@@ -1118,20 +1079,12 @@ describe ('ImportExportResolver: Export Late Init Live Bindings', () => {
 });
 
 describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
-    async function resolve (code) {
-        let config = new RollupConfigContainer({ plugins: [] });
-        let plugins = new PluginContainer(config, {});
-        plugins.start();
-        let curr = process.cwd() + '/_entry';
-        let res = await ImportExportResolver(plugins, code.join('\n'), curr, new CodeGenerator({ liveBindings: 'reference' }), 'reference');
-        return res.code;
-    }
 
     it ('should change import usage to binding variable', async () => {
         let res = await resolve([
             'import MyVar1 from "./myfile";',
             'console.log(MyVar1);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                              ',
             'console.log(__i__.MyVar1);'
@@ -1142,7 +1095,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
         let res = await resolve([
             'import MyDefault, { MyVar1, MyVar2 } from "./myfile";',
             'console.log(MyDefault, MyVar1, MyVar2);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                                     ',
             'console.log(__i__.MyDefault, __i__.MyVar1, __i__.MyVar2);'
@@ -1153,7 +1106,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
         let res = await resolve([
             'import MyVar1 from "./myfile";',
             'console.log(MyVar1.abc);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                              ',
             'console.log(__i__.MyVar1.abc);'
@@ -1164,7 +1117,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
         let res = await resolve([
             'import MyVar1 from "./myfile";',
             'console.log(MyVar1["abc"]);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                              ',
             'console.log(__i__.MyVar1["abc"]);'
@@ -1176,7 +1129,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             'import MyVar1 from "./myfile";',
             'let abc = MyVar1;',
             'let [ def ] = MyVar1;'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                              ',
             'let abc = __i__.MyVar1;',
@@ -1191,7 +1144,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault, MyVar);',
             '}',
             'console.log(MyDefault);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                            ',
             'function MyFunction (MyDefault) {',
@@ -1208,7 +1161,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault, MyVar);',
             '}',
             'console.log(MyDefault);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                            ',
             'function MyFunction ([MyDefault]) {',
@@ -1226,7 +1179,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault, MyVar);',
             '}',
             'console.log(MyDefault);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                            ',
             'function MyFunction ({MyDefault}) {',
@@ -1244,7 +1197,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault, MyVar);',
             '}',
             'console.log(MyDefault);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                            ',
             'let MyFunction = ([MyDefault]) => {',
@@ -1262,7 +1215,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    function MyDefault() {}',
             '}',
             'console.log(MyDefault);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1283,7 +1236,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    }',
             '}',
             'console.log(MyDefault);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1306,7 +1259,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '       console.log(MyDefault);',
             '    }',
             '}'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1325,7 +1278,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault, MyVar);',
             '}',
             'console.log(MyDefault);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                            ',
             'var MyFunction = function (MyDefault) {',
@@ -1342,7 +1295,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault, MyVar);',
             '}',
             'console.log(MyDefault);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                            ',
             'var MyFunction = (MyDefault) => {',
@@ -1364,7 +1317,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    }',
             '    console.log(MyDefault);',
             '}' 
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'console.log(__i__.MyDefault);',
@@ -1388,7 +1341,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault);',
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'console.log(__i__.MyDefault);',
@@ -1410,7 +1363,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '        console.log(MyDefault);',
             '    }',
             '}'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1433,7 +1386,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '        console.log(MyDefault);',
             '    }',
             '}'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1456,7 +1409,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '        console.log(MyDefault);',
             '    }',
             '}'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1476,7 +1429,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             'var obj2 = { Other: MyDefault }',
             'var obj3 = { MyDefault: MyDefault }',
             'var obj4 = { MyDefault: Other }'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'var obj1 = { MyDefault: __i__.MyDefault }',
@@ -1491,7 +1444,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             'import MyDefault, { Other, Another } from "./myfile";',
             'export { MyDefault as MyDefault, Other, Another as Something }',
             'export{ Other as OtherExport }'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                                     ',
             '__e__( { MyDefault: function () { return __i__.MyDefault }, Other: function () { return __i__.Other }, Something: function () { return __i__.Another } });',
@@ -1504,7 +1457,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             'import MyDefault from "./myfile";',
             'var obj = { MyDefault: 123 }',
             'console.log(obj.MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'var obj = { MyDefault: 123 }',
@@ -1516,7 +1469,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
         let res = await resolve([
             'import MyDefault from "./myfile";',
             'var obj = { [MyDefault]: 123 }',
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'var obj = { [__i__.MyDefault]: 123 }',
@@ -1531,7 +1484,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault);',
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1550,7 +1503,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault);',
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1569,7 +1522,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault);',
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1588,7 +1541,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault);',
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1607,7 +1560,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault);',
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1626,7 +1579,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault, MyVar);',
             '}',
             'console.log(MyDefault, MyVar)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                            ',
             'function MyFunction () {',
@@ -1645,7 +1598,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault);',
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1660,7 +1613,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
         let res = await resolve([
             'import MyDefault from "./myfile";',
             'let fn = () => MyDefault(123);'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'let fn = () => __i__.MyDefault(123);'
@@ -1676,7 +1629,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    }', 
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1699,7 +1652,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    }',
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1723,7 +1676,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    }', 
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1746,7 +1699,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    }', 
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1766,7 +1719,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    console.log(MyDefault);',
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction (abc = __i__.MyDefault) {',
@@ -1786,7 +1739,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    }',
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1809,7 +1762,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '    }',
             '}',
             'console.log(MyDefault)'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function MyFunction () {',
@@ -1827,7 +1780,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             'import MyDefault from "./myfile";',
             'var obj = { ...MyDefault };',
             'var arr = [ ...MyDefault ];'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'var obj = { ...__i__.MyDefault };',
@@ -1841,7 +1794,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             'function Hello (...MyDefault) {',
             '    console.log(MyDefault);',
             '}'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                 ',
             'function Hello (...MyDefault) {',
@@ -1858,7 +1811,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '        console.log(MyDefault, MyVar);',
             '    }',
             '}'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                            ',
             'class Hello {',
@@ -1877,7 +1830,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '        console.log(MyDefault, MyVar);',
             '    }',
             '}'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                            ',
             'class Hello {',
@@ -1896,7 +1849,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '        console.log(MyDefault, MyVar);',
             '    }',
             '}'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                            ',
             'class Hello {',
@@ -1915,7 +1868,7 @@ describe ('ImportExportResolver: Import Live Bindings (reference)', () => {
             '        console.log(MyDefault, MyVar);',
             '    }',
             '}'
-        ]);
+        ], 'reference');
         expect(res).to.equal([
             '                                            ',
             'var Hello = {',

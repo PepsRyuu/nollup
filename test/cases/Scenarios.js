@@ -1,4 +1,4 @@
-let { expect, fs, nollup } = require('../nollup');
+let { expect, fs, nollup, rollup } = require('../nollup');
 let Evaluator = require('../utils/evaluator');
 let path = require('path');
 
