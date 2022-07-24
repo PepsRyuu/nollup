@@ -513,7 +513,7 @@ describe ('Options: output.format', () => {
 
     describe('iife', () => {
         it ('should use externals from window', async () => {
-            fs.stub('./src/main.js', () => 'import $ from "jquery";');
+            fs.stub('./src/main.js', () => 'import jquery from "jquery";');
         
             let bundle = await nollup({
                 input: './src/main.js',
@@ -526,7 +526,7 @@ describe ('Options: output.format', () => {
 
             expect(output[0].code.match(/import (.*?) from 'jquery'/)).to.be.null;
             expect(output[0].code.indexOf(`var __nollup__external__jquery__default__ = self.jquery && self.jquery.hasOwnProperty('default')? self.jquery.default : self.jquery;`) > -1).to.be.true;
-            expect(output[0].code.indexOf(`var $ = __nollup__external__jquery__default__;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var jquery = __nollup__external__jquery__default__;`) > -1).to.be.true;
             fs.reset();
         });
 
@@ -553,7 +553,7 @@ describe ('Options: output.format', () => {
         });
 
         it ('should use externals from import for multiple files and duplicate imports', async () => {
-            fs.stub('./src/other.js', () => `import { query } from "jquery"; import _ from 'lodash';`)
+            fs.stub('./src/other.js', () => `import { query } from "jquery"; import lodash from 'lodash';`)
             fs.stub('./src/main.js', () => 'import "./other"; import { ajax } from "jquery";');
         
             let bundle = await nollup({
@@ -570,7 +570,7 @@ describe ('Options: output.format', () => {
             expect(output[0].code.indexOf(`var __nollup__external__lodash__default__ = self.lodash && self.lodash.hasOwnProperty('default')? self.lodash.default : self.lodash;`) > -1).to.be.true;
             expect(output[0].code.indexOf(`var ajax = __nollup__external__jquery__ajax__;`) > -1).to.be.true;
             expect(output[0].code.indexOf(`var query = __nollup__external__jquery__query__;`) > -1).to.be.true;
-            expect(output[0].code.indexOf(`var _ = __nollup__external__lodash__default__;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var lodash = __nollup__external__lodash__default__;`) > -1).to.be.true;
             fs.reset();
         });
 
@@ -603,8 +603,8 @@ describe ('Options: output.format', () => {
                 format: 'iife'
             });
 
-            expect(output[0].code.indexOf(`var __nollup__external__jquery__default__ = self.jquery && self.jquery.hasOwnProperty('default')? self.jquery.default : self.jquery;`) > -1).to.be.true;
-            expect(output[0].code.indexOf(`var __nollup__external__jquery__ = self.jquery;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__default__ = self.$ && self.$.hasOwnProperty('default')? self.$.default : self.$;`) > -1).to.be.true;
+            expect(output[0].code.indexOf(`var __nollup__external__jquery__ = self.$;`) > -1).to.be.true;
             expect(output[0].code.indexOf('var $ = __nollup__external__jquery__default__;') > -1).to.be.true;
             expect(output[0].code.indexOf('var rest = __nollup__external__jquery__;') > -1).to.be.true;
             fs.reset();

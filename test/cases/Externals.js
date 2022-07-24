@@ -67,7 +67,7 @@ let EXTERNAL_MODULES = {
         'readline': {
             clearLine: true
         },
-        'DefaultModule': {
+        'Default': {
             default: { 
                 prop: true
             }
@@ -84,6 +84,12 @@ let EXTERNAL_MODULES = {
         },
         'IIFESpecial__CharactersTest$__': {
             NamedExport1: 123,
+            NamedExport2: 456
+        },
+        'MyLibrary': {
+            NamedExport1: 123,
+        },
+        'MyLibraryOther': {
             NamedExport2: 456
         },
         '__globalModule': {
@@ -287,7 +293,13 @@ describe('External', () => {
                     external: ['DefaultModule']
                 });
 
-                let { output } = await bundle.generate({ format });
+                let { output } = await bundle.generate({ 
+                    format,
+                    globals: {
+                        'DefaultModule': 'Default'
+                    }
+                });
+
                 let { globals } = await Evaluator.init(format, 'main.js', getModules(output, format), getGlobalScope({ }, format));
                 expect(globals.result).to.equal(true);
                 fs.reset();
@@ -417,11 +429,30 @@ describe('External', () => {
             let bundle = await nollup({
                 input: './src/main.js',
                 external: ['-iIFE-special+_Characters-Test$)('],
-                output: {
-                    globals: {
-                        '-iIFE-special+_Characters-Test$)(': '__globalModule'
-                    }
+            });
+
+            let { output } = await bundle.generate({ 
+                format: 'iife',  
+                globals: {
+                    '-iIFE-special+_Characters-Test$)(': '__globalModule'
                 }
+            });
+            let { globals } = await Evaluator.init('iife', 'main.js', output, getGlobalScope({ }, 'iife'));
+            expect(globals.result).to.equal(true);
+            fs.reset();
+        });
+
+        it ('should use the default variable name as the name of the import', async () => {
+            fs.stub('./src/main.js', () => `
+                import MyLibrary from "my-library"; 
+                import MyLibraryOther from "my-library-other";
+                if (MyLibrary.NamedExport1 === 123 && MyLibraryOther.NamedExport2 === 456) { 
+                    self.result = true; 
+                }
+            `);
+
+            let bundle = await nollup({
+                input: './src/main.js',
             });
 
             let { output } = await bundle.generate({ format: 'iife' });

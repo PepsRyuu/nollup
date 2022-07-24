@@ -37,6 +37,6 @@
     "mocha-istanbul-ui": "^0.4.1",
     "proxyquire": "^2.0.1",
     "requirejs": "^2.3.6",
-    "rollup": "^2.75.5"
+    "rollup": "^2.77.0"
   }
 }
