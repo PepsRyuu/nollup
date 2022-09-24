@@ -3328,4 +3328,651 @@ describe ('API: Plugin Hooks', () => {
             fs.reset();
         });
     });
+
+    describe('Plugin Object Hooks', () => {
+        it('should support async hooks with objects', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let passed = false;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId: {
+                        handler(id) {
+                            expect(id.includes('main.js')).to.be.true;
+                        }
+                    },
+                    transform: {
+                        handler(code, id) {
+                            expect(code).to.equal('export default 123');
+                            expect(id.includes('main.js')).to.be.true;   
+                        }
+                    },
+                    generateBundle: {
+                        handler() {
+                            passed = true;
+                        }
+                    }
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(passed).to.be.true;
+            fs.reset();
+        });
+
+        it('should support sync hooks with objects', async () => {
+            fs.stub('./src/main.js', () => 'export default import.meta.value');
+            let ref;
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform (code) {
+                        ref = this.emitFile({
+                            type: 'asset',
+                            name: 'style.css',
+                            source: 'body {}'
+                        });
+
+                        return `
+                            console.log(import.meta.ROLLUP_FILE_URL_${ref});
+                            ${code}
+                        `;
+                    },
+                    resolveFileUrl: {
+                        handler(details) {
+                            return `(function () { return "${details.fileName}"})()`;
+                        }
+                    },
+                    resolveImportMeta: {
+                        handler (property) {
+                            if (property === 'value') {
+                                return '12345';
+                            }
+                        }
+                    }
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm',  assetFileNames: '[name].lol.[ext]'        });
+            let main = output.find(o => o.fileName === 'main.js');
+            expect(main.code.indexOf('(function () { return "style.lol.css"})()') > -1).to.be.true;
+            expect(main.code.indexOf('12345') > -1).to.be.true;
+            fs.reset();
+        });
+
+        it('should execute async first plugins in "pre" order first before other plugins', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let order = [];
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId: {
+                        order: 'pre',
+                        handler(id) {
+                            order.push(1);
+                        }
+                    },
+                }, {
+                    resolveId: {
+                        handler(id) {
+                            order.push(2);
+                        }
+                    },
+                }, {
+                    resolveId: {
+                        order: 'post',
+                        handler(id) {
+                            order.push(3);
+                        }
+                    },
+                }, {
+                    resolveId(id) {
+                        order.push(4);
+                    },
+                }, {
+                    resolveId: {
+                        order: 'pre',
+                        handler(id) {
+                            order.push(5);
+                        }
+                    },
+                }, {
+                    resolveId: {
+                        order: 'pre',
+                        handler(id) {
+                            order.push(6);
+                        }
+                    },
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(order).to.deep.equal([1,5,6,2,4,3]);
+            fs.reset();
+        });
+
+        it('should execute async first plugins in "post" order after other plugins', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let order = [];
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveId: {
+                        order: 'post',
+                        handler(id) {
+                            order.push(1);
+                        }
+                    },
+                }, {
+                    resolveId: {
+                        handler(id) {
+                            order.push(2);
+                        }
+                    },
+                }, {
+                    resolveId: {
+                        order: 'pre',
+                        handler(id) {
+                            order.push(3);
+                        }
+                    },
+                }, {
+                    resolveId(id) {
+                        order.push(4);
+                    },
+                }, {
+                    resolveId: {
+                        order: 'post',
+                        handler(id) {
+                            order.push(5);
+                        }
+                    },
+                }, {
+                    resolveId: {
+                        order: 'post',
+                        handler(id) {
+                            order.push(6);
+                        }
+                    },
+                }]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(order).to.deep.equal([3,2,4,1,5,6]);
+            fs.reset();
+        });
+
+        it('should execute async sequential hooks in "pre" order after other plugins', async () => {
+            fs.stub('./src/main.js', () => 'export default window.a0');
+            let order = [];
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform: {
+                        order: 'pre',
+                        handler(code) {
+                            order.push(1);
+                            return code + 1;
+                        }
+                    },
+                }, {
+                    transform: {
+                        handler(code) {
+                            order.push(2);
+                            return code + 2;
+                        }
+                    },
+                }, {
+                    transform: {
+                        order: 'post',
+                        handler(code) {
+                            order.push(3);
+                            return code + 3;
+                        }
+                    },
+                }, {
+                    transform(code) {
+                        order.push(4);
+                        return code + 4;
+                    },
+                }, {
+                    transform: {
+                        order: 'pre',
+                        handler(code) {
+                            order.push(5);
+                            return code + 5;
+                        }
+                    },
+                }, {
+                    transform: {
+                        order: 'pre',
+                        handler(code) {
+                            order.push(6);
+                            return code + 6;
+                        }
+                    },
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(order).to.deep.equal([1,5,6,2,4,3]);
+            expect(output[0].code.includes('window.a0156243')).to.be.true;
+            fs.reset();
+        });
+
+        it('should execute async sequential hooks in "post" order after other plugins', async () => {
+            fs.stub('./src/main.js', () => 'export default window.a0');
+            let order = [];
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    transform: {
+                        order: 'post',
+                        handler(code) {
+                            order.push(1);
+                            return code + 1;
+                        }
+                    },
+                }, {
+                    transform: {
+                        handler(code) {
+                            order.push(2);
+                            return code + 2;
+                        }
+                    },
+                }, {
+                    transform: {
+                        order: 'pre',
+                        handler(code) {
+                            order.push(3);
+                            return code + 3;
+                        }
+                    },
+                }, {
+                    transform(code) {
+                        order.push(4);
+                        return code + 4;
+                    },
+                }, {
+                    transform: {
+                        order: 'post',
+                        handler(code) {
+                            order.push(5);
+                            return code + 5;
+                        }
+                    },
+                }, {
+                    transform: {
+                        order: 'post',
+                        handler(code) {
+                            order.push(6);
+                            return code + 6;
+                        }
+                    },
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(order).to.deep.equal([3,2,4,1,5,6]);
+            expect(output[0].code.includes('window.a0324156')).to.be.true;
+            fs.reset();
+        });
+
+        it('should execute sync first hooks in "pre" order after other plugins', async () => {
+            fs.stub('./src/main.js', () => 'export default import.meta.value');
+            let order = [];
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveImportMeta: {
+                        order: 'pre',
+                        handler() {
+                            order.push(1);
+                        }
+                    },
+                }, {
+                    resolveImportMeta: {
+                        handler() {
+                            order.push(2);
+                        }
+                    },
+                }, {
+                    resolveImportMeta: {
+                        order: 'post',
+                        handler() {
+                            order.push(3);
+                            return 'window.location.href';
+                        }
+                    },
+                }, {
+                    resolveImportMeta() {
+                        order.push(4);
+                    },
+                }, {
+                    resolveImportMeta: {
+                        order: 'pre',
+                        handler() {
+                            order.push(5);
+                        }
+                    },
+                }, {
+                    resolveImportMeta: {
+                        order: 'pre',
+                        handler() {
+                            order.push(6);
+                        }
+                    },
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(order).to.deep.equal([1,5,6,2,4,3]);
+            expect(output[0].code.includes('window.location.href')).to.be.true;
+            fs.reset();
+        });
+
+        it('should execute sync first hooks in "post" order after other plugins', async () => {
+            fs.stub('./src/main.js', () => 'export default import.meta.value');
+            let order = [];
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    resolveImportMeta: {
+                        order: 'post',
+                        handler() {
+                            order.push(1);
+                        }
+                    },
+                }, {
+                    resolveImportMeta: {
+                        handler() {
+                            order.push(2);
+                        }
+                    },
+                }, {
+                    resolveImportMeta: {
+                        order: 'pre',
+                        handler() {
+                            order.push(3);
+                        }
+                    },
+                }, {
+                    resolveImportMeta() {
+                        order.push(4);
+                    },
+                }, {
+                    resolveImportMeta: {
+                        order: 'post',
+                        handler() {
+                            order.push(5);
+                        }
+                    },
+                }, {
+                    resolveImportMeta: {
+                        order: 'post',
+                        handler() {
+                            order.push(6);
+                            return 'window.location.href';
+                        }
+                    },
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(order).to.deep.equal([3,2,4,1,5,6]);
+            expect(output[0].code.includes('window.location.href')).to.be.true;
+            fs.reset();
+        });
+
+        it('should execute async parallel hooks in "pre" order after other plugins', async () => {
+            fs.stub('./src/main.js', () => 'export default import.meta.value');
+            let order = [];
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    buildStart: {
+                        order: 'pre',
+                        handler() {
+                            order.push(1);
+                        }
+                    },
+                }, {
+                    buildStart: {
+                        handler() {
+                            order.push(2);
+                        }
+                    },
+                }, {
+                    buildStart: {
+                        order: 'post',
+                        handler() {
+                            order.push(3);
+                        }
+                    },
+                }, {
+                    buildStart() {
+                        order.push(4);
+                    },
+                }, {
+                    buildStart: {
+                        order: 'pre',
+                        handler() {
+                            order.push(5);
+                        }
+                    },
+                }, {
+                    buildStart: {
+                        order: 'pre',
+                        handler() {
+                            order.push(6);
+                        }
+                    },
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(order).to.deep.equal([1,5,6,2,4,3]);
+            fs.reset();
+        });
+
+        it('should execute async parallel hooks in "post" order after other plugins', async () => {
+            fs.stub('./src/main.js', () => 'export default import.meta.value');
+            let order = [];
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    buildStart: {
+                        order: 'post',
+                        handler() {
+                            order.push(1);
+                        }
+                    },
+                }, {
+                    buildStart: {
+                        handler() {
+                            order.push(2);
+                        }
+                    },
+                }, {
+                    buildStart: {
+                        order: 'pre',
+                        handler() {
+                            order.push(3);
+                        }
+                    },
+                }, {
+                    buildStart() {
+                        order.push(4);
+                    },
+                }, {
+                    buildStart: {
+                        order: 'post',
+                        handler() {
+                            order.push(5);
+                        }
+                    },
+                }, {
+                    buildStart: {
+                        order: 'post',
+                        handler() {
+                            order.push(6);
+                        }
+                    },
+                }]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(order).to.deep.equal([3,2,4,1,5,6]);
+            fs.reset();
+        });
+
+        it('should support sequential option for async parallel hooks', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+            let order = [];
+
+            function sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async buildStart() {
+                        await sleep(1000);
+                        order.push(1);
+                    },
+                }, {
+                    buildStart: {
+                        async handler() {
+                            await sleep(500);
+                            order.push(2);
+                        }
+                    },
+                }, {
+                    buildStart: {
+                        sequential: true,
+                        handler(id) {
+                            order.push(3);
+                        }
+                    },
+                }, {
+                    async buildStart() {
+                        await sleep(300);
+                        order.push(4);
+                    },
+                }, {
+                    buildStart: {
+                        async handler() {
+                            await sleep(100);
+                            order.push(5);
+                        }
+                    },
+                },{
+                    buildStart: {
+                        sequential: true,
+                        handler(id) {
+                            order.push(6);
+                        }
+                    },
+                }, {
+                    async buildStart() {
+                        await sleep(300);
+                        order.push(7);
+                    },
+                }, {
+                    buildStart: {
+                        async handler() {
+                            await sleep(100);
+                            order.push(8);
+                        }
+                    },
+                },]
+            });
+
+            await bundle.generate({ format: 'esm' });
+            expect(order).to.deep.equal([2,1,3,5,4,6,8,7]);
+            fs.reset();
+        });
+
+        it('should support sequential for async parallel hooks that return values', async () => {
+            fs.stub('./src/main.js', () => 'export default 123');
+
+            function sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            let bundle = await nollup({
+                input: './src/main.js',
+                plugins: [{
+                    async banner() {
+                        await sleep(1000);
+                        return '1';
+                    },
+                }, {
+                    banner: {
+                        async handler() {
+                            await sleep(500);
+                            return '2';
+                        }
+                    },
+                }, {
+                    banner: {
+                        sequential: true,
+                        handler(id) {
+                            return '3';
+                        }
+                    },
+                }, {
+                    async banner() {
+                        await sleep(300);
+                        return '4';
+                    },
+                }, {
+                    banner: {
+                        async handler() {
+                            await sleep(100);
+                            return '5';
+                        }
+                    },
+                },{
+                    banner: {
+                        sequential: true,
+                        handler(id) {
+                            return '6'
+                        }
+                    },
+                }, {
+                    async banner() {
+                        await sleep(300);
+                        return '7';
+                    },
+                }, {
+                    banner: '8'
+                }, {
+                    banner: () => '9'
+                }, {
+                    banner: {
+                        async handler() {
+                            await sleep(100);
+                            return 'X';
+                        }
+                    },
+                },]
+            });
+
+            let { output } = await bundle.generate({ format: 'esm' });
+            expect(output[0].code.includes('1\n2\n3\n4\n5\n6\n7\n8\n9\nX')).to.be.true;
+            fs.reset();
+        })
+    })
 });
