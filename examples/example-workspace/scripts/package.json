@@ -1,0 +1,11 @@
+{
+    "scripts": {
+        "dev:app1": "NODE_ENV=development APP_TARGET=app1 node ../../../lib/cli.js -c",
+        "dev:app2": "NODE_ENV=development APP_TARGET=app2 node ../../../lib/cli.js -c",
+        "build:app1": "NODE_ENV=production APP_TARGET=app1 rollup -c --watch",
+        "build:app2": "NODE_ENV=production APP_TARGET=app2 rollup -c --watch"
+    },
+    "devDependencies": {
+        "rollup": "^3.11.0"
+    }
+}

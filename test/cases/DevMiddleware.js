@@ -11,6 +11,10 @@ let chokidar = {
         return {
             on: (event, callback) => {
                 this._callbacks.push({ event, callback });
+            },
+            
+            add() {
+
             }
         }
     },
